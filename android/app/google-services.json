@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "498626591797",
+    "project_id": "serene-spa-b324d",
+    "storage_bucket": "serene-spa-b324d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:498626591797:android:2f21c0f7dc430007a7857c",
+        "android_client_info": {
+          "package_name": "com.spa_app.fe_android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB51pNyGPQ2WsMR51zVSyOm8nHhFSy47Y8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

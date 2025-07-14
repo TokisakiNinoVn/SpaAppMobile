@@ -1,0 +1,1 @@
+C:\Code\calender_full_stack\fe_android\build\app\intermediates\cxx\Debug\6s505k19\obj\arm64-v8a

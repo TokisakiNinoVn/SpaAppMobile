@@ -1,0 +1,2 @@
+C:/Code/calender_full_stack/fe_android/android/app/.cxx/Debug/6s505k19/x86/CMakeFiles/edit_cache.dir
+C:/Code/calender_full_stack/fe_android/android/app/.cxx/Debug/6s505k19/x86/CMakeFiles/rebuild_cache.dir
