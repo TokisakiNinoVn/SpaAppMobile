@@ -4,8 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'admin/widgets/account_widget.dart';
 import 'admin/widgets/home_widget.dart';
-import 'admin/widgets/policy_widget.dart';
-import 'admin/widgets/profile_widget.dart';
+import 'admin/widgets/account_admin_widget.dart';
+import 'admin/widgets/list_technician_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -83,13 +83,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     switch (_selectedIndex) {
       case 0:
-        return HomeTab(role: role ?? 'Không rõ');
+        return HomeTab();
       case 1:
         return const AccountTab();
       case 2:
-        return const ProfileTab();
+        return const ListTechnicianTab();
       case 3:
-        return const PolicyTab();
+        return const AccountAdminTab();
       default:
         return const Center(child: Text("Không tìm thấy tab."));
     }

@@ -1,23 +1,44 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../helper/snackbar_helper.dart';
+import '../../routes/app_router.dart';
+import '../../screens/login_screen.dart';
 
 class ApiMethodsPrivate {
   // Hàm lấy token từ SharedPreferences
   static Future<String?> getToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
-    // if (token != null) {
-    //   if (kDebugMode) {
-    //     print("Token from SharedPreferences: $token");
-    //   }
-    // } else {
-    //   if (kDebugMode) {
-    //     print("Token not found in SharedPreferences");
-    //   }
-    // }
     return token;
+  }
+
+
+  static Future<void> _handle401() async {
+    final context = rootNavigatorKey.currentContext;
+
+    final prefs = await SharedPreferences.getInstance();
+    // await prefs.clear();
+    await prefs.remove('token');
+    // await prefs.remove('isLogin');
+
+
+    if (context != null) {
+      SnackbarHelper.showError(context, "Phiên đăng nhập của bạn hết hạn, vui lòng đăng nhập lại!");
+      context.go('/login');
+      //
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (_) => LoginScreen(),
+      //   ),
+      // );
+    }
   }
 
   // Phương thức POST với token
@@ -38,9 +59,13 @@ class ApiMethodsPrivate {
         body: jsonEncode(body),
       );
 
+      if (response.statusCode == 401) {
+        _handle401();
+        return {'status': 'error', 'message': 'Unauthorized'};
+      }
+
       // Xử lý response
       final jsonResponse = jsonDecode(response.body);
-      // print(jsonResponse);
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonResponse;
       } else {
@@ -78,6 +103,11 @@ class ApiMethodsPrivate {
         headers: headers,
       );
 
+      if (response.statusCode == 401) {
+        _handle401();
+        return {'status': 'error', 'message': 'Unauthorized'};
+      }
+
       // Xử lý response
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -108,6 +138,11 @@ class ApiMethodsPrivate {
         body: jsonEncode(body),
       );
 
+      if (response.statusCode == 401) {
+        _handle401();
+        return {'status': 'error', 'message': 'Unauthorized'};
+      }
+
       if (response.statusCode == 200 || response.statusCode == 204) {
         return jsonDecode(response.body);
       } else {
@@ -134,6 +169,11 @@ class ApiMethodsPrivate {
         Uri.parse(url),
         headers: headers,
       );
+
+      if (response.statusCode == 401) {
+        _handle401();
+        return {'status': 'error', 'message': 'Unauthorized'};
+      }
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         return jsonDecode(response.body);

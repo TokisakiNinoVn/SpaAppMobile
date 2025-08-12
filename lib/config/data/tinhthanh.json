@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "name": "TP. Hồ Chí Minh",
+    "children": [
+      { "id": 101, "name": "Quận 1" },
+      { "id": 102, "name": "Quận 3" },
+      { "id": 103, "name": "Quận 4" },
+      { "id": 104, "name": "Quận 5" },
+      { "id": 105, "name": "Quận 7" },
+      { "id": 106, "name": "Quận 10" },
+      { "id": 107, "name": "Quận Bình Thạnh" },
+      { "id": 108, "name": "Quận Gò Vấp" },
+      { "id": 109, "name": "Quận Tân Bình" },
+      { "id": 110, "name": "Quận Tân Phú" },
+      { "id": 111, "name": "Quận Thủ Đức" },
+      { "id": 112, "name": "Huyện Bình Chánh" },
+      { "id": 113, "name": "Huyện Củ Chi" },
+      { "id": 114, "name": "Huyện Hóc Môn" },
+      { "id": 115, "name": "Huyện Nhà Bè" }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Hà Nội",
+    "children": [
+      { "id": 201, "name": "Quận Ba Đình" },
+      { "id": 202, "name": "Quận Hoàn Kiếm" },
+      { "id": 203, "name": "Quận Đống Đa" },
+      { "id": 204, "name": "Quận Hai Bà Trưng" },
+      { "id": 205, "name": "Quận Thanh Xuân" },
+      { "id": 206, "name": "Quận Cầu Giấy" },
+      { "id": 207, "name": "Quận Long Biên" },
+      { "id": 208, "name": "Quận Nam Từ Liêm" },
+      { "id": 209, "name": "Quận Bắc Từ Liêm" },
+      { "id": 210, "name": "Huyện Gia Lâm" },
+      { "id": 211, "name": "Huyện Đông Anh" },
+      { "id": 212, "name": "Huyện Sóc Sơn" }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Đà Nẵng",
+    "children": [
+      { "id": 301, "name": "Quận Hải Châu" },
+      { "id": 302, "name": "Quận Thanh Khê" },
+      { "id": 303, "name": "Quận Sơn Trà" },
+      { "id": 304, "name": "Quận Ngũ Hành Sơn" },
+      { "id": 305, "name": "Quận Liên Chiểu" },
+      { "id": 306, "name": "Huyện Hòa Vang" },
+      { "id": 307, "name": "Huyện Hoàng Sa" }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Hải Phòng",
+    "children": [
+      { "id": 401, "name": "Quận Hồng Bàng" },
+      { "id": 402, "name": "Quận Lê Chân" },
+      { "id": 403, "name": "Quận Ngô Quyền" },
+      { "id": 404, "name": "Quận Hải An" },
+      { "id": 405, "name": "Quận Dương Kinh" },
+      { "id": 406, "name": "Quận Kiến An" },
+      { "id": 407, "name": "Huyện Thủy Nguyên" },
+      { "id": 408, "name": "Huyện An Dương" },
+      { "id": 409, "name": "Huyện Tiên Lãng" },
+      { "id": 410, "name": "Huyện Cát Hải" }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Khánh Hòa",
+    "children": [
+      { "id": 501, "name": "TP. Nha Trang" },
+      { "id": 502, "name": "Thị xã Ninh Hòa" },
+      { "id": 503, "name": "Huyện Vạn Ninh" },
+      { "id": 504, "name": "Huyện Diên Khánh" },
+      { "id": 505, "name": "Huyện Cam Lâm" },
+      { "id": 506, "name": "TP. Cam Ranh" }
+    ]
+  }
+]

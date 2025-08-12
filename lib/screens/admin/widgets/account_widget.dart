@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:spa_app/services/user_service.dart';
-import '../../../helper/format_helper.dart';
-import '../components/full_screen_list_image.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:spa_app/config/color_config.dart';
 
-import '../components/full_screen_single_image.dart';
-
+import 'package:spa_app/services/user_service.dart';
+import 'package:spa_app/helper/full_screen_single_image.dart';
+import 'package:spa_app/helper/full_screen_list_image.dart';
+import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/services/realtime_service.dart';
 
 class AccountTab extends StatefulWidget {
   const AccountTab({super.key});
@@ -16,18 +18,44 @@ class AccountTab extends StatefulWidget {
 class _AccountTabState extends State<AccountTab> {
   final UserService userService = UserService();
   final TextEditingController _searchController = TextEditingController();
+  late RealtimeService _realtimeService;
+
 
   List<Map<String, dynamic>> users = [];
   List<Map<String, dynamic>> filteredUsers = [];
   bool isLoading = true;
   String searchQuery = '';
   String roleFilter = 'ktv';
-  String statusFilter = 'active';
+  String statusFilter = 'all';
+  bool showFilters = false;
 
   @override
   void initState() {
     super.initState();
     _loadUsers();
+    _realtimeService = RealtimeService(
+      context,
+      onUserStatusUpdate: (data) {
+        if (!mounted) return;
+        setState(() {
+          _handleRealtimeUserStatusUpdate(data);
+        });
+      },
+    );
+    _realtimeService.connect();
+  }
+
+  void _handleRealtimeUserStatusUpdate(Map<String, dynamic> data) {
+    final String userId = data['userId'];
+    final bool status = data['status'];
+
+    final int index = users.indexWhere((user) => user['_id'] == userId);
+    if (index != -1) {
+      setState(() {
+        users[index]['status'] = status ? 'active' : 'inactive';
+        _applyFilters();
+      });
+    }
   }
 
   Future<void> _loadUsers() async {
@@ -47,10 +75,9 @@ class _AccountTabState extends State<AccountTab> {
 
   void _applyFilters() {
     filteredUsers = users.where((user) {
-      final matchesSearch = user['phone'].toString().contains(searchQuery) ||
-          (user['fullname']?.toString() ?? '').toLowerCase().contains(searchQuery.toLowerCase());
+      final matchesSearch = user['phone'].toString().contains(searchQuery) || (user['technician']?['fullName']?.toString() ?? '').toLowerCase().contains(searchQuery.toLowerCase());
       final matchesRole = user['roles'] == roleFilter;
-      final matchesStatus = user['status'] == statusFilter;
+      final matchesStatus = statusFilter == 'all' || user['status'] == statusFilter;
       return matchesSearch && matchesRole && matchesStatus;
     }).toList();
   }
@@ -58,87 +85,116 @@ class _AccountTabState extends State<AccountTab> {
   void _showChangePasswordDialog(String userId) {
     final TextEditingController newPasswordController = TextEditingController();
     final TextEditingController confirmPasswordController = TextEditingController();
+    bool obscureNewPassword = true;
+    bool obscureConfirmPassword = true;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Đổi mật khẩu'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: newPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Mật khẩu mới',
-                border: OutlineInputBorder(),
-              ),
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('🔒 Đổi mật khẩu', style: TextStyle(fontWeight: FontWeight.bold)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: newPasswordController,
+                  obscureText: obscureNewPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Mật khẩu mới',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureNewPassword ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() => obscureNewPassword = !obscureNewPassword);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: confirmPasswordController,
+                  obscureText: obscureConfirmPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Xác nhận mật khẩu',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() => obscureConfirmPassword = !obscureConfirmPassword);
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: confirmPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Xác nhận mật khẩu',
-                border: OutlineInputBorder(),
+            actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Hủy'),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newPassword = newPasswordController.text.trim();
-              final confirmPassword = confirmPasswordController.text.trim();
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final newPassword = newPasswordController.text.trim();
+                  final confirmPassword = confirmPasswordController.text.trim();
 
-              if (newPassword.isEmpty || confirmPassword.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin')),
-                );
-                return;
-              }
+                  if (newPassword.isEmpty || confirmPassword.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin')),
+                    );
+                    return;
+                  }
 
-              if (newPassword != confirmPassword) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Mật khẩu xác nhận không khớp')),
-                );
-                return;
-              }
+                  if (newPassword != confirmPassword) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Mật khẩu xác nhận không khớp')),
+                    );
+                    return;
+                  }
 
-              try {
-                final response = await userService.changePasswordUserService({
-                  'userId': userId,
-                  'newPassword': newPassword,
-                });
+                  try {
+                    final response = await userService.changePasswordUserService({
+                      'userId': userId,
+                      'newPassword': newPassword,
+                    });
 
-                Navigator.pop(context);
-                if (response['success']) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đổi mật khẩu thành công')),
-                  );
-                  _loadUsers();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(response['message'] ?? 'Có lỗi xảy ra')),
-                  );
-                }
-              } catch (e) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Có lỗi xảy ra, vui lòng thử lại')),
-                );
-              }
-            },
-            child: const Text('Xác nhận'),
-          ),
-        ],
-      ),
+                    Navigator.pop(context);
+                    if (response['success']) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Đổi mật khẩu thành công')),
+                      );
+                      _loadUsers();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(response['message'] ?? 'Có lỗi xảy ra')),
+                      );
+                    }
+                  } catch (e) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Có lỗi xảy ra, vui lòng thử lại')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.check),
+                label: const Text('Xác nhận'),
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          );
+        });
+      },
     );
   }
+
 
   Future<void> _toggleUserStatus(String id, bool currentStatus) async {
     final confirmed = await showDialog<bool>(
@@ -217,16 +273,82 @@ class _AccountTabState extends State<AccountTab> {
     return Scaffold(
       body: Column(
         children: [
-          _buildSearchAndFilterSection(),
+          _buildSearchSection(),
+          if (showFilters) _buildFilterSection(),
           _buildUserListSection(),
         ],
       ),
     );
   }
 
-  Widget _buildSearchAndFilterSection() {
+  Widget _buildSearchSection() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm theo số điện thoại hoặc tên',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      searchQuery = '';
+                      _applyFilters();
+                    });
+                  },
+                )
+                    : null,
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Theme.of(context).primaryColor),
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value;
+                  _applyFilters();
+                });
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: Icon(
+              showFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
+              color: Colors.blue,
+            ),
+            onPressed: () {
+              setState(() {
+                showFilters = !showFilters;
+              });
+            },
+            tooltip: showFilters ? 'Ẩn bộ lọc' : 'Hiện bộ lọc',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterSection() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       child: Column(
         children: [
           Row(
@@ -238,10 +360,12 @@ class _AccountTabState extends State<AccountTab> {
                     labelText: 'Vai trò',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8.0),
+                      borderSide: BorderSide(color: ColorConfig.secondary),
                     ),
                   ),
                   items: const [
                     DropdownMenuItem(value: 'ktv', child: Text('Kỹ thuật viên')),
+                    DropdownMenuItem(value: 'quanly', child: Text('Quản lý')),
                     DropdownMenuItem(value: 'admin', child: Text('Quản trị viên')),
                   ],
                   onChanged: (value) {
@@ -263,6 +387,7 @@ class _AccountTabState extends State<AccountTab> {
                     ),
                   ),
                   items: const [
+                    DropdownMenuItem(value: 'all', child: Text('Tất cả')),
                     DropdownMenuItem(value: 'active', child: Text('Hoạt động')),
                     DropdownMenuItem(value: 'inactive', child: Text('Không hoạt động')),
                   ],
@@ -275,35 +400,6 @@ class _AccountTabState extends State<AccountTab> {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              labelText: 'Tìm kiếm theo số điện thoại/tên',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() {
-                    searchQuery = '';
-                    _applyFilters();
-                  });
-                },
-              )
-                  : null,
-            ),
-            onChanged: (value) {
-              setState(() {
-                searchQuery = value;
-                _applyFilters();
-              });
-            },
           ),
         ],
       ),
@@ -321,11 +417,8 @@ class _AccountTabState extends State<AccountTab> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         itemBuilder: (context, index) {
           final user = filteredUsers[index];
-          final hasTechnician = user['technicians'] != null &&
-              (user['technicians'] as List).isNotEmpty;
-          final technician = hasTechnician
-              ? (user['technicians'] as List).first
-              : null;
+          final hasTechnician = user['technician'] != null && (user['technician']).isNotEmpty;
+          final technician = hasTechnician ? (user['technician']) : null;
 
           final avatarUrl = hasTechnician &&
               technician?['avatar']?['url'] != null
@@ -354,11 +447,11 @@ class _AccountTabState extends State<AccountTab> {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundColor: Colors.grey[300],
+                    backgroundColor: Colors.grey[100],
                     backgroundImage:
                     avatarUrl != null ? NetworkImage(avatarUrl) : null,
                     child: avatarUrl == null
-                        ? const Icon(Icons.person, size: 30)
+                        ? Icon(Icons.person, size: 30, color: ColorConfig.secondary)
                         : null,
                   ),
                   const SizedBox(width: 16),
@@ -373,13 +466,14 @@ class _AccountTabState extends State<AccountTab> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (user['role'] == 'ktv')
-                                  Text(
-                                    user['fullname'] ?? 'Không có tên',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                    Text(
+                                      user['fullname'] ?? 'Không có tên',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
+
                                   const SizedBox(height: 4),
                                   Text(
                                     user['phone'] ?? '',
@@ -389,13 +483,26 @@ class _AccountTabState extends State<AccountTab> {
                                     const SizedBox(height: 4),
                                     Text(
                                       technician?['fullName'] ?? '',
-                                      style: const TextStyle(color: Colors.blueGrey),
+                                      style: TextStyle(color: ColorConfig.primary),
                                     ),
+                                  ] else if (user['roles'] == 'quanly') ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      user['fullname'] ?? 'Không có tên',
+                                      style: TextStyle(color: ColorConfig.primary),
+                                    )
+                                  ] else if (user['roles'] == 'admin') ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Quản lý',
+                                      style: TextStyle(color: ColorConfig.primary),
+                                    )
                                   ]
                                 ],
                               ),
                             ),
                             const SizedBox(width: 8),
+                            // Cập nhật realtime cho cái này
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
@@ -430,14 +537,16 @@ class _AccountTabState extends State<AccountTab> {
                                 _showChangePasswordDialog(user['_id']);
                               },
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              tooltip: 'Chỉnh sửa thông tin',
-                              onPressed: () {
-
-                              },
-                            ),
-                            IconButton(
+                            if (user['roles'] == 'ktv' && user['technician'] != null) ...[
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                  tooltip: 'Chỉnh sửa thông tin',
+                                  onPressed: () {
+                                    context.go('/edit-technician', extra: user);
+                                  }
+                                )
+                            ],
+                            user['roles'] == 'admin' ? const SizedBox() : IconButton(
                               icon: Icon(
                                 user['isActive']
                                     ? Icons.lock_open
@@ -452,12 +561,14 @@ class _AccountTabState extends State<AccountTab> {
                               onPressed: () => _toggleUserStatus(
                                   user['_id'], user['isActive']),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete,
-                                  color: Colors.red),
-                              onPressed: () => _deleteUser(user['_id']),
-                              tooltip: 'Xóa tài khoản',
-                            ),
+                            if (user['roles'] != 'admin') ...[
+                              IconButton(
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.red),
+                                onPressed: () => _deleteUser(user['_id']),
+                                tooltip: 'Xóa tài khoản',
+                              ),
+                            ]
                           ],
                         ),
                       ],
@@ -494,11 +605,12 @@ class UserDetailWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasTechnician = user['technicians'] != null &&
-        (user['technicians'] as List).isNotEmpty;
-    final technician = hasTechnician
-        ? (user['technicians'] as List).first
-        : null;
+    // Origin
+    // final hasTechnician = user['technician'] != null && (user['technician'] as List).isNotEmpty;
+    // final technician = hasTechnician ? (user['technician'] as List).first : null;
+
+    final bool hasTechnician = user['technician'] != null;
+    final technician = hasTechnician ? user['technician'] : null;
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -526,53 +638,69 @@ class UserDetailWidget extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
+                  user['roles'] == 'ktv' && technician != null ? Center(
                     child: GestureDetector(
                       onTap: () {
                         final imageUrl = technician!['avatar']['url'];
                         if (imageUrl != null && imageUrl.isNotEmpty) {
                           showDialog(
                             context: context,
-                            builder: (_) => FullScreenSingleImageViewer(
-                              imageUrl: FormatHelper.formatImageUrl(imageUrl),
-                            ),
+                            builder: (_) => FullScreenSingleImageViewer(imageUrl: FormatHelper.formatImageUrl(imageUrl)),
                           );
                         }
                       },
                       child: CircleAvatar(
                         radius: 50,
                         backgroundColor: Colors.grey[300],
-                        backgroundImage: hasTechnician &&
-                            technician?['avatar'] != null
-                            ? NetworkImage(FormatHelper.formatImageUrl(
-                            technician!['avatar']['url'] ?? ''))
-                            : null,
-                        child: hasTechnician &&
-                            technician?['avatar'] == null
-                            ? const Icon(Icons.person, size: 50)
-                            : null,
+                        backgroundImage: hasTechnician && technician?['avatar'] != null ? NetworkImage(FormatHelper.formatImageUrl(technician!['avatar']['url'] ?? '')) : null,
+                        child: hasTechnician && technician?['avatar'] == null ? const Icon(Icons.person, size: 50) : null,
                       ),
                     ),
-                  ),
+                  ) : const SizedBox(),
                   const SizedBox(height: 16),
-                  Center(
-                    child: Text(
-                      user['fullname'] ?? 'Không có tên',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                  if (user['roles'] == 'quanly' || user['roles'] == 'admin') ...[
+                    Center(
+                      child: Text(
+                        user['roles'] == 'quanly' ? user['fullname'] : 'Quản trị viên - Admin',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
+                  ] else if (user['roles'] == 'ktv' && technician == null) ...[
+                    Center(
+                      child: Text(
+                        'Tài khoản được đăng ký với quyền kỹ thuật viên nhưng chưa tạo hồ sơ',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                  // Center(
+                  //   child: Text(
+                  //     user['roles'] == 'quanly' ? user['fullname'] : 'Quản trị viên - Admin',
+                  //     style: const TextStyle(
+                  //       fontSize: 20,
+                  //       fontWeight: FontWeight.bold,
+                  //     ),
+                  //   ),
+                  // ),
                   const Divider(height: 32),
                   _buildCopyableDetailRow(context, 'Số điện thoại', user['phone']),
                   _buildCopyableDetailRow(context, 'Mật khẩu', user['password']),
 
-                  _buildDetailRow('Vai trò',
-                      user['roles'] == 'admin' ? 'Quản trị viên' : 'Kỹ thuật viên'),
-                  _buildDetailRow('Trạng thái',
-                      user['status'] == 'active' ? 'Hoạt động' : 'Không hoạt động'),
-                  _buildDetailRow('Lần đăng nhập cuối', FormatHelper.formatDateTime(user['lastLogin'])),
+                  // _buildDetailRow('Vai trò', user['roles'] == 'admin' ? 'Quản trị viên' : 'Kỹ thuật viên'),
+                  // _buildDetailRow('Trạng thái', user['status'] == 'active' ? 'Hoạt động' : 'Không hoạt động'),
+                  // _buildDetailRow(
+                  //   'Lần đăng nhập cuối',
+                  //   user['lastLogin'] != null
+                  //       ? FormatHelper.formatDateTime(user['lastLogin'])!
+                  //       : 'Không có',
+                  // ),
+
                   if (hasTechnician) ...[
                     const SizedBox(height: 16),
                     const Text(
@@ -591,8 +719,7 @@ class UserDetailWidget extends StatelessWidget {
                     _buildDetailRow('Kinh nghiệm', technician?['experience']),
                     _buildDetailRow('Mô tả kinh nghiệm', technician?['experienceDescription']),
                     _buildDetailRow('Giới thiệu', technician?['bio']),
-                    _buildDetailRow('Đã được phê duyệt',
-                        technician?['isApproved'] ? 'Có' : 'Không'),
+                    _buildDetailRow('Đã được phê duyệt', technician?['isActive'] == false ? 'Có' : 'Không'),
 
                     if (technician?['images'] != null &&
                         (technician!['images'] as List).isNotEmpty) ...[
@@ -611,8 +738,7 @@ class UserDetailWidget extends StatelessWidget {
                           scrollDirection: Axis.horizontal,
                           itemCount: (technician['images'] as List).length,
                           itemBuilder: (context, index) {
-                            final image =
-                            (technician['images'] as List)[index];
+                            final image = (technician['images'] as List)[index];
                             return Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child: GestureDetector(

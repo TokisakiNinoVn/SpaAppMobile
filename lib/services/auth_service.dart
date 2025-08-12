@@ -7,9 +7,29 @@ class AuthService {
     return await ApiMethodsPublic.postRequest(AuthApiRoutes.login, body: data);
   }
 
+  Future<Map<String, dynamic>> getOTPService(data) async {
+    return await ApiMethodsPublic.postRequest(AuthApiRoutes.getOTP, body: data);
+  }
+
+  Future<Map<String, dynamic>> verifyOTPService(data) async {
+    return await ApiMethodsPublic.postRequest(AuthApiRoutes.verifyOTP, body: data);
+  }
+
+  Future<Map<String, dynamic>> changePasswordService(data) async {
+    return await ApiMethodsPublic.postRequest(AuthApiRoutes.changePassword, body: data);
+  }
+
+  Future<Map<String, dynamic>> logoutService(
+      Map<String, dynamic> data,
+      ) async {
+    return await ApiMethodsPrivate.postRequest(
+      '${AuthApiRoutes.logout}',
+      data,
+    );
+  }
+
   Future<Map<String, dynamic>> registerService(data) async {
-    return await ApiMethodsPublic.postRequest(AuthApiRoutes.register,
-        body: data);
+    return await ApiMethodsPrivate.postRequest(AuthApiRoutes.register, data);
   }
 
   Future<Map<String, dynamic>> checkTokenService() async {

@@ -1,5 +1,5 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+// import 'dart:convert';
+// import 'package:http/http.dart' as http;
 
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/user_api.dart';
@@ -33,6 +33,21 @@ class UserService {
   Future<Map<String, dynamic>> deleteUserService(String id) async {
     return await ApiMethodsPrivate.deleteRequest(
       '${UserApiRoutes.deleteUser}/$id',
+    );
+  }
+
+  Future<Map<String, dynamic>> loadDetailUserService() async {
+    return await ApiMethodsPrivate.getRequest(
+      '${UserApiRoutes.detailUser}',
+    );
+  }
+
+  Future<Map<String, dynamic>> changeStatusUserService(
+    Map<String, dynamic> data,
+  ) async {
+    return await ApiMethodsPrivate.postRequest(
+      '${UserApiRoutes.changeStatusUser}',
+      data,
     );
   }
 }

@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/file_api.dart';
 

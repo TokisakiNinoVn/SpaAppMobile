@@ -1,10 +1,16 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/config/theme_config.dart';
 
 import 'package:spa_app/services/auth_service.dart';
+
+import '../helper/snackbar_helper.dart';
+import 'admin/home_admin_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,8 +31,49 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    // _checkToken();
     _loadLoginData();
   }
+
+  // Future<void> _checkToken() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final token = prefs.getString('token');
+  //   final isLogin = prefs.getString('isLogin');
+  //   final role = prefs.getString('role');
+  //
+  //
+  //   if (token == null) {
+  //     context.go('/login');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(
+  //           content: Text("Phiên đăng nhập hết hạn vui lòng đăng nhập lại! Login")),
+  //     );
+  //     return;
+  //   }
+  //
+  //   final response = await authService.checkTokenService();
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Text("Response check token login: ${response}")),
+  //   );
+  //   if (response['data'] != null || response['success'] == true || response['status'] == 'success') {
+  //     if (role == 'admin') {
+  //       context.go('/home-admin');
+  //     } else if (role == 'ktv') {
+  //       context.go('/home-technician');
+  //     }
+  //     // else if (role == 'customer') {
+  //     //   context.go('/home-customer');
+  //     // }
+  //     else {
+  //       // prefs.remove('token');
+  //       context.go('/login');
+  //     }
+  //   } else {
+  //     // prefs.remove('token');
+  //     context.go('/login');
+  //   }
+  // }
 
   Future<void> _loadLoginData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -68,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = passwordController.text;
 
     if (phone.isEmpty || password.isEmpty) {
-      _showSnack('Vui lòng nhập đầy đủ thông tin');
+      SnackbarHelper.showError(context, "Vui lòng nhập đầy đủ thông tin");
       return;
     }
 
@@ -83,56 +130,67 @@ class _LoginScreenState extends State<LoginScreen> {
       final prefs = await SharedPreferences.getInstance();
 
       if (response['token'] != null) {
-        await prefs.setString('token', response['token']);
-        await prefs.setString('isLogin', 'true');
-        await prefs.setString('inforUserLogin', jsonEncode(response['data']));
-        await prefs.setString('role', jsonEncode(response['data']?['role']));
-        await prefs.setBool('rememberMe', rememberMe);
+        try {
+          await prefs.setString('token', response['token']);
+          await prefs.setString('isLogin', 'true');
+          await prefs.setString('inforUserLogin', jsonEncode(response['data']));
+          await prefs.setString('role', jsonEncode(response['data']?['role']));
+          await prefs.setBool('rememberMe', rememberMe);
 
-        if (rememberMe) {
-          final loginInfo = jsonEncode({
-            'phone': phone,
-            'password': password,
-          });
-          await prefs.setString('loginData', loginInfo);
-        } else {
-          await prefs.remove('loginData');
+          // Status
+          await prefs.setString('statusAccount', jsonEncode(response['data']?['status']));
+          await prefs.setString('isTechnicianActive', jsonEncode(response['data']['isTechnicianActive']));
+
+          final bool isHaveTechnician = response['data']['isHaveTechnician'];
+          // final bool isTechnicianActive = response['data']['isTechnicianActive'];
+
+          if (rememberMe) {
+            final loginInfo = jsonEncode({
+              'phone': phone,
+              'password': password,
+            });
+            await prefs.setString('loginData', loginInfo);
+          } else {
+            await prefs.remove('loginData');
+          }
+
+          if (response['data']['role'] == 'admin') {
+            context.go('/home-admin');
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (_) => HomeAdminScreen(),
+            //   ),
+            // );
+          } else if (response['data']['role'] == 'ktv') {
+            await prefs.setString('statusAccount', jsonEncode(response['data']?['status']));
+            await prefs.setString('isTechnicianActive', jsonEncode(response['data']?['isTechnicianActive']));
+            if (isHaveTechnician == true) {
+              await prefs.setString('technician', jsonEncode(response['data']?['technicianProfile']));
+              context.go('/home-technician');
+            } else {
+              SnackbarHelper.showWarning(context, "Bạn đã đăng ký tài khoản nhưng chưa tạo hồ sơ!");
+              context.go('/create-technician');
+            }
+            // _showSnack('Bạn đã đăng ký tài khoản nhưng chưa tạo hồ sơ!');
+            // context.go('/create-technician');
+          } else if (response['data']['role'] == 'quanly') {
+            context.go('/home-quanly');
+          } else if (response['data']['role'] == 'customer') {
+            context.go('/home-customer');
+          }
+        } catch (e) {
+          SnackbarHelper.showError(context, "Lỗi gì đó ở đoạn lưu thông tin đăng nhập: $e");
         }
-
-        if (response['data']['role'] == 'admin') {
-          context.go('/home-admin');
-        } else if (response['data']['role'] == 'ktv') {
-          context.go('/home-technician');
-        } else if (response['data']['role'] == 'customer') {
-          context.go('/home-customer');
-        }
-
-        // context.go('/home');
-        _showSnack('Đăng nhập thành công!');
       } else {
-        _showSnack(response['message'] ?? 'Đăng nhập thất bại');
+        // _showSnack(response['message'] ?? ');
+        SnackbarHelper.showError(context,response['message'] ?? "Đăng nhập thất bại");
       }
     } catch (e) {
-      _showSnack('Lỗi hệ thống: $e');
+        SnackbarHelper.showError(context, "Lỗi hệ thống: $e");
     } finally {
       setState(() => isLoading = false);
     }
-  }
-
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.lora(color: Colors.white),
-        ),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.redAccent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
   }
 
   @override
@@ -156,12 +214,9 @@ class _LoginScreenState extends State<LoginScreen> {
       textInputAction: inputAction,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF8B5E3C)),
+        prefixIcon: Icon(icon, color: ColorConfig.iconColor),
         suffixIcon: suffix,
-        labelStyle: GoogleFonts.lora(
-          color: const Color(0xFF8B5E3C),
-          fontSize: 16,
-        ),
+        labelStyle: ThemeConfig.appTextStyle(color: ColorConfig.textSecondary),
         filled: true,
         fillColor: Colors.white.withOpacity(0.9),
         enabledBorder: OutlineInputBorder(
@@ -170,14 +225,11 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFD4A373), width: 2),
+          borderSide: BorderSide(color: ColorConfig.secondary, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
-      style: GoogleFonts.lora(
-        color: Colors.black87,
-        fontSize: 16,
-      ),
+      style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
     );
   }
 
@@ -188,18 +240,6 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        // decoration: const BoxDecoration(
-        //   image: DecorationImage(
-        //     image: AssetImage('assets/images/spa_background.jpg'),
-        //     fit: BoxFit.cover,
-        //     opacity: 0.3,
-        //   ),
-        //   gradient: LinearGradient(
-        //     colors: [Color(0xFFF8EDEB), Color(0xFFF3D2C1)],
-        //     begin: Alignment.topCenter,
-        //     end: Alignment.bottomCenter,
-        //   ),
-        // ),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -216,14 +256,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF8B5E3C),
+                    color: ColorConfig.primary,
                   ),
                 ),
                 Text(
                   'Thư giãn & làm đẹp',
                   style: GoogleFonts.lora(
                     fontSize: 18,
-                    color: const Color(0xFF8B5E3C),
+                    color: ColorConfig.primary,
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -241,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   suffix: IconButton(
                     icon: Icon(
                       showPassword ? Icons.visibility : Icons.visibility_off,
-                      color: const Color(0xFF8B5E3C),
+                      color: ColorConfig.primary,
                     ),
                     onPressed: () => setState(() => showPassword = !showPassword),
                   ),
@@ -253,15 +293,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     Checkbox(
                       value: rememberMe,
                       onChanged: (val) => setState(() => rememberMe = val ?? true),
-                      checkColor: Colors.white,
-                      activeColor: const Color(0xFFD4A373),
+                      checkColor: ColorConfig.white,
+                      activeColor: ColorConfig.secondary,
                     ),
                     Text(
                       'Ghi nhớ đăng nhập',
-                      style: GoogleFonts.lora(
-                        color: const Color(0xFF8B5E3C),
-                        fontSize: 14,
-                      ),
+                      style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
                     ),
                   ],
                 ),
@@ -272,8 +309,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: isLoading ? null : handleLogin,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: const Color(0xFFD4A373),
-                      foregroundColor: Colors.white,
+                      backgroundColor: ColorConfig.secondary,
+                      foregroundColor: ColorConfig.primaryBackground,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -291,32 +328,39 @@ class _LoginScreenState extends State<LoginScreen> {
                     )
                         : Text(
                       'Đăng nhập',
-                      style: GoogleFonts.lora(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: ThemeConfig.appTextStyle(color: ColorConfig.textButtonColor, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => context.go('/register'),
-                  child: Text(
-                    'Bạn chưa có tài khoản? Đăng ký',
-                    style: GoogleFonts.lora(
-                      color: const Color(0xFF8B5E3C),
-                      fontSize: 14,
+                Center(
+                  child: TextButton(
+                    onPressed: () => context.go('/register'),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Bạn chưa có tài khoản?',
+                            style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Đăng ký',
+                            style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 TextButton(
-                  onPressed: () => _showSnack('Chức năng này chưa được triển khai'),
+                  onPressed: () {
+                    context.go('/get-otp');
+                  },
                   child: Text(
                     'Quên mật khẩu?',
-                    style: GoogleFonts.lora(
-                      color: const Color(0xFF8B5E3C),
-                      fontSize: 14,
-                    ),
+                    style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary, fontSize: 14),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -324,18 +368,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       'Phiên bản: 2.4.1.23',
-                      style: GoogleFonts.lora(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
+                      style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary, fontSize: 12),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Liên hệ: support@serenespa.vn',
-                      style: GoogleFonts.lora(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
+                      style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary, fontSize: 12),
                     ),
                   ],
                 ),

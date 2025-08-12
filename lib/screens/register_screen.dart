@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -25,76 +25,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool showPassword = false;
   bool showConfirmPassword = false;
 
-  // Future<void> handleRegister() async {
-  //   final phone = phoneController.text.trim();
-  //   final password = passwordController.text;
-  //   final confirmPassword = confirmPasswordController.text;
-  //   final fullname = fullnameController.text.trim();
-  //
-  //   // Validation
-  //   if (phone.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-  //     _showSnack('Vui lòng nhập đầy đủ thông tin bắt buộc');
-  //     return;
-  //   }
-  //
-  //   if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
-  //     _showSnack('Số điện thoại phải có đúng 10 chữ số');
-  //     return;
-  //   }
-  //
-  //   if (password.length < 6) {
-  //     _showSnack('Mật khẩu phải có ít nhất 6 ký tự');
-  //     return;
-  //   }
-  //
-  //   if (password != confirmPassword) {
-  //     _showSnack('Mật khẩu xác nhận không khớp');
-  //     return;
-  //   }
-  //
-  //   if (selectedRole == 'quanly' && fullname.isEmpty) {
-  //     _showSnack('Vui lòng nhập họ và tên');
-  //     return;
-  //   }
-  //
-  //   setState(() => isLoading = true);
-  //
-  //   try {
-  //     final response = await authService.registerService({
-  //       "phone": phone,
-  //       "password": password,
-  //       "roles": selectedRole,
-  //       if (selectedRole == 'quanly') "fullname": fullname,
-  //     });
-  //     // Chuyển qua màn hình xác nhận otp số điện thoại
-  //
-  //     if (response['status'] == 'success') {
-  //       if(response['isHaveTechnician'] == false) {
-  //         final prefs = await SharedPreferences.getInstance();
-  //         await prefs.setString('token', response['token']);
-  //         _showSnack('Đăng ký tài khoản thành công!');
-  //         context.go('/create-technician');
-  //       } else {
-  //         _showSnack('Đăng ký tài khoản thành công!');
-  //       }
-  //     } else {
-  //       _showSnack(response['message'] ?? 'Đăng ký thất bại');
-  //     }
-  //
-  //   } catch (e) {
-  //     _showSnack('Lỗi hệ thống: $e');
-  //     print("Lỗi đăng ký: $e");
-  //   } finally {
-  //     setState(() => isLoading = false);
-  //   }
-  // }
-
   Future<void> handleRegister() async {
     final phone = phoneController.text.trim();
     final password = passwordController.text;
     final confirmPassword = confirmPasswordController.text;
     final fullname = fullnameController.text.trim();
 
+    // Validation
     if (phone.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       _showSnack('Vui lòng nhập đầy đủ thông tin bắt buộc');
       return;
@@ -122,42 +59,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => isLoading = true);
 
-    final fullPhone = '+84${phone.substring(1)}'; // Chuyển 0123 → +84123
     try {
-      await FirebaseAuth.instance.verifyPhoneNumber(
-        phoneNumber: fullPhone,
-        timeout: const Duration(seconds: 60),
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          // Android có thể tự xác minh được
-          await FirebaseAuth.instance.signInWithCredential(credential);
-        },
-        verificationFailed: (FirebaseAuthException e) {
-          if (e.code == 'too-many-requests') {
-            _showSnack('Thiết bị đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau.');
-          } else if (e.code == 'invalid-phone-number') {
-            _showSnack('Số điện thoại không hợp lệ.');
-          } else {
-            _showSnack('Lỗi gửi OTP: ${e.message}');
-            print('Lỗi gửi OTP: ${e.message}');
+      final response = await authService.registerService({
+        "phone": phone,
+        "password": password,
+        "roles": selectedRole,
+        if (selectedRole == 'quanly') "fullname": fullname,
+      });
+
+      if (response['status'] == 'success') {
+        if (selectedRole == 'quanly') {
+          // _showSnack('Đăng ký tài khoản quản lý thành công, chờ duyệt!');
+          SnackbarHelper.showSuccess(context, "Đăng ký tài khoản quản lý thành công, chờ duyệt!");
+          context.go('/login');
+        } else {
+          if(response['isHaveTechnician'] == false) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('token', response['token']);
+            print("role: $selectedRole");
+
+            SnackbarHelper.showSuccess(context, "Đăng ký tài khoản thành công!");
+            context.go('/create-technician');
           }
-        },
-          codeSent: (verificationId, resendToken) {
-          // Chuyển sang màn hình OTP
-          context.push('/otp-confirm', extra: {
-            'verificationId': verificationId,
-            'phone': phone,
-            'password': password,
-            'fullname': fullname,
-            'role': selectedRole,
-          });
-        },
-        codeAutoRetrievalTimeout: (verificationId) {
-          // Có thể xử lý timeout tại đây nếu cần
-        },
-      );
+          // else {
+          //   _showSnack('Đăng ký tài khoản thành công!');
+          // }
+        }
+      } else {
+        // _showSnack(response['message'] ?? 'Đăng ký thất bại');
+        SnackbarHelper.showError(context, response['message'] ?? 'Đăng ký thất bại');
+      }
+
     } catch (e) {
-      _showSnack('Lỗi gửi OTP: $e');
-      print('Lỗi gửi OTP: $e');
+      // _showSnack('Lỗi hệ thống: $e');
+      SnackbarHelper.showError(context, 'Lỗi hệ thống: $e');
+      print("Lỗi đăng ký: $e");
     } finally {
       setState(() => isLoading = false);
     }
@@ -252,7 +188,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       items: const [
         DropdownMenuItem(
           value: 'quanly',
-          child: Text('Quản lý'),
+          child: Text('Đầu bắn tour'),
         ),
         DropdownMenuItem(
           value: 'ktv',

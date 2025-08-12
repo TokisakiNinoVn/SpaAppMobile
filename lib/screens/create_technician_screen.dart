@@ -4,12 +4,16 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/config/theme_config.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
-import 'package:spa_app/services/tinhthanh_service.dart';
+import 'package:spa_app/services/tinhthanh_service_v2.dart';
 import 'package:spa_app/services/file_service.dart';
-import 'package:spa_app/config/app_config.dart';
+import '../helper/format_helper.dart';
+import '../helper/full_screen_single_image.dart';
 
 class CreateTechnicianScreen extends StatefulWidget {
   const CreateTechnicianScreen({super.key});
@@ -26,111 +30,154 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
   final technicianService = TechnicianService();
   final tinhThanhService = TinhThanhService();
 
-  // State variables
   bool isLoading = false;
   List<dynamic> provinces = [];
   List<dynamic> districts = [];
-  List<dynamic> communes = [];
   dynamic selectedProvince;
-  dynamic selectedDistrict;
+  List<dynamic> selectedDistricts = [];
+  String? selectedYear;
   dynamic selectedCommune;
   String? experience;
   List<Map<String, dynamic>> images = [];
   Map<String, dynamic>? avatarImage;
 
-  // Dropdown loading states
+  final _provinceSearchController = TextEditingController();
+  final _districtSearchController = TextEditingController();
+  final _communeSearchController = TextEditingController();
+  final _experienceSearchController = TextEditingController();
+
+  List<dynamic> filteredProvinces = [];
+  List<dynamic> filteredDistricts = [];
+  List<dynamic> filteredCommunes = [];
+
   bool isProvincesLoading = false;
   bool isDistrictsLoading = false;
   bool isCommunesLoading = false;
 
+  final Map<String, bool> services = {
+    'Đá nóng': false,
+    'Giác hơi': false,
+    'Cạo gió': false,
+  };
+
+  final List<String> years = List.generate(
+    50, (index) => (DateTime.now().year - 49 + index).toString(),
+  );
+
   @override
   void initState() {
     super.initState();
+    _provinceSearchController.addListener(_filterProvinces);
+    _districtSearchController.addListener(_filterDistricts);
     _loadProvinces();
+  }
+
+  @override
+  void dispose() {
+    _provinceSearchController.dispose();
+    _districtSearchController.dispose();
+    _communeSearchController.dispose();
+    _experienceSearchController.dispose();
+    fullnameController.dispose();
+    addressController.dispose();
+    // experienceDescriptionController.dispose();
+    bioController.dispose();
+    super.dispose();
+  }
+
+  void _filterProvinces() {
+    final query = _provinceSearchController.text.toLowerCase();
+    setState(() {
+      filteredProvinces = provinces.where((province) {
+        return province['name'].toString().toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  void _filterDistricts() {
+    final query = _districtSearchController.text.toLowerCase();
+    setState(() {
+      filteredDistricts = districts.where((district) {
+        return district['name'].toString().toLowerCase().contains(query);
+      }).toList();
+    });
   }
 
   Future<void> _loadProvinces() async {
     setState(() => isProvincesLoading = true);
     try {
-      final response = await tinhThanhService.getDetailsTinhThanhApiRoutesService();
-      print('DS tinh thanh: ${response['data']}');
-      if (response['code'] == 200 || response['status'] == 'success') {
-        setState(() => provinces = response['data']);
+      final listTinhThanh = await tinhThanhService.getTinhThanh();
+      print("DS Tinh thanh: $listTinhThanh");
+      if (listTinhThanh.isEmpty) {
+        SnackbarHelper.showError(context, 'Không thể tải danh sách tỉnh thành');
       } else {
-        _showSnack('Không thể tải danh sách tỉnh thành');
+        setState(() {
+          provinces = listTinhThanh;
+          filteredProvinces = provinces;
+        });
       }
     } catch (e) {
-      _showSnack('Lỗi tải tỉnh thành: $e');
+      SnackbarHelper.showError(context, 'Lỗi tải tỉnh thành: $e');
     } finally {
       setState(() => isProvincesLoading = false);
     }
   }
 
-  Future<void> _loadDistricts(String provinceId) async {
+  Future<void> _loadDistricts(int idProvince) async {
     setState(() {
       isDistrictsLoading = true;
       districts = [];
-      communes = [];
-      selectedDistrict = null;
+      filteredDistricts = [];
+      filteredCommunes = [];
+      selectedDistricts.clear();
       selectedCommune = null;
     });
 
     try {
-      final response = await tinhThanhService.getDetailsHuyenApiRoutesService(provinceId);
-      if (response['code'] == 200 || response['status'] == 'success') {
-        setState(() => districts = response['data']);
+      final listQuanHuyen = await tinhThanhService.getHuyenByTinh(idProvince);
+      if (listQuanHuyen.isEmpty) {
+        SnackbarHelper.showError(context, 'Không thể tải danh sách huyện');
       } else {
-        _showSnack('Không thể tải danh sách huyện');
+        setState(() {
+          districts = listQuanHuyen;
+          filteredDistricts = districts;
+        });
       }
     } catch (e) {
-      _showSnack('Lỗi tải huyện: $e');
+      SnackbarHelper.showError(context, 'Lỗi tải huyện: $e');
     } finally {
       setState(() => isDistrictsLoading = false);
-    }
-  }
-
-  Future<void> _loadCommunes(String districtId) async {
-    setState(() {
-      isCommunesLoading = true;
-      communes = [];
-      selectedCommune = null;
-    });
-
-    try {
-      final response = await tinhThanhService.getDetailsXaApiRoutesService(districtId);
-      if (response['code'] == 200 || response['status'] == 'success') {
-        setState(() => communes = response['data']);
-      } else {
-        _showSnack('Không thể tải danh sách xã');
-      }
-    } catch (e) {
-      _showSnack('Lỗi tải xã: $e');
-    } finally {
-      setState(() => isCommunesLoading = false);
     }
   }
 
   Future<void> handleCreateTechnician() async {
     final fullname = fullnameController.text.trim();
     final address = addressController.text.trim();
-    final experienceDesc = experienceDescriptionController.text.trim();
+    // final experienceDesc = experienceDescriptionController.text.trim();
     final bio = bioController.text.trim();
 
-    // Validation
     if (fullname.isEmpty) {
-      _showSnack('Vui lòng nhập họ tên');
+      SnackbarHelper.showWarning(context, 'Vui lòng nhập họ tên');
       return;
     }
-    if (selectedProvince == null || selectedDistrict == null || selectedCommune == null) {
-      _showSnack('Vui lòng chọn đầy đủ địa chỉ');
+    if (selectedProvince == null || selectedDistricts.isEmpty) {
+      SnackbarHelper.showWarning(context, 'Vui lòng chọn đầy đủ địa chỉ');
       return;
     }
     if (address.isEmpty) {
-      _showSnack('Vui lòng nhập địa chỉ cụ thể');
+      SnackbarHelper.showWarning(context, 'Vui lòng nhập địa chỉ nơi ở');
+      return;
+    }
+    if (selectedYear == null) {
+      SnackbarHelper.showWarning(context, 'Vui lòng chọn năm sinh');
       return;
     }
     if (experience == null) {
-      _showSnack('Vui lòng chọn kinh nghiệm');
+      SnackbarHelper.showWarning(context, 'Vui lòng chọn kinh nghiệm');
+      return;
+    }
+    if (images.length < 3) {
+      SnackbarHelper.showWarning(context, 'Vui lòng chọn tối thiểu 3 ảnh');
       return;
     }
 
@@ -141,25 +188,32 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         'avatar': avatarImage,
         'fullName': fullname,
         'province': selectedProvince['name'],
-        'district': selectedDistrict['name'],
-        'commune': selectedCommune['name'],
+        'districts': selectedDistricts.map((d) => d['name']).toList(),
         'address': address,
+        'yearOfBirth': selectedYear,
         'experience': experience,
-        'experienceDescription': experienceDesc,
+        // 'experienceDescription': experienceDesc,
+        'services': services.entries
+            .where((entry) => entry.value)
+            .map((entry) => entry.key)
+            .toList(),
         'images': images,
         'bio': bio,
       };
 
       final response = await technicianService.createTechnicianService(data);
       if (response['success'] == true) {
-        context.go('/home');
-        _showSnack('Hồ sơ của bạn đã tạo thành công, chờ duyệt', isError: false);
+        SnackbarHelper.showSuccess(
+            context, 'Hồ sơ của bạn đã tạo thành công, chờ duyệt');
+        context.go('/login');
       } else {
-        _showSnack(response['message'] ?? 'Có lỗi xảy ra khi tạo hồ sơ');
+        SnackbarHelper.showError(
+            context, response['message'] ?? 'Có lỗi xảy ra khi tạo hồ sơ');
         print('Lỗi khi tạo hồ sơ: ${response['message']}');
       }
     } catch (e) {
-      _showSnack('Lỗi hệ thống: $e');
+      SnackbarHelper.showError(context, 'Lỗi hệ thống: $e');
+      print('Lỗi hệ thống: $e');
     } finally {
       setState(() => isLoading = false);
     }
@@ -180,23 +234,24 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
           }
         });
       } else {
-        _showSnack('Không thể tải lên hình ảnh');
+        SnackbarHelper.showError(context, 'Không thể tải lên hình ảnh');
       }
     } catch (e) {
-      _showSnack('Lỗi tải lên hình ảnh: $e');
+      SnackbarHelper.showError(context, 'Lỗi tải lên hình ảnh: $e');
     }
   }
 
   Future<void> _pickImage({bool isAvatar = false}) async {
+    if (!isAvatar && images.length >= 5) {
+      SnackbarHelper.showError(context, 'Bạn chỉ được chọn tối đa 5 ảnh');
+      return;
+    }
+
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      if (isAvatar) {
-        await _cropImage(File(pickedFile.path), isAvatar: true);
-      } else {
-        await uploadImage(pickedFile.path);
-      }
+      await _cropImage(File(pickedFile.path), isAvatar: isAvatar);
     }
   }
 
@@ -232,13 +287,13 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       final response = await fileService.deleteFileService(idImage);
 
       if (response['status'] == 'success') {
-        _showSnack('Hình ảnh đã được xóa', isError: false);
+        SnackbarHelper.showSuccess(context, 'Hình ảnh đã được xóa');
         setState(() => images.removeWhere((img) => img['_id'] == idImage));
       } else {
-        _showSnack('Không thể xóa hình ảnh');
+        SnackbarHelper.showError(context, 'Không thể xóa hình ảnh');
       }
     } catch (e) {
-      _showSnack('Lỗi xóa hình ảnh: $e');
+      SnackbarHelper.showError(context, 'Lỗi xóa hình ảnh: $e');
     }
   }
 
@@ -268,48 +323,285 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     );
   }
 
-  void _showSnack(String message, {bool isError = true}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.lora(color: Colors.white)),
-        backgroundColor: isError ? Colors.redAccent : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  Widget _buildLocationField({
+    required String label,
+    required String? value,
+    required VoidCallback onTap,
+    bool isLoading = false,
+  }) {
+    return GestureDetector(
+      onTap: isLoading ? null : onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(50),
+          border: Border.all(
+            color: Colors.grey[300]!,
+            width: 1.0, // viền mỏng
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  value ?? label,
+                  style: ThemeConfig.appTextStyle(
+                    color: value != null
+                        ? ColorConfig.textPrimary
+                        : Colors.grey,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              if (isLoading)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                const Icon(Icons.arrow_drop_down, color: Colors.grey),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  // format link network image
-  String formatImageUrl(String url) {
-    return '${AppConfig.apiUrlImage}$url';
+
+  void _showProvinceBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _buildLocationBottomSheet(
+        title: 'Chọn tỉnh',
+        controller: _provinceSearchController,
+        items: filteredProvinces,
+        onSelected: (province) {
+          setState(() {
+            selectedProvince = province;
+            selectedDistricts.clear();
+          });
+          _loadDistricts(province['id']);
+          Navigator.pop(context);
+        },
+      ),
+    );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required dynamic value,
+  void _showDistrictBottomSheet() {
+    if (selectedProvince == null) {
+      SnackbarHelper.showWarning(context, 'Vui lòng chọn tỉnh trước');
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 16,
+              right: 16,
+              top: 40,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Chọn quận *',
+                  style: ThemeConfig.appTextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _districtSearchController,
+                  decoration: InputDecoration(
+                    labelText: 'Tìm kiếm',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: filteredDistricts.length,
+                    itemBuilder: (context, index) {
+                      final district = filteredDistricts[index];
+                      final isSelected = selectedDistricts.contains(district);
+                      return CheckboxListTile(
+                        title: Text(district['name']),
+                        value: isSelected,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              selectedDistricts.add(district);
+                            } else {
+                              selectedDistricts.remove(district);
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ColorConfig.secondary,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text('Xác nhận'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showExperienceBottomSheet() {
+    final experiences = [
+      '1 năm', '2 năm', '3 năm', '4 năm', '5 năm',
+      '6 năm', '7 năm', '8 năm', '9 năm', '10 năm'
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Chọn kinh nghiệm',
+              style: ThemeConfig.appTextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 300,
+              child: ListView(
+                children: experiences.map((exp) {
+                  return ListTile(
+                    title: Text(exp),
+                    onTap: () {
+                      setState(() => experience = exp);
+                      Navigator.pop(context);
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  void _showYearBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        height: 300,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(
+              'Chọn năm sinh',
+              style: ThemeConfig.appTextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                itemCount: years.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(years[index]),
+                    onTap: () {
+                      setState(() => selectedYear = years[index]);
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationBottomSheet({
+    required String title,
+    required TextEditingController controller,
     required List<dynamic> items,
-    required Function(dynamic) onChanged,
-    bool isLoading = false,
+    required Function(dynamic) onSelected,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[300]!),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 16,
+        right: 16,
+        top: 40,
       ),
-      child: DropdownButton<dynamic>(
-        value: value,
-        isExpanded: true,
-        underline: const SizedBox(),
-        hint: Text(label, style: GoogleFonts.lora(color: const Color(0xFF8B5E3C))),
-        items: items.map((item) {
-          return DropdownMenuItem(
-            value: item,
-            child: Text(item['name'], style: GoogleFonts.lora()),
-          );
-        }).toList(),
-        onChanged: isLoading ? null : onChanged,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: ThemeConfig.appTextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: 'Tìm kiếm',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView.builder(
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final item = items[index];
+                return ListTile(
+                  title: Text(item['name']),
+                  onTap: () => onSelected(item),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -324,7 +616,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         mainAxisSpacing: 8,
         childAspectRatio: 1,
       ),
-      itemCount: images.length + 1,
+      itemCount: images.length + (images.length < 5 ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == images.length) {
           return GestureDetector(
@@ -343,10 +635,14 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         return Stack(
           children: [
             GestureDetector(
-              onTap: () => _showFullScreenImage(formatImageUrl(image['url'])),
+              onTap: () => FullScreenSingleImageViewer(
+                  imageUrl: FormatHelper.formatImageUrl(image['url'])),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(formatImageUrl(image['url']), fit: BoxFit.cover),
+                child: Image.network(
+                  FormatHelper.formatImageUrl(image['url']),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             Positioned(
@@ -376,7 +672,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         GestureDetector(
           onTap: () {
             if (avatarImage != null) {
-              _showFullScreenImage(formatImageUrl(avatarImage!['url']));
+              _showFullScreenImage(
+                  FormatHelper.formatImageUrl(avatarImage!['url']));
             }
           },
           child: Stack(
@@ -392,7 +689,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                 child: ClipOval(
                   child: avatarImage != null
                       ? Image.network(
-                    formatImageUrl(avatarImage!['url']),
+                    FormatHelper.formatImageUrl(avatarImage!['url']),
                     fit: BoxFit.cover,
                     width: 110,
                     height: 110,
@@ -416,14 +713,14 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                         color: Colors.red,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close, size: 20, color: Colors.white),
+                      child:
+                      const Icon(Icons.close, size: 20, color: Colors.white),
                     ),
                   ),
                 ),
             ],
           ),
         ),
-        const SizedBox(height: 10),
         ElevatedButton.icon(
           onPressed: () => _pickImage(isAvatar: true),
           icon: const Icon(Icons.camera_alt),
@@ -436,7 +733,39 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _buildServicesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Dịch vụ cung cấp', style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary)),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 3,
+          runSpacing: 3,
+          children: services.entries.map((service) {
+            return FilterChip(
+              // label: Text(service.key, style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary)),
+              label: Text(service.key),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              selected: service.value,
+              onSelected: (bool value) {
+                setState(() {
+                  services[service.key] = value;
+                });
+              },
+              selectedColor: ColorConfig.secondary,
+              checkmarkColor: ColorConfig.white,
+              labelStyle: ThemeConfig.appTextStyle(
+                color: service.value ? ColorConfig.textWhite : ColorConfig.textPrimary,
+              ),
+            );
+          }).toList(),
+        ),
       ],
     );
   }
@@ -444,153 +773,169 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ColorConfig.white,
       resizeToAvoidBottomInset: true,
       body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8F4E9), Color(0xFFE9D8C8)],
-          ),
-        ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Image.asset('lib/assets/images/spa_logo.png', height: 100),
-                // const SizedBox(height: 16),
-                Text('Serene Spa', style: GoogleFonts.playfairDisplay(
-                    fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF8B5E3C))),
-                Text('Tạo hồ sơ kĩ thuật viên', style: GoogleFonts.lora(
-                    fontSize: 18, color: const Color(0xFF8B5E3C))),
-                const SizedBox(height: 40),
-
-                // Avatar Section
-                _buildAvatarSection(),
-
-                // Full Name
-                _buildTextField(
-                  controller: fullnameController,
-                  label: 'Họ và tên',
-                  icon: Icons.person,
-                ),
-                const SizedBox(height: 16),
-
-                // Province Dropdown
-                _buildDropdown(
-                  label: 'Chọn tỉnh/thành',
-                  value: selectedProvince,
-                  items: provinces,
-                  onChanged: (value) {
-                    setState(() => selectedProvince = value);
-                    _loadDistricts(value['idProvince']);
-                  },
-                  isLoading: isProvincesLoading,
-                ),
-                const SizedBox(height: 16),
-
-                // District Dropdown
-                _buildDropdown(
-                  label: 'Chọn quận/huyện',
-                  value: selectedDistrict,
-                  items: districts,
-                  onChanged: (value) {
-                    setState(() => selectedDistrict = value);
-                    _loadCommunes(value['idDistrict']);
-                  },
-                  isLoading: isDistrictsLoading,
-                ),
-                const SizedBox(height: 16),
-
-                // Commune Dropdown
-                _buildDropdown(
-                  label: 'Chọn phường/xã',
-                  value: selectedCommune,
-                  items: communes,
-                  onChanged: (value) => setState(() => selectedCommune = value),
-                  isLoading: isCommunesLoading,
-                ),
-                const SizedBox(height: 16),
-
-                // Address
-                _buildTextField(
-                  controller: addressController,
-                  label: 'Địa chỉ cụ thể',
-                  icon: Icons.location_on,
-                ),
-                const SizedBox(height: 16),
-
-                // Experience Dropdown
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: DropdownButton<String>(
-                    value: experience,
-                    isExpanded: true,
-                    underline: const SizedBox(),
-                    hint: Text('Chọn kinh nghiệm', style: GoogleFonts.lora(color: const Color(0xFF8B5E3C))),
-                    items: const [
-                      DropdownMenuItem(value: 'Có kinh nghiệm', child: Text('Có kinh nghiệm')),
-                      DropdownMenuItem(value: 'Không có kinh nghiệm', child: Text('Không có kinh nghiệm')),
-                    ],
-                    onChanged: (value) => setState(() => experience = value),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            children: [
+              Center(
+                child: Text(
+                  'Tạo hồ sơ kĩ thuật viên',
+                  style: ThemeConfig.appTextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: ColorConfig.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 16),
-
-                // Experience Description
-                _buildTextField(
-                  controller: experienceDescriptionController,
-                  label: 'Mô tả kinh nghiệm (tối đa 200 ký tự)',
-                  icon: Icons.description,
-                  maxLines: 3,
-                  maxLength: 200,
-                ),
-                const SizedBox(height: 16),
-
-                // Bio
-                _buildTextField(
-                  controller: bioController,
-                  label: 'Giới thiệu bản thân (tối đa 100 ký tự)',
-                  icon: Icons.info,
-                  maxLength: 100,
-                ),
-                const SizedBox(height: 16),
-
-                // Image Upload
-                Text('Hình ảnh (tối đa 5 ảnh)', style: GoogleFonts.lora(fontSize: 16)),
-                const SizedBox(height: 8),
-                _buildImageGrid(),
-                const SizedBox(height: 20),
-
-                // Submit Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : handleCreateTechnician,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: const Color(0xFFD4A373),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 5,
-                      shadowColor: Colors.black.withOpacity(0.2),
+              ),
+              const SizedBox(height: 10),
+              _buildAvatarSection(),
+              const SizedBox(height: 7),
+              _buildTextField(
+                controller: fullnameController,
+                label: 'Họ và tên',
+              ),
+              const SizedBox(height: 7),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Thành phố làm việc',
+                          style: ThemeConfig.appTextStyle(
+                            color: ColorConfig.textPrimary, fontSize: 14
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        _buildLocationField(
+                          label: 'Thành phố',
+                          value: selectedProvince?['name'],
+                          onTap: _showProvinceBottomSheet,
+                          isLoading: isProvincesLoading,
+                        ),
+                      ],
                     ),
-                    child: isLoading
-                        ? const CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                        : Text('Tạo hồ sơ', style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Chọn quận/Huyện',
+                          style: ThemeConfig.appTextStyle(
+                            color: ColorConfig.textPrimary, fontSize: 14
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        _buildLocationField(
+                          label: selectedDistricts.isEmpty
+                              ? 'Quận/Huyện'
+                              : '${selectedDistricts.length} đã chọn',
+                          value: selectedDistricts.isEmpty
+                              ? null
+                              : selectedDistricts
+                              .map((d) => d['name'])
+                              .join(', ')
+                              .substring(
+                            0,
+                            selectedDistricts.length > 1 ? 15 : 30,
+                          ),
+                          onTap: _showDistrictBottomSheet,
+                          isLoading: isDistrictsLoading,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                controller: addressController,
+                label: 'Địa chỉ nơi ở',
+                hint: 'Số nhà, đường, phường, xã, thành phố, tỉnh...',
+                maxLines: 1,
+              ),
+              const SizedBox(height: 7),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildLocationField(
+                      label: 'Năm sinh',
+                      value: selectedYear,
+                      onTap: _showYearBottomSheet,
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: _buildLocationField(
+                      label: 'Kinh nghiệm',
+                      value: experience,
+                      onTap: _showExperienceBottomSheet,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                controller: bioController,
+                label: 'Giới thiệu bản thân',
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              _buildServicesSection(),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Hình ảnh (3-5 ảnh)',
+                      style: ThemeConfig.appTextStyle(
+                        color: ColorConfig.textPrimary,
+                      ),
+                    ),
+                  ),
+                  if (images.isNotEmpty)
+                    Text(
+                      '(${images.length}/5)',
+                      style: ThemeConfig.appTextStyle(
+                        color: ColorConfig.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _buildImageGrid(),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => context.go('/login'),
+                      icon: Icon(Icons.chevron_left, color: ColorConfig.grey),
+                      label: Text("Hủy", style: TextStyle(color: ColorConfig.grey)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ColorConfig.secondary,
+                      ),
+                      onPressed: isLoading ? null : handleCreateTechnician,
+                      label: Text("Tạo hồ sơ", style: TextStyle(color: ColorConfig.textWhite)),
+                      icon: Icon(Icons.chevron_right, color: ColorConfig.textWhite),
+                    ),
+                  ),
+                ],
+              )
+
+            ],
           ),
         ),
       ),
@@ -600,7 +945,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
-    required IconData icon,
+    String? hint,
     int maxLines = 1,
     int? maxLength,
   }) {
@@ -610,30 +955,22 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       maxLength: maxLength,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF8B5E3C)),
-        labelStyle: GoogleFonts.lora(color: const Color(0xFF8B5E3C), fontSize: 16),
+        hintText: hint,
+        labelStyle: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
         filled: true,
         fillColor: Colors.white.withOpacity(0.9),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(50),
           borderSide: BorderSide(color: Colors.grey[300]!),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFD4A373), width: 2),
+          borderRadius: BorderRadius.circular(50),
+          borderSide: const BorderSide(color: Color(0xFFD4A373), width: 1),
         ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        contentPadding:
+        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       ),
-      style: GoogleFonts.lora(color: Colors.black87, fontSize: 16),
+      style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
     );
-  }
-
-  @override
-  void dispose() {
-    fullnameController.dispose();
-    addressController.dispose();
-    experienceDescriptionController.dispose();
-    bioController.dispose();
-    super.dispose();
   }
 }

@@ -15,8 +15,20 @@ class TechnicianService {
   Future<Map<String, dynamic>> createTechnicianService(
     Map<String, dynamic> data,
   ) async {
+    // print("URL: ${TechnicianApiRoutes.createTechnician} - data: $data");
     return await ApiMethodsPrivate.postRequest(
       TechnicianApiRoutes.createTechnician,
+      data,
+    );
+  }
+  Future<Map<String, dynamic>> updateTechnicianService(
+      String id,
+    Map<String, dynamic> data,
+  ) async {
+    // print("$id - data update: $data");
+    // print("URL: ${TechnicianApiRoutes.updateTechnician}/$id - data update: $data");
+    return await ApiMethodsPrivate.putRequest(
+      '${TechnicianApiRoutes.updateTechnician}/$id',
       data,
     );
   }
@@ -41,9 +53,9 @@ class TechnicianService {
   //     TechnicianApiRoutes.listDiemNhanApi,
   //   );
   // }
-  // Future<Map<String, dynamic>> getListXeService() async {
-  //   return await ApiMethodsPrivate.getRequest(
-  //     TechnicianApiRoutes.listXeApi,
-  //   );
-  // }
+  Future<Map<String, dynamic>> getListTechnicianCreateByUser() async {
+    return await ApiMethodsPrivate.getRequest(
+      TechnicianApiRoutes.listTechnicianCreateByUser
+    );
+  }
 }
