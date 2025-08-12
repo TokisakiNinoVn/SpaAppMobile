@@ -2,9 +2,13 @@
 import '../../../config/app_config.dart';
 
 class FormatHelper {
+  // static String formatImageUrl(String url) {
+  //   // print("URL origin image: $url");
+  //   return '${AppConfig.apiUrlImage}$url';
+  // }
   static String formatImageUrl(String url) {
     // print("URL origin image: $url");
-    return '${AppConfig.apiUrlImage}$url';
+    return '$url';
   }
 
   static String formatDateTime(String dateString) {

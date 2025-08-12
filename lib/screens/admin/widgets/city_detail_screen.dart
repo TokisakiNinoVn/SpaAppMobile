@@ -10,6 +10,8 @@ import 'package:spa_app/services/realtime_service.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/tinhthanh_service.dart';
 
+import '../../quanly/widgets/list_technician_quanly_widget.dart';
+
 class CityDetailScreen extends StatefulWidget {
   final String cityName;
 
@@ -31,12 +33,15 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
   List<Map<String, dynamic>> filteredUsers = [];
   List<dynamic> provinces = [];
   List<dynamic> filteredProvinces = [];
+  List<String> allServices = [];
+  List<String> selectedServices = [];
 
   bool isLoading = true;
   String searchQuery = '';
   String? statusFilter;
   bool showProvinceList = false;
   bool showStatusList = false;
+  bool showServiceList = false;
   String? selectedProvince;
 
   bool isProvincesLoading = false;
@@ -62,6 +67,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     );
     _realtimeService.connect();
     _loadProvinces();
+
   }
 
   void _handleRealtimeUserStatusUpdate(Map<String, dynamic> data) {
@@ -85,11 +91,19 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
         final allUsers = List<Map<String, dynamic>>.from(response['data']);
 
         final filteredUsers = allUsers.where((user) =>
-          user['roles'] == 'ktv' && user['isAcceptHaveApprovalRequest'] == true && user['city'] == widget.cityName
+        user['roles'] == 'ktv' && user['isAcceptHaveApprovalRequest'] == true && user['technician']?['province'] == widget.cityName
         ).toList();
+
+        Set<String> serviceSet = {};
+        for (var user in filteredUsers) {
+          if (user['technician']?['services'] != null) {
+            serviceSet.addAll((user['technician']['services'] as List).cast<String>());
+          }
+        }
 
         setState(() {
           users = filteredUsers;
+          allServices = serviceSet.toList();
           _applyFilters();
         });
       }
@@ -104,8 +118,15 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
           (user['technician']?['fullName'].toString() ?? '').toLowerCase().contains(searchQuery.toLowerCase());
       final matchesStatus = statusFilter == null || user['status'] == statusFilter;
       final matchesProvince = selectedProvince == null || selectedProvince == 'Tất cả' || user['technician']?['province'] == selectedProvince;
-      return matchesSearch && matchesStatus && matchesProvince;
+      final matchesServices = selectedServices.isEmpty || (user['technician']?['services'] as List?)!.any((s) => selectedServices.contains(s)) ?? false;
+      return matchesSearch && matchesStatus && matchesProvince && matchesServices;
     }).toList();
+
+    filteredUsers.sort((a, b) {
+      if (a['status'] == 'active' && b['status'] != 'active') return -1;
+      if (a['status'] != 'active' && b['status'] == 'active') return 1;
+      return 0;
+    });
   }
 
   Future<void> _loadProvinces() async {
@@ -128,232 +149,97 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     }
   }
 
-  void _filterProvinces(String query) {
-    setState(() {
-      filteredProvinces = provinces.where((province) {
-        return province['name'].toString().toLowerCase().contains(query.toLowerCase());
-      }).toList();
-      filteredProvinces.insert(0, {'name': 'Tất cả'});
-    });
-  }
-
+  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              _buildSearchSection(),
-              Expanded(
-                child: _buildUserListSection(),
-              ),
-            ],
-          ),
-          if (showProvinceList) _buildProvinceSelectionWidget(),
-          if (showStatusList) _buildStatusSelectionWidget(),
-        ],
+      body: SafeArea( // ✅ tránh bị che bởi thanh trạng thái
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                _buildSearchSection(),
+                Expanded(
+                  child: _buildUserListSection(),
+                ),
+              ],
+            ),
+            if (showStatusList) _buildStatusSelectionWidget(),
+            if (showServiceList) _buildServiceSelectionWidget(),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSearchSection() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Column(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8), // ✅ giảm padding top & bottom
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Tìm kiếm theo số điện thoại hoặc tên',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() {
-                          searchQuery = '';
-                          _applyFilters();
-                        });
-                      },
-                    )
-                        : null,
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide(color: Theme.of(context).primaryColor),
-                    ),
-                  ),
-                  onChanged: (value) {
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm theo số điện thoại hoặc tên',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
                     setState(() {
-                      searchQuery = value;
+                      searchQuery = '';
                       _applyFilters();
                     });
                   },
+                )
+                    : null,
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.filter_alt_outlined),
-                color: statusFilter != null ? Colors.blue : Colors.grey,
-                onPressed: () {
-                  setState(() {
-                    showStatusList = true;
-                    showProvinceList = false;
-                  });
-                },
-                tooltip: 'Lọc theo trạng thái',
-              ),
-            ],
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value;
+                  _applyFilters();
+                });
+              },
+            ),
           ),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () {
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.filter_alt_outlined),
+            color: statusFilter != null ? Colors.blue : Colors.grey,
+            onPressed: () {
               setState(() {
-                showProvinceList = true;
+                showStatusList = true;
+                showServiceList = false;
+              });
+            },
+            tooltip: 'Lọc theo trạng thái',
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.filter_center_focus),
+            color: selectedServices.isNotEmpty ? Colors.blue : Colors.grey,
+            onPressed: () {
+              setState(() {
+                showServiceList = true;
                 showStatusList = false;
               });
             },
-            child: AbsorbPointer(
-              child: TextFormField(
-                controller: TextEditingController(text: selectedProvince ?? ''),
-                decoration: InputDecoration(
-                  hintText: 'Chọn tỉnh thành',
-                  prefixIcon: const Icon(Icons.location_on),
-                  suffixIcon: selectedProvince != null
-                      ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      setState(() {
-                        selectedProvince = null;
-                        _applyFilters();
-                      });
-                    },
-                  )
-                      : null,
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
+            tooltip: 'Lọc theo dịch vụ',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProvinceSelectionWidget() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.5,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                children: [
-                  const Text(
-                    'Chọn tỉnh thành',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      setState(() {
-                        showProvinceList = false;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: TextField(
-                controller: _provinceSearchController,
-                decoration: InputDecoration(
-                  hintText: 'Tìm kiếm tỉnh thành',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _provinceSearchController.text.isNotEmpty
-                      ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _provinceSearchController.clear();
-                      _filterProvinces('');
-                    },
-                  )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                ),
-                onChanged: _filterProvinces,
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: filteredProvinces.length,
-                itemBuilder: (context, index) {
-                  final province = filteredProvinces[index];
-                  return ListTile(
-                    title: Text(province['name']),
-                    onTap: () {
-                      setState(() {
-                        selectedProvince = province['name'] == 'Tất cả' ? null : province['name'];
-                        showProvinceList = false;
-                        _applyFilters();
-                      });
-                    },
-                    trailing: selectedProvince == province['name'] ||
-                        (selectedProvince == null && province['name'] == 'Tất cả')
-                        ? Icon(Icons.check, color: ColorConfig.textSuccess)
-                        : null,
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildStatusSelectionWidget() {
     return Positioned(
@@ -376,7 +262,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Row(
                 children: [
                   const Text(
@@ -425,21 +311,108 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     );
   }
 
+  Widget _buildServiceSelectionWidget() {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.4,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                children: [
+                  const Text(
+                    'Chọn dịch vụ',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        selectedServices.clear();
+                        _applyFilters();
+                      });
+                    },
+                    child: const Text('Reset'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        showServiceList = false;
+                        _applyFilters();
+                      });
+                    },
+                    child: const Text('Apply'),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        showServiceList = false;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: allServices.length,
+                itemBuilder: (context, index) {
+                  final service = allServices[index];
+                  final isSelected = selectedServices.contains(service);
+                  return CheckboxListTile(
+                    title: Text(service),
+                    value: isSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        if (value == true) {
+                          selectedServices.add(service);
+                        } else {
+                          selectedServices.remove(service);
+                        }
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildUserListSection() {
     return isLoading
         ? const Center(child: CircularProgressIndicator())
         : filteredUsers.isEmpty
         ? const Center(child: Text('Không có người dùng nào phù hợp'))
         : Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: GridView.builder(
-        // shrinkWrap: true,
-        // physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+          crossAxisCount: 3,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 160 / 190,
+          childAspectRatio: 120 / 228,
         ),
         itemCount: filteredUsers.length,
         itemBuilder: (context, index) {
@@ -447,7 +420,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
           final hasTechnician = user['technician'] != null;
           final technician = hasTechnician ? user['technician'] : null;
           final avatarUrl = hasTechnician && technician?['avatar']?['url'] != null
-              ? FormatHelper.formatImageUrl(technician!['avatar']['url'] ?? '')
+              ? technician!['avatar']['url'] ?? ''
               : null;
           return GestureDetector(
             onTap: () => _showUserDetails(user),
@@ -469,28 +442,28 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
                     child: avatarUrl != null
                         ? Image.network(
                       avatarUrl,
-                      height: 160,
+                      height: 110,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
                           Container(
-                            height: 160,
+                            height: 200,
                             color: Colors.grey[300],
                             child: const Icon(Icons.person, size: 50, color: Colors.grey),
                           ),
                     )
                         : Container(
-                      height: 160,
+                      height: 140,
                       color: Colors.grey[300],
                       child: const Icon(Icons.person, size: 50, color: Colors.grey),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -509,7 +482,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                           child: Text(
                             technician?['fullName'] ?? 'Không có tên',
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                             maxLines: 1,
@@ -520,7 +493,32 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                       ],
                     ),
                   ),
-                  // const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${technician?['yearOfBirth'] ?? 'N/A'}',
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: (technician?['services'] as List<dynamic>? ?? [])
+                              .map((service) => Text(
+                            service.toString(),
+                            style: const TextStyle(fontSize: 12),
+                            textAlign: TextAlign.center,
+                          ))
+                              .toList(),
+                        )
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -543,226 +541,5 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     _searchController.dispose();
     _provinceSearchController.dispose();
     super.dispose();
-  }
-}
-
-class UserDetailWidget extends StatelessWidget {
-  final Map<String, dynamic> user;
-
-  const UserDetailWidget({super.key, required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    final bool hasTechnician = user['technician'] != null;
-    final technician = hasTechnician ? user['technician'] : null;
-
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      height: MediaQuery.of(context).size.height * 0.8,
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Chi tiết tài khoản',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        final imageUrl = technician?['avatar']?['url'];
-                        if (imageUrl != null && imageUrl.isNotEmpty) {
-                          showDialog(
-                            context: context,
-                            builder: (_) => FullScreenSingleImageViewer(
-                                imageUrl: FormatHelper.formatImageUrl(imageUrl)),
-                          );
-                        }
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: hasTechnician && technician?['avatar'] != null
-                            ? Image.network(
-                          FormatHelper.formatImageUrl(technician!['avatar']['url'] ?? ''),
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        )
-                            : Container(
-                          width: 100,
-                          height: 100,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.person, size: 50),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Text(
-                      user['role'] == 'ktv' ? (user['fullName'] ?? 'Không có tên') : '',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 32),
-                  _buildCopyableDetailRow(context, 'Số điện thoại', user['phone']),
-                  _buildCopyableDetailRow(context, 'Mật khẩu', user['password']),
-                  _buildDetailRow('Trạng thái', user['status'] == 'active' ? 'Hoạt động' : 'Không hoạt động'),
-                  _buildDetailRow(
-                    'Lần đăng nhập cuối',
-                    user['lastLogin'] != null ? FormatHelper.formatDateTime(user['lastLogin']) : 'Không có',
-                  ),
-                  if (hasTechnician) ...[
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Thông tin Kỹ thuật viên',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Divider(),
-                    _buildDetailRow('Tên đầy đủ', technician?['fullName']),
-                    _buildDetailRow('Tỉnh/Thành phố', technician?['province']),
-                    _buildDetailRow('Quận/Huyện', technician?['district']),
-                    _buildDetailRow('Phường/Xã', technician?['commune']),
-                    _buildDetailRow('Địa chỉ', technician?['address']),
-                    _buildDetailRow('Kinh nghiệm', technician?['experience']),
-                    _buildDetailRow('Mô tả kinh nghiệm', technician?['experienceDescription']),
-                    _buildDetailRow('Giới thiệu', technician?['bio']),
-                    _buildDetailRow('Phê duyệt', technician?['isAcceptHaveApprovalRequest'] == true ? 'Đã được phê duyệt' : 'Chưa được phê duyệt'),
-                    if (technician?['images'] != null && (technician!['images'] as List).isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Hình ảnh',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Divider(),
-                      SizedBox(
-                        height: 100,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: (technician['images'] as List).length,
-                          itemBuilder: (context, index) {
-                            final image = (technician['images'] as List)[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: GestureDetector(
-                                onTap: () => _showFullScreenImages(context, technician['images'], index),
-                                child: Image.network(
-                                  FormatHelper.formatImageUrl(image['url'] ?? ''),
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showFullScreenImages(BuildContext context, List<dynamic> images, int initialIndex) {
-    showDialog(
-      context: context,
-      builder: (context) => FullScreenImageViewer(
-        images: images,
-        initialIndex: initialIndex,
-        formatImageUrl: FormatHelper.formatImageUrl,
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, dynamic value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(value?.toString() ?? 'N/A'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCopyableDetailRow(BuildContext context, String label, String? value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value ?? '',
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.copy, size: 20),
-          tooltip: 'Copy $label',
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: value ?? ''));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Đã copy $label")),
-            );
-          },
-        ),
-      ],
-    );
   }
 }

@@ -107,7 +107,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     setState(() => isProvincesLoading = true);
     try {
       final listTinhThanh = await tinhThanhService.getTinhThanh();
-      print("DS Tinh thanh: $listTinhThanh");
+      // print("DS Tinh thanh: $listTinhThanh");
       if (listTinhThanh.isEmpty) {
         SnackbarHelper.showError(context, 'Không thể tải danh sách tỉnh thành');
       } else {
@@ -190,9 +190,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         'province': selectedProvince['name'],
         'districts': selectedDistricts.map((d) => d['name']).toList(),
         'address': address,
-        'yearOfBirth': selectedYear,
+        'yearOfBirth': int.tryParse(selectedYear.toString()),
         'experience': experience,
-        // 'experienceDescription': experienceDesc,
         'services': services.entries
             .where((entry) => entry.value)
             .map((entry) => entry.key)
@@ -200,6 +199,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         'images': images,
         'bio': bio,
       };
+
 
       final response = await technicianService.createTechnicianService(data);
       if (response['success'] == true) {
@@ -635,14 +635,10 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         return Stack(
           children: [
             GestureDetector(
-              onTap: () => FullScreenSingleImageViewer(
-                  imageUrl: FormatHelper.formatImageUrl(image['url'])),
+              onTap: () => FullScreenSingleImageViewer(imageUrl: image['url']),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  FormatHelper.formatImageUrl(image['url']),
-                  fit: BoxFit.cover,
-                ),
+                child: Image.network(image['url'], fit: BoxFit.cover),
               ),
             ),
             Positioned(
@@ -672,8 +668,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         GestureDetector(
           onTap: () {
             if (avatarImage != null) {
-              _showFullScreenImage(
-                  FormatHelper.formatImageUrl(avatarImage!['url']));
+              _showFullScreenImage(avatarImage!['url']);
             }
           },
           child: Stack(
@@ -689,7 +684,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                 child: ClipOval(
                   child: avatarImage != null
                       ? Image.network(
-                    FormatHelper.formatImageUrl(avatarImage!['url']),
+                    avatarImage!['url'],
                     fit: BoxFit.cover,
                     width: 110,
                     height: 110,
@@ -828,7 +823,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                         Text(
                           'Chọn quận/Huyện',
                           style: ThemeConfig.appTextStyle(
-                            color: ColorConfig.textPrimary, fontSize: 14
+                            color: ColorConfig.textPrimary,
+                            fontSize: 14,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -838,19 +834,22 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                               : '${selectedDistricts.length} đã chọn',
                           value: selectedDistricts.isEmpty
                               ? null
-                              : selectedDistricts
-                              .map((d) => d['name'])
-                              .join(', ')
-                              .substring(
-                            0,
-                            selectedDistricts.length > 1 ? 15 : 30,
-                          ),
+                              : (() {
+                            String text = selectedDistricts
+                                .map((d) => d['name'])
+                                .join(', ');
+                            int maxLength = selectedDistricts.length > 1 ? 15 : 30;
+                            return text.length > maxLength
+                                ? text.substring(0, maxLength) + '...'
+                                : text;
+                          })(),
                           onTap: _showDistrictBottomSheet,
                           isLoading: isDistrictsLoading,
                         ),
                       ],
                     ),
                   ),
+
                 ],
               ),
               const SizedBox(height: 12),

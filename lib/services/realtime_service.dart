@@ -21,48 +21,15 @@ class RealtimeService {
   final void Function(Map<String, dynamic>)? onUserStatusUpdate;
 
   RealtimeService(this.context, {this.onUserStatusUpdate});
-  // Future<void> connect() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final token = prefs.getString('token');
-  //   final uri = Uri(
-  //     scheme: 'ws',
-  //     host: AppConfig.ip, //
-  //     port: 5001,
-  //     path: '/api/private/ws/account-status',
-  //   );
-  //
-  //   try {
-  //     final socket = await WebSocket.connect(
-  //       uri.toString(),
-  //       headers: {
-  //         'Authorization': 'Bearer $token',
-  //       },
-  //     );
-  //
-  //     _channel = IOWebSocketChannel(socket);
-  //
-  //
-  //     print('[RealtimeService] ✅ WebSocket đã sẵn sàng');
-  //
-  //     _channel.stream.listen(
-  //       _handleEvent,
-  //       onError: (error) {
-  //         debugPrint('[RealtimeService] ❌ Lỗi WebSocket: $error');
-  //       },
-  //       onDone: () {
-  //         debugPrint('[RealtimeService] 🔴 WebSocket đã đóng');
-  //       },
-  //     );
-  //   } catch (e) {
-  //     debugPrint('[RealtimeService] ❌ Không thể kết nối WebSocket: $e');
-  //   }
-  // }
   Future<void> connect() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    final uri = Uri.parse(AppConfig.apiWebsocket);
-    print("URL websocket: $uri");
-    print("Token: $token");
+    final uri = Uri(
+      scheme: 'ws',
+      host: AppConfig.ip, //
+      port: 5001,
+      path: '/api/private/ws/account-status',
+    );
 
     try {
       final socket = await WebSocket.connect(
@@ -72,9 +39,8 @@ class RealtimeService {
         },
       );
 
-      print("infor socket: ${socket.toString()}");
-
       _channel = IOWebSocketChannel(socket);
+
 
       print('[RealtimeService] ✅ WebSocket đã sẵn sàng');
 
@@ -91,6 +57,42 @@ class RealtimeService {
       debugPrint('[RealtimeService] ❌ Không thể kết nối WebSocket: $e');
     }
   }
+
+
+  // Future<void> connect() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final token = prefs.getString('token');
+  //   final uri = Uri.parse(AppConfig.apiWebsocket);
+  //   print("URL websocket: $uri");
+  //   print("Token: $token");
+  //
+  //   try {
+  //     final socket = await WebSocket.connect(
+  //       uri.toString(),
+  //       headers: {
+  //         'Authorization': 'Bearer $token',
+  //       },
+  //     );
+  //
+  //     print("infor socket: ${socket.toString()}");
+  //
+  //     _channel = IOWebSocketChannel(socket);
+  //
+  //     print('[RealtimeService] ✅ WebSocket đã sẵn sàng');
+  //
+  //     _channel.stream.listen(
+  //       _handleEvent,
+  //       onError: (error) {
+  //         debugPrint('[RealtimeService] ❌ Lỗi WebSocket: $error');
+  //       },
+  //       onDone: () {
+  //         debugPrint('[RealtimeService] 🔴 WebSocket đã đóng');
+  //       },
+  //     );
+  //   } catch (e) {
+  //     debugPrint('[RealtimeService] ❌ Không thể kết nối WebSocket: $e');
+  //   }
+  // }
 
 
   Future<void> _handleEvent(dynamic event) async {
