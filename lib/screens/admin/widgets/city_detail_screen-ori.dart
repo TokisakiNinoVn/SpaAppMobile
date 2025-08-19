@@ -647,7 +647,6 @@ class UserDetailWidget extends StatelessWidget {
                     _buildDetailRow('Phường/Xã', technician?['commune']),
                     _buildDetailRow('Địa chỉ', technician?['address']),
                     _buildDetailRow('Kinh nghiệm', technician?['experience']),
-                    _buildDetailRow('Mô tả kinh nghiệm', technician?['experienceDescription']),
                     _buildDetailRow('Giới thiệu', technician?['bio']),
                     _buildDetailRow('Phê duyệt', technician?['isAcceptHaveApprovalRequest'] == true ? 'Đã được phê duyệt' : 'Chưa được phê duyệt'),
                     if (technician?['images'] != null && (technician!['images'] as List).isNotEmpty) ...[

@@ -19,7 +19,8 @@ class ListTechnicianTab extends StatefulWidget {
 class _ListTechnicianTabState extends State<ListTechnicianTab> {
   final UserService userService = UserService();
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _provinceSearchController = TextEditingController();
+  final TextEditingController _provinceSearchController =
+      TextEditingController();
 
   late RealtimeService _realtimeService;
   final tinhThanhService = TinhThanhService();
@@ -81,9 +82,14 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
       if (response['success']) {
         final allUsers = List<Map<String, dynamic>>.from(response['data']);
 
-        final filteredUsers = allUsers.where((user) =>
-          user['roles'] == 'ktv' && user['isAcceptHaveApprovalRequest'] == true
-        ).toList();
+        final filteredUsers =
+            allUsers
+                .where(
+                  (user) =>
+                      user['roles'] == 'ktv' &&
+                      user['isAcceptHaveApprovalRequest'] == true,
+                )
+                .toList();
 
         setState(() {
           users = filteredUsers;
@@ -96,19 +102,28 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
   }
 
   void _applyFilters() {
-    filteredUsers = users.where((user) {
-      final matchesSearch = user['phone'].toString().contains(searchQuery) ||
-          (user['technician']?['fullName'].toString() ?? '').toLowerCase().contains(searchQuery.toLowerCase());
-      final matchesStatus = statusFilter == null || user['status'] == statusFilter;
-      final matchesProvince = selectedProvince == null || selectedProvince == 'Tất cả' || user['technician']?['province'] == selectedProvince;
-      return matchesSearch && matchesStatus && matchesProvince;
-    }).toList();
+    filteredUsers =
+        users.where((user) {
+          final matchesSearch =
+              user['phone'].toString().contains(searchQuery) ||
+              (user['technician']?['fullName'].toString() ?? '')
+                  .toLowerCase()
+                  .contains(searchQuery.toLowerCase());
+          final matchesStatus =
+              statusFilter == null || user['status'] == statusFilter;
+          final matchesProvince =
+              selectedProvince == null ||
+              selectedProvince == 'Tất cả' ||
+              user['technician']?['province'] == selectedProvince;
+          return matchesSearch && matchesStatus && matchesProvince;
+        }).toList();
   }
 
   Future<void> _loadProvinces() async {
     setState(() => isProvincesLoading = true);
     try {
-      final response = await tinhThanhService.getDetailsTinhThanhApiRoutesService();
+      final response =
+          await tinhThanhService.getDetailsTinhThanhApiRoutesService();
       if (response['code'] == 200 || response['status'] == 'success') {
         setState(() {
           provinces = response['data'];
@@ -116,10 +131,10 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
           filteredProvinces.insert(0, {'name': 'Tất cả'});
         });
       } else {
-        SnackbarHelper.showError(context,'Không thể tải danh sách tỉnh thành');
+        SnackbarHelper.showError(context, 'Không thể tải danh sách tỉnh thành');
       }
     } catch (e) {
-      SnackbarHelper.showError(context,'Lỗi tải tỉnh thành: $e');
+      SnackbarHelper.showError(context, 'Lỗi tải tỉnh thành: $e');
     } finally {
       setState(() => isProvincesLoading = false);
     }
@@ -127,9 +142,12 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
 
   void _filterProvinces(String query) {
     setState(() {
-      filteredProvinces = provinces.where((province) {
-        return province['name'].toString().toLowerCase().contains(query.toLowerCase());
-      }).toList();
+      filteredProvinces =
+          provinces.where((province) {
+            return province['name'].toString().toLowerCase().contains(
+              query.toLowerCase(),
+            );
+          }).toList();
       filteredProvinces.insert(0, {'name': 'Tất cả'});
     });
   }
@@ -142,9 +160,7 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
           Column(
             children: [
               _buildSearchSection(),
-              Expanded(
-                child: _buildUserListSection(),
-              ),
+              Expanded(child: _buildUserListSection()),
             ],
           ),
           if (showProvinceList) _buildProvinceSelectionWidget(),
@@ -167,21 +183,25 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
                   decoration: InputDecoration(
                     hintText: 'Tìm kiếm theo số điện thoại hoặc tên',
                     prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() {
-                          searchQuery = '';
-                          _applyFilters();
-                        });
-                      },
-                    )
-                        : null,
+                    suffixIcon:
+                        _searchController.text.isNotEmpty
+                            ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  searchQuery = '';
+                                  _applyFilters();
+                                });
+                              },
+                            )
+                            : null,
                     filled: true,
                     fillColor: Colors.grey.shade100,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,
@@ -192,7 +212,9 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide(color: Theme.of(context).primaryColor),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).primaryColor,
+                      ),
                     ),
                   ),
                   onChanged: (value) {
@@ -231,20 +253,24 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
                 decoration: InputDecoration(
                   hintText: 'Chọn tỉnh thành',
                   prefixIcon: const Icon(Icons.location_on),
-                  suffixIcon: selectedProvince != null
-                      ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      setState(() {
-                        selectedProvince = null;
-                        _applyFilters();
-                      });
-                    },
-                  )
-                      : null,
+                  suffixIcon:
+                      selectedProvince != null
+                          ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                selectedProvince = null;
+                                _applyFilters();
+                              });
+                            },
+                          )
+                          : null,
                   filled: true,
                   fillColor: Colors.grey.shade100,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
@@ -284,10 +310,7 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
                 children: [
                   const Text(
                     'Chọn tỉnh thành',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
                   IconButton(
@@ -308,15 +331,16 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
                 decoration: InputDecoration(
                   hintText: 'Tìm kiếm tỉnh thành',
                   prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _provinceSearchController.text.isNotEmpty
-                      ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _provinceSearchController.clear();
-                      _filterProvinces('');
-                    },
-                  )
-                      : null,
+                  suffixIcon:
+                      _provinceSearchController.text.isNotEmpty
+                          ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _provinceSearchController.clear();
+                              _filterProvinces('');
+                            },
+                          )
+                          : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
@@ -333,15 +357,20 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
                     title: Text(province['name']),
                     onTap: () {
                       setState(() {
-                        selectedProvince = province['name'] == 'Tất cả' ? null : province['name'];
+                        selectedProvince =
+                            province['name'] == 'Tất cả'
+                                ? null
+                                : province['name'];
                         showProvinceList = false;
                         _applyFilters();
                       });
                     },
-                    trailing: selectedProvince == province['name'] ||
-                        (selectedProvince == null && province['name'] == 'Tất cả')
-                        ? Icon(Icons.check, color: ColorConfig.textSuccess)
-                        : null,
+                    trailing:
+                        selectedProvince == province['name'] ||
+                                (selectedProvince == null &&
+                                    province['name'] == 'Tất cả')
+                            ? Icon(Icons.check, color: ColorConfig.textSuccess)
+                            : null,
                   );
                 },
               ),
@@ -378,10 +407,7 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
                 children: [
                   const Text(
                     'Chọn trạng thái',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
                   IconButton(
@@ -409,9 +435,10 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
                         _applyFilters();
                       });
                     },
-                    trailing: statusFilter == option['value']
-                        ? const Icon(Icons.check, color: Colors.blue)
-                        : null,
+                    trailing:
+                        statusFilter == option['value']
+                            ? const Icon(Icons.check, color: Colors.blue)
+                            : null,
                   );
                 },
               ),
@@ -428,103 +455,117 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
         : filteredUsers.isEmpty
         ? const Center(child: Text('Không có người dùng nào phù hợp'))
         : Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: GridView.builder(
-        // shrinkWrap: true,
-        // physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 160 / 190,
-        ),
-        itemCount: filteredUsers.length,
-        itemBuilder: (context, index) {
-          final user = filteredUsers[index];
-          final hasTechnician = user['technician'] != null;
-          final technician = hasTechnician ? user['technician'] : null;
-          final avatarUrl = hasTechnician && technician?['avatar']?['url'] != null
-              ? FormatHelper.formatImageUrl(technician!['avatar']['url'] ?? '')
-              : null;
-          return GestureDetector(
-            onTap: () => _showUserDetails(user),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: avatarUrl != null
-                        ? Image.network(
-                      avatarUrl,
-                      height: 160,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(
-                            height: 160,
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.person, size: 50, color: Colors.grey),
-                          ),
-                    )
-                        : Container(
-                      height: 160,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.person, size: 50, color: Colors.grey),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (user['status'] == 'active') ...[
-                          Container(
-                            width: 8,
-                            height: 8,
-                            margin: const EdgeInsets.only(right: 6),
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ],
-                        Flexible(
-                          child: Text(
-                            technician?['fullName'] ?? 'Không có tên',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // const SizedBox(height: 12),
-                ],
-              ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: GridView.builder(
+            // shrinkWrap: true,
+            // physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 160 / 190,
             ),
-          );
-        },
-      ),
-    );
+            itemCount: filteredUsers.length,
+            itemBuilder: (context, index) {
+              final user = filteredUsers[index];
+              final hasTechnician = user['technician'] != null;
+              final technician = hasTechnician ? user['technician'] : null;
+              final avatarUrl =
+                  hasTechnician && technician?['avatar']?['url'] != null
+                      ? FormatHelper.formatImageUrl(
+                        technician!['avatar']['url'] ?? '',
+                      )
+                      : null;
+              return GestureDetector(
+                onTap: () => _showUserDetails(user),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                        child:
+                            avatarUrl != null
+                                ? Image.network(
+                                  avatarUrl,
+                                  height: 160,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (context, error, stackTrace) => Container(
+                                        height: 160,
+                                        color: Colors.grey[300],
+                                        child: const Icon(
+                                          Icons.person,
+                                          size: 50,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                )
+                                : Container(
+                                  height: 160,
+                                  color: Colors.grey[300],
+                                  child: const Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (user['status'] == 'active') ...[
+                              Container(
+                                width: 8,
+                                height: 8,
+                                margin: const EdgeInsets.only(right: 6),
+                                decoration: const BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
+                            Flexible(
+                              child: Text(
+                                technician?['fullName'] ?? 'Không có tên',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
   }
 
   void _showUserDetails(Map<String, dynamic> user) {
@@ -563,10 +604,7 @@ class UserDetailWidget extends StatelessWidget {
             children: [
               const Text(
                 'Chi tiết tài khoản',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -586,33 +624,42 @@ class UserDetailWidget extends StatelessWidget {
                         if (imageUrl != null && imageUrl.isNotEmpty) {
                           showDialog(
                             context: context,
-                            builder: (_) => FullScreenSingleImageViewer(
-                                imageUrl: FormatHelper.formatImageUrl(imageUrl)),
+                            builder:
+                                (_) => FullScreenSingleImageViewer(
+                                  imageUrl: FormatHelper.formatImageUrl(
+                                    imageUrl,
+                                  ),
+                                ),
                           );
                         }
                       },
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: hasTechnician && technician?['avatar'] != null
-                            ? Image.network(
-                          FormatHelper.formatImageUrl(technician!['avatar']['url'] ?? ''),
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        )
-                            : Container(
-                          width: 100,
-                          height: 100,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.person, size: 50),
-                        ),
+                        child:
+                            hasTechnician && technician?['avatar'] != null
+                                ? Image.network(
+                                  FormatHelper.formatImageUrl(
+                                    technician!['avatar']['url'] ?? '',
+                                  ),
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                )
+                                : Container(
+                                  width: 100,
+                                  height: 100,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.person, size: 50),
+                                ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Center(
                     child: Text(
-                      user['role'] == 'ktv' ? (user['fullName'] ?? 'Không có tên') : '',
+                      user['role'] == 'ktv'
+                          ? (user['fullName'] ?? 'Không có tên')
+                          : '',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -620,12 +667,27 @@ class UserDetailWidget extends StatelessWidget {
                     ),
                   ),
                   const Divider(height: 32),
-                  _buildCopyableDetailRow(context, 'Số điện thoại', user['phone']),
-                  _buildCopyableDetailRow(context, 'Mật khẩu', user['password']),
-                  _buildDetailRow('Trạng thái', user['status'] == 'active' ? 'Hoạt động' : 'Không hoạt động'),
+                  _buildCopyableDetailRow(
+                    context,
+                    'Số điện thoại',
+                    user['phone'],
+                  ),
+                  _buildCopyableDetailRow(
+                    context,
+                    'Mật khẩu',
+                    user['password'],
+                  ),
+                  _buildDetailRow(
+                    'Trạng thái',
+                    user['status'] == 'active'
+                        ? 'Hoạt động'
+                        : 'Không hoạt động',
+                  ),
                   _buildDetailRow(
                     'Lần đăng nhập cuối',
-                    user['lastLogin'] != null ? FormatHelper.formatDateTime(user['lastLogin']) : 'Không có',
+                    user['lastLogin'] != null
+                        ? FormatHelper.formatDateTime(user['lastLogin'])
+                        : 'Không có',
                   ),
                   if (hasTechnician) ...[
                     const SizedBox(height: 16),
@@ -640,13 +702,18 @@ class UserDetailWidget extends StatelessWidget {
                     _buildDetailRow('Tên đầy đủ', technician?['fullName']),
                     _buildDetailRow('Tỉnh/Thành phố', technician?['province']),
                     _buildDetailRow('Quận/Huyện', technician?['district']),
-                    _buildDetailRow('Phường/Xã', technician?['commune']),
+                    // _buildDetailRow('Phường/Xã', technician?['commune']),
                     _buildDetailRow('Địa chỉ', technician?['address']),
                     _buildDetailRow('Kinh nghiệm', technician?['experience']),
-                    _buildDetailRow('Mô tả kinh nghiệm', technician?['experienceDescription']),
                     _buildDetailRow('Giới thiệu', technician?['bio']),
-                    _buildDetailRow('Phê duyệt', technician?['isAcceptHaveApprovalRequest'] == true ? 'Đã được phê duyệt' : 'Chưa được phê duyệt'),
-                    if (technician?['images'] != null && (technician!['images'] as List).isNotEmpty) ...[
+                    _buildDetailRow(
+                      'Phê duyệt',
+                      technician?['isAcceptHaveApprovalRequest'] == true
+                          ? 'Đã được phê duyệt'
+                          : 'Chưa được phê duyệt',
+                    ),
+                    if (technician?['images'] != null &&
+                        (technician!['images'] as List).isNotEmpty) ...[
                       const SizedBox(height: 16),
                       const Text(
                         'Hình ảnh',
@@ -666,9 +733,16 @@ class UserDetailWidget extends StatelessWidget {
                             return Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child: GestureDetector(
-                                onTap: () => _showFullScreenImages(context, technician['images'], index),
+                                onTap:
+                                    () => _showFullScreenImages(
+                                      context,
+                                      technician['images'],
+                                      index,
+                                    ),
                                 child: Image.network(
-                                  FormatHelper.formatImageUrl(image['url'] ?? ''),
+                                  FormatHelper.formatImageUrl(
+                                    image['url'] ?? '',
+                                  ),
                                   width: 100,
                                   height: 100,
                                   fit: BoxFit.cover,
@@ -689,14 +763,19 @@ class UserDetailWidget extends StatelessWidget {
     );
   }
 
-  void _showFullScreenImages(BuildContext context, List<dynamic> images, int initialIndex) {
+  void _showFullScreenImages(
+    BuildContext context,
+    List<dynamic> images,
+    int initialIndex,
+  ) {
     showDialog(
       context: context,
-      builder: (context) => FullScreenImageViewer(
-        images: images,
-        initialIndex: initialIndex,
-        formatImageUrl: FormatHelper.formatImageUrl,
-      ),
+      builder:
+          (context) => FullScreenImageViewer(
+            images: images,
+            initialIndex: initialIndex,
+            formatImageUrl: FormatHelper.formatImageUrl,
+          ),
     );
   }
 
@@ -713,16 +792,17 @@ class UserDetailWidget extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          Expanded(
-            flex: 3,
-            child: Text(value?.toString() ?? 'N/A'),
-          ),
+          Expanded(flex: 3, child: Text(value?.toString() ?? 'N/A')),
         ],
       ),
     );
   }
 
-  Widget _buildCopyableDetailRow(BuildContext context, String label, String? value) {
+  Widget _buildCopyableDetailRow(
+    BuildContext context,
+    String label,
+    String? value,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -741,10 +821,7 @@ class UserDetailWidget extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  value ?? '',
-                  style: const TextStyle(fontSize: 14),
-                ),
+                Text(value ?? '', style: const TextStyle(fontSize: 14)),
               ],
             ),
           ),
@@ -754,9 +831,9 @@ class UserDetailWidget extends StatelessWidget {
           tooltip: 'Copy $label',
           onPressed: () {
             Clipboard.setData(ClipboardData(text: value ?? ''));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Đã copy $label")),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text("Đã copy $label")));
           },
         ),
       ],

@@ -1,6 +1,3 @@
-
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -8,9 +5,10 @@ import '../../../helper/format_helper.dart';
 import '../../../helper/full_screen_list_image.dart';
 import '../../../helper/full_screen_single_image.dart';
 
-class UserDetailWidget extends StatelessWidget {
+class UserDetailWidgetAdmin extends StatelessWidget {
   final Map<String, dynamic> user;
-  const UserDetailWidget({super.key, required this.user});
+  const UserDetailWidgetAdmin({super.key, required this.user});
+
   void _showFullScreenImages(BuildContext context, List<dynamic> images, int initialIndex) {
     showDialog(
       context: context,
@@ -84,17 +82,41 @@ class UserDetailWidget extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildListDetail(String label, List<dynamic>? items) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          if (items == null || items.isEmpty)
+            const Text('N/A')
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: items.map((item) => Text('- $item')).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool hasTechnician = user['technician'] != null;
     final technician = hasTechnician ? user['technician'] : null;
-
+    final userId = user['_id'];
+    final displayName = hasTechnician
+        ? (technician?['fullName'] ?? user['fullname'])
+        : user['fullname'];
     return Container(
       padding: const EdgeInsets.all(16.0),
-      height: MediaQuery
-          .of(context)
-          .size
-          .height * 0.8,
+      height: MediaQuery.of(context).size.height * 0.8,
       child: Column(
         children: [
           Row(
@@ -125,9 +147,8 @@ class UserDetailWidget extends StatelessWidget {
                         if (imageUrl != null && imageUrl.isNotEmpty) {
                           showDialog(
                             context: context,
-                            builder: (_) =>
-                                FullScreenSingleImageViewer(
-                                    imageUrl: imageUrl),
+                            builder: (_) => FullScreenSingleImageViewer(
+                                imageUrl: imageUrl),
                           );
                         }
                       },
@@ -152,27 +173,33 @@ class UserDetailWidget extends StatelessWidget {
                   const SizedBox(height: 16),
                   Center(
                     child: Text(
-                      user['role'] == 'ktv' ? (user['fullName'] ??
-                          'Không có tên') : '',
-                      style: const TextStyle(
+                      displayName ?? 'Không có tên',
+                        style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   const Divider(height: 32),
-                  _buildCopyableDetailRow(
-                      context, 'Số điện thoại', user['phone']),
-                  _buildCopyableDetailRow(
-                      context, 'Mật khẩu', user['password']),
-                  _buildDetailRow('Trạng thái', user['status'] == 'active'
-                      ? 'Hoạt động'
-                      : 'Không hoạt động'),
+                  // User basic infor
+                  _buildCopyableDetailRow(context, 'Số điện thoại', user['phone']),
+                  _buildCopyableDetailRow(context, 'Mật khẩu', user['password']),
+                  _buildDetailRow('Vai trò', user['roles'] == 'ktv' ? 'Kỹ thuật viên' : user['roles']),
+                  _buildDetailRow('Trạng thái tài khoản', user['isActive'] ? 'Kích hoạt' : 'Không kích hoạt'),
+                  _buildDetailRow('Trạng thái hoạt động', user['status'] == 'active' ? 'Hoạt động' : 'Không hoạt động'),
                   _buildDetailRow(
                     'Lần đăng nhập cuối',
-                    user['lastLogin'] != null ? FormatHelper.formatDateTime(
-                        user['lastLogin']) : 'Không có',
+                    user['lastLogin'] != null ? FormatHelper.formatDateTime(user['lastLogin']) : 'Không có',
                   ),
+                  _buildDetailRow(
+                    'Ngày tạo',
+                    user['createdAt'] != null ? FormatHelper.formatDateTime(user['createdAt']) : 'Không có',
+                  ),
+                  _buildDetailRow(
+                    'Ngày cập nhật',
+                    user['updatedAt'] != null ? FormatHelper.formatDateTime(user['updatedAt']) : 'Không có',
+                  ),
+
                   if (hasTechnician) ...[
                     const SizedBox(height: 16),
                     const Text(
@@ -183,18 +210,26 @@ class UserDetailWidget extends StatelessWidget {
                       ),
                     ),
                     const Divider(),
+                    // _buildCopyableDetailRow(context, 'ID KTV', technician?['_id']),
                     _buildDetailRow('Tên đầy đủ', technician?['fullName']),
-                    _buildDetailRow('Tỉnh/Thành phố', technician?['province']),
-                    _buildDetailRow('Quận/Huyện', technician?['district']),
+                    _buildDetailRow('Năm sinh', technician?['yearOfBirth']?.toString()),
+                    _buildDetailRow('Tỉnh/Thành phố làm việc', technician?['province']),
+                    _buildListDetail('Quận/Huyện làm việc', technician?['districts']),
                     _buildDetailRow('Địa chỉ', technician?['address']),
                     _buildDetailRow('Kinh nghiệm', technician?['experience']),
+                    _buildListDetail('Dịch vụ', technician?['services']),
                     _buildDetailRow('Giới thiệu', technician?['bio']),
-                    _buildDetailRow('Phê duyệt',
-                        technician?['isAcceptHaveApprovalRequest'] == true
-                            ? 'Đã được phê duyệt'
-                            : 'Chưa được phê duyệt'),
-                    if (technician?['images'] != null &&
-                        (technician!['images'] as List).isNotEmpty) ...[
+                    // _buildDetailRow('Trạng thái KTV', technician?['isActive'] ? 'Kích hoạt' : 'Không kích hoạt'),
+                    // _buildDetailRow(
+                    //   'Ngày tạo KTV',
+                    //   technician?['createdAt'] != null ? FormatHelper.formatDateTime(technician['createdAt']) : 'Không có',
+                    // ),
+                    // _buildDetailRow(
+                    //   'Ngày cập nhật KTV',
+                    //   technician?['updatedAt'] != null ? FormatHelper.formatDateTime(technician['updatedAt']) : 'Không có',
+                    // ),
+
+                    if (technician?['images'] != null && (technician!['images'] as List).isNotEmpty) ...[
                       const SizedBox(height: 16),
                       const Text(
                         'Hình ảnh',
@@ -214,9 +249,7 @@ class UserDetailWidget extends StatelessWidget {
                             return Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child: GestureDetector(
-                                onTap: () =>
-                                    _showFullScreenImages(
-                                        context, technician['images'], index),
+                                onTap: () => _showFullScreenImages(context, technician['images'], index),
                                 child: Image.network(
                                   image['url'] ?? '',
                                   width: 100,
@@ -238,4 +271,4 @@ class UserDetailWidget extends StatelessWidget {
       ),
     );
   }
-  }
+}

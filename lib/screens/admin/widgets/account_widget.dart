@@ -541,8 +541,12 @@ class _AccountTabState extends State<AccountTab> {
                               IconButton(
                                 icon: const Icon(Icons.edit),
                                   tooltip: 'Chỉnh sửa thông tin',
-                                  onPressed: () {
-                                    context.go('/edit-technician', extra: user);
+                                  onPressed: () async {
+                                    // context.push('/edit-technician', extra: user);
+                                    final result = await context.push('/edit-technician', extra: user);
+                                    if (result == true) {
+                                      _loadUsers();
+                                    }
                                   }
                                 )
                             ],
@@ -717,7 +721,6 @@ class UserDetailWidget extends StatelessWidget {
                     _buildDetailRow('Phường/Xã', technician?['commune']),
                     _buildDetailRow('Địa chỉ', technician?['address']),
                     _buildDetailRow('Kinh nghiệm', technician?['experience']),
-                    _buildDetailRow('Mô tả kinh nghiệm', technician?['experienceDescription']),
                     _buildDetailRow('Giới thiệu', technician?['bio']),
                     _buildDetailRow('Đã được phê duyệt', technician?['isActive'] == false ? 'Có' : 'Không'),
 

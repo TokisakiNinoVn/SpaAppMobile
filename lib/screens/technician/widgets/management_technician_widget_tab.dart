@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 
 import 'package:spa_app/services/user_service.dart';
@@ -51,7 +52,7 @@ class _ManagementTechnicianTabState extends State<ManagementTechnicianTab> {
       final response = await technicianService.getListTechnicianCreateByUser();
       if (response['success']) {
         final filteredUsers = List<Map<String, dynamic>>.from(response['data']);
-        print("list data: $filteredUsers");
+        // print("list data: $filteredUsers");
 
         setState(() {
           users = filteredUsers;
@@ -175,7 +176,7 @@ class _ManagementTechnicianTabState extends State<ManagementTechnicianTab> {
                 icon: const Icon(Icons.add),
                 color: Colors.grey,
                 onPressed: () {
-                  SnackbarHelper.showWarning(context, 'Chức năng đang phát triển');
+                  context.push("/home-technician/add-technician");
                 },
                 tooltip: 'Thêm hồ sơ mới',
               ),

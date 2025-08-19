@@ -10,6 +10,11 @@ class UserService {
       '${UserApiRoutes.getListUser}',
     );
   }
+  Future<Map<String, dynamic>> getIsAcceptHaveApprovalRequestService() async {
+    return await ApiMethodsPrivate.getRequest(
+      '${UserApiRoutes.getIsAcceptHaveApprovalRequestUser}',
+    );
+  }
 
   Future<Map<String, dynamic>> lockOrUnlockUserService(
     String id,

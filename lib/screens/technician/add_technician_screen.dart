@@ -12,17 +12,17 @@ import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
 import 'package:spa_app/services/tinhthanh_service_v2.dart';
 import 'package:spa_app/services/file_service.dart';
-import '../helper/format_helper.dart';
-import '../helper/full_screen_single_image.dart';
+import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/full_screen_single_image.dart';
 
-class CreateTechnicianScreen extends StatefulWidget {
-  const CreateTechnicianScreen({super.key});
+class AddTechnicianScreen extends StatefulWidget {
+  const AddTechnicianScreen({super.key});
 
   @override
-  State<CreateTechnicianScreen> createState() => _CreateTechnicianScreen();
+  State<AddTechnicianScreen> createState() => _AddTechnicianScreen();
 }
 
-class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
+class _AddTechnicianScreen extends State<AddTechnicianScreen> {
   final fullnameController = TextEditingController();
   final addressController = TextEditingController();
   final experienceDescriptionController = TextEditingController();
@@ -201,11 +201,10 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       };
 
 
-      final response = await technicianService.createTechnicianService(data);
+      final response = await technicianService.addTechnicianService(data);
       if (response['success'] == true) {
-        SnackbarHelper.showSuccess(
-            context, 'Hồ sơ của bạn đã tạo thành công, chờ duyệt');
-        context.go('/login');
+        SnackbarHelper.showSuccess(context, 'Đã thêm hồ sơ vui lòng chờ duyệt');
+        context.go('/home-technician');
       } else {
         SnackbarHelper.showError(
             context, response['message'] ?? 'Có lỗi xảy ra khi tạo hồ sơ');
@@ -777,7 +776,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
             children: [
               Center(
                 child: Text(
-                  'Tạo hồ sơ kĩ thuật viên',
+                  'Giới thiệu kĩ thuật viên',
                   style: ThemeConfig.appTextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -883,7 +882,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
               const SizedBox(height: 12),
               _buildTextField(
                 controller: bioController,
-                label: 'Giới thiệu bản thân',
+                label: 'Giới thiệu thêm',
                 maxLines: 2,
               ),
               const SizedBox(height: 12),
@@ -915,7 +914,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => context.go('/login'),
+                      onPressed: () => context.go('/home'),
                       icon: Icon(Icons.chevron_left, color: ColorConfig.grey),
                       label: Text("Hủy", style: TextStyle(color: ColorConfig.grey)),
                     ),

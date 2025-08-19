@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/screens/admin/widgets/user_detail.dart';
 
 import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
@@ -239,7 +240,6 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
       ),
     );
   }
-
 
   Widget _buildStatusSelectionWidget() {
     return Positioned(
@@ -532,7 +532,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => UserDetailWidget(user: user),
+      builder: (context) => UserDetailWidgetAdmin(user: user),
     );
   }
 

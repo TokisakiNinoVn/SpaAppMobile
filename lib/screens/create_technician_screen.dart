@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:spa_app/config/color_config.dart';
@@ -12,8 +11,8 @@ import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
 import 'package:spa_app/services/tinhthanh_service_v2.dart';
 import 'package:spa_app/services/file_service.dart';
-import '../helper/format_helper.dart';
-import '../helper/full_screen_single_image.dart';
+import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/full_screen_single_image.dart';
 
 class CreateTechnicianScreen extends StatefulWidget {
   const CreateTechnicianScreen({super.key});
@@ -80,7 +79,6 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     _experienceSearchController.dispose();
     fullnameController.dispose();
     addressController.dispose();
-    // experienceDescriptionController.dispose();
     bioController.dispose();
     super.dispose();
   }
@@ -107,7 +105,6 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     setState(() => isProvincesLoading = true);
     try {
       final listTinhThanh = await tinhThanhService.getTinhThanh();
-      // print("DS Tinh thanh: $listTinhThanh");
       if (listTinhThanh.isEmpty) {
         SnackbarHelper.showError(context, 'Không thể tải danh sách tỉnh thành');
       } else {
@@ -153,7 +150,6 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
   Future<void> handleCreateTechnician() async {
     final fullname = fullnameController.text.trim();
     final address = addressController.text.trim();
-    // final experienceDesc = experienceDescriptionController.text.trim();
     final bio = bioController.text.trim();
 
     if (fullname.isEmpty) {
