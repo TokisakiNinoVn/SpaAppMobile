@@ -1,0 +1,274 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../../helper/format_helper.dart';
+import '../../../helper/full_screen_list_image.dart';
+import '../../../helper/full_screen_single_image.dart';
+
+class UserDetailWidgetAdmin extends StatelessWidget {
+  final Map<String, dynamic> user;
+  const UserDetailWidgetAdmin({super.key, required this.user});
+
+  void _showFullScreenImages(BuildContext context, List<dynamic> images, int initialIndex) {
+    showDialog(
+      context: context,
+      builder: (context) => FullScreenImageViewer(
+        images: images,
+        initialIndex: initialIndex,
+        formatImageUrl: FormatHelper.formatImageUrl,
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, dynamic value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(value?.toString() ?? 'N/A'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCopyableDetailRow(BuildContext context, String label, String? value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value ?? '',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.copy, size: 20),
+          tooltip: 'Copy $label',
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: value ?? ''));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Đã copy $label")),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildListDetail(String label, List<dynamic>? items) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          if (items == null || items.isEmpty)
+            const Text('N/A')
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: items.map((item) => Text('- $item')).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasTechnician = user['technician'] != null;
+    final technician = hasTechnician ? user['technician'] : null;
+    final userId = user['_id'];
+    final displayName = hasTechnician
+        ? (technician?['fullName'] ?? user['fullname'])
+        : user['fullname'];
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      height: MediaQuery.of(context).size.height * 0.8,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Chi tiết tài khoản',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        final imageUrl = technician?['avatar']?['url'];
+                        if (imageUrl != null && imageUrl.isNotEmpty) {
+                          showDialog(
+                            context: context,
+                            builder: (_) => FullScreenSingleImageViewer(
+                                imageUrl: imageUrl),
+                          );
+                        }
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: hasTechnician && technician?['avatar'] != null
+                            ? Image.network(
+                          technician!['avatar']['url'] ?? '',
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        )
+                            : Container(
+                          width: 100,
+                          height: 100,
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.person, size: 50),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text(
+                      displayName ?? 'Không có tên',
+                        style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 32),
+                  // User basic infor
+                  _buildCopyableDetailRow(context, 'Số điện thoại', user['phone']),
+                  _buildCopyableDetailRow(context, 'Mật khẩu', user['password']),
+                  _buildDetailRow('Vai trò', user['roles'] == 'ktv' ? 'Kỹ thuật viên' : user['roles']),
+                  _buildDetailRow('Trạng thái tài khoản', user['isActive'] ? 'Kích hoạt' : 'Không kích hoạt'),
+                  _buildDetailRow('Trạng thái hoạt động', user['status'] == 'active' ? 'Hoạt động' : 'Không hoạt động'),
+                  _buildDetailRow(
+                    'Lần đăng nhập cuối',
+                    user['lastLogin'] != null ? FormatHelper.formatDateTime(user['lastLogin']) : 'Không có',
+                  ),
+                  _buildDetailRow(
+                    'Ngày tạo',
+                    user['createdAt'] != null ? FormatHelper.formatDateTime(user['createdAt']) : 'Không có',
+                  ),
+                  _buildDetailRow(
+                    'Ngày cập nhật',
+                    user['updatedAt'] != null ? FormatHelper.formatDateTime(user['updatedAt']) : 'Không có',
+                  ),
+
+                  if (hasTechnician) ...[
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Thông tin Kỹ thuật viên',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Divider(),
+                    // _buildCopyableDetailRow(context, 'ID KTV', technician?['_id']),
+                    _buildDetailRow('Tên đầy đủ', technician?['fullName']),
+                    _buildDetailRow('Năm sinh', technician?['yearOfBirth']?.toString()),
+                    _buildDetailRow('Tỉnh/Thành phố làm việc', technician?['province']),
+                    _buildListDetail('Quận/Huyện làm việc', technician?['districts']),
+                    _buildDetailRow('Địa chỉ', technician?['address']),
+                    _buildDetailRow('Kinh nghiệm', technician?['experience']),
+                    _buildListDetail('Dịch vụ', technician?['services']),
+                    _buildDetailRow('Giới thiệu', technician?['bio']),
+                    // _buildDetailRow('Trạng thái KTV', technician?['isActive'] ? 'Kích hoạt' : 'Không kích hoạt'),
+                    // _buildDetailRow(
+                    //   'Ngày tạo KTV',
+                    //   technician?['createdAt'] != null ? FormatHelper.formatDateTime(technician['createdAt']) : 'Không có',
+                    // ),
+                    // _buildDetailRow(
+                    //   'Ngày cập nhật KTV',
+                    //   technician?['updatedAt'] != null ? FormatHelper.formatDateTime(technician['updatedAt']) : 'Không có',
+                    // ),
+
+                    if (technician?['images'] != null && (technician!['images'] as List).isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Hình ảnh',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Divider(),
+                      SizedBox(
+                        height: 100,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: (technician['images'] as List).length,
+                          itemBuilder: (context, index) {
+                            final image = (technician['images'] as List)[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: GestureDetector(
+                                onTap: () => _showFullScreenImages(context, technician['images'], index),
+                                child: Image.network(
+                                  image['url'] ?? '',
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

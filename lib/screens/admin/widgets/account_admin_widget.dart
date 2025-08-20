@@ -58,9 +58,6 @@ class _AccountAdminTabState extends State<AccountAdminTab> {
               if (!mounted) return;
               Navigator.of(context).pop();
               context.go('/login');
-              // ScaffoldMessenger.of(context).showSnackBar(
-              //   const SnackBar(content: Text("Đăng xuất thành công")),
-              // );
               SnackbarHelper.showSuccess(context, "Đăng xuất thành công");
             },
             icon: const Icon(Icons.logout),

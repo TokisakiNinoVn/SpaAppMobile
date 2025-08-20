@@ -15,6 +15,7 @@ import '../screens/otp_confirm_screen.dart';
 import '../screens/quanly/home_quanly_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/auth/forgetpasword/reset_password.dart';
+import '../screens/technician/add_technician_screen.dart';
 import '../screens/technician/home_technician_screen.dart';
 import '../screens/technician/technician/user_edit_technician.dart';
 
@@ -74,6 +75,12 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/home-technician',
       builder: (context, state) => const HomeTechnicianScreen(),
+      routes: [
+        GoRoute(
+          path: 'add-technician',
+          builder: (context, state) => const AddTechnicianScreen(),
+        ),
+      ]
     ),
     GoRoute(
       path: '/create-technician',

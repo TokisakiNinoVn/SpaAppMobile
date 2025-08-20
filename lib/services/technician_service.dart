@@ -13,14 +13,26 @@ class TechnicianService {
 
   // create
   Future<Map<String, dynamic>> createTechnicianService(
-    Map<String, dynamic> data,
-  ) async {
-    // print("URL: ${TechnicianApiRoutes.createTechnician} - data: $data");
+      Map<String, dynamic> data,
+      ) async {
+    // final prettyJson = const JsonEncoder.withIndent('  ').convert(data);
+
     return await ApiMethodsPrivate.postRequest(
       TechnicianApiRoutes.createTechnician,
       data,
     );
   }
+  Future<Map<String, dynamic>> addTechnicianService(
+      Map<String, dynamic> data,
+      ) async {
+    final prettyJson = const JsonEncoder.withIndent('  ').convert(data);
+      // print("data request: $prettyJson");
+    return await ApiMethodsPrivate.postRequest(
+      TechnicianApiRoutes.addTechnician,
+      data,
+    );
+  }
+
   Future<Map<String, dynamic>> updateTechnicianService(
       String id,
     Map<String, dynamic> data,

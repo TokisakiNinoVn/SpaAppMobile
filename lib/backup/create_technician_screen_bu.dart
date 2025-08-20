@@ -735,14 +735,6 @@
 //                 ),
 //                 const SizedBox(height: 16),
 //                 _buildTextField(
-//                   controller: experienceDescriptionController,
-//                   label: 'Mô tả kinh nghiệm (tối đa 200 ký tự)',
-//                   icon: Icons.description,
-//                   maxLines: 3,
-//                   maxLength: 200,
-//                 ),
-//                 const SizedBox(height: 16),
-//                 _buildTextField(
 //                   controller: bioController,
 //                   label: 'Giới thiệu bản thân (tối đa 100 ký tự)',
 //                   icon: Icons.info,
