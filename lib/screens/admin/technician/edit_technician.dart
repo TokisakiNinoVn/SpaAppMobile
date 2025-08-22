@@ -112,9 +112,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
           provinces = listTinhThanh;
           filteredProvinces = provinces;
           if (widget.data['technician']['province'] != null) {
-            selectedProvince = provinces.firstWhereOrNull(
-              (prov) => prov['name'] == widget.data['technician']['province'],
-            );
+            selectedProvince = provinces.firstWhereOrNull((prov) => prov['name'] == widget.data['technician']['province']);
             if (selectedProvince != null) {
               _loadDistricts(selectedProvince['id']);
             }

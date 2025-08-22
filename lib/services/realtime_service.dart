@@ -21,6 +21,7 @@ class RealtimeService {
   final void Function(Map<String, dynamic>)? onUserStatusUpdate;
 
   RealtimeService(this.context, {this.onUserStatusUpdate});
+
   Future<void> connect() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');

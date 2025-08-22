@@ -14,7 +14,7 @@ class UploadService {
     String? token = prefs.getString('token');
 
     final uri = Uri.parse(UploadApiRoutes.singleFile);
-    print("URL upload: $uri");
+    // print("URL upload: $uri");
     final request = http.MultipartRequest('POST', uri);
 
     if (token != null && token.isNotEmpty) {

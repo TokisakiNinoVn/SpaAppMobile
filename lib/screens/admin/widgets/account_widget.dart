@@ -9,6 +9,8 @@ import 'package:spa_app/helper/full_screen_list_image.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/services/realtime_service.dart';
 
+import '../../../helper/snackbar_helper.dart';
+
 class AccountTab extends StatefulWidget {
   const AccountTab({super.key});
   @override
@@ -257,13 +259,9 @@ class _AccountTabState extends State<AccountTab> {
       try {
         await userService.deleteUserService(userId);
         _loadUsers();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã xóa người dùng thành công')),
-        );
+        SnackbarHelper.showSuccess(context, 'Đã xóa người dùng thành công');
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Có lỗi xảy ra khi xóa người dùng')),
-        );
+        SnackbarHelper.showError(context, 'Có lỗi xảy ra, vui lòng thử lại');
       }
     }
   }
@@ -683,27 +681,9 @@ class UserDetailWidget extends StatelessWidget {
                       ),
                     ),
                   ],
-                  // Center(
-                  //   child: Text(
-                  //     user['roles'] == 'quanly' ? user['fullname'] : 'Quản trị viên - Admin',
-                  //     style: const TextStyle(
-                  //       fontSize: 20,
-                  //       fontWeight: FontWeight.bold,
-                  //     ),
-                  //   ),
-                  // ),
                   const Divider(height: 32),
                   _buildCopyableDetailRow(context, 'Số điện thoại', user['phone']),
                   _buildCopyableDetailRow(context, 'Mật khẩu', user['password']),
-
-                  // _buildDetailRow('Vai trò', user['roles'] == 'admin' ? 'Quản trị viên' : 'Kỹ thuật viên'),
-                  // _buildDetailRow('Trạng thái', user['status'] == 'active' ? 'Hoạt động' : 'Không hoạt động'),
-                  // _buildDetailRow(
-                  //   'Lần đăng nhập cuối',
-                  //   user['lastLogin'] != null
-                  //       ? FormatHelper.formatDateTime(user['lastLogin'])!
-                  //       : 'Không có',
-                  // ),
 
                   if (hasTechnician) ...[
                     const SizedBox(height: 16),
@@ -716,9 +696,11 @@ class UserDetailWidget extends StatelessWidget {
                     ),
                     const Divider(),
                     _buildDetailRow('Tên đầy đủ', technician?['fullName']),
-                    _buildDetailRow('Tỉnh/Thành phố', technician?['province']),
-                    _buildDetailRow('Quận/Huyện', technician?['district']),
-                    _buildDetailRow('Phường/Xã', technician?['commune']),
+                    // _buildDetailRow('Tỉnh/Thành phố', technician?['province']),
+                    _buildDetailRow('Tỉnh/Thành phố làm việc', technician?['province']),
+                    _buildListDetail('Quận/Huyện làm việc', technician?['districts']),
+
+                    // _buildDetailRow('Phường/Xã', technician?['commune']),
                     _buildDetailRow('Địa chỉ', technician?['address']),
                     _buildDetailRow('Kinh nghiệm', technician?['experience']),
                     _buildDetailRow('Giới thiệu', technician?['bio']),
@@ -775,6 +757,29 @@ class UserDetailWidget extends StatelessWidget {
         images: images,
         initialIndex: initialIndex,
         formatImageUrl: FormatHelper.formatImageUrl,
+      ),
+    );
+  }
+
+  Widget _buildListDetail(String label, List<dynamic>? items) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          if (items == null || items.isEmpty)
+            const Text('N/A')
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: items.map((item) => Text('- $item')).toList(),
+            ),
+        ],
       ),
     );
   }

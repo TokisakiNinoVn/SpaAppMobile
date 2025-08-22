@@ -182,7 +182,7 @@ class _AccountTabState extends State<AccountTab> {
           const Divider(height: 32),
           _buildInfoTile('Tên kỹ thuật viên', technician?['fullName']),
           _buildInfoTile('Khu vực làm việc',
-              'Địa chỉ 1: ${technician?['address'] ?? ''}\nĐịa chỉ 2: ${technician?['commune'] ?? ''}, ${technician?['district'] ?? ''}, ${technician?['province'] ?? ''}'),
+              'Địa chỉ 1: ${technician?['address'] ?? ''}\nĐịa chỉ 2: ${technician?['province'] ?? ''}'),
           _buildInfoTile('Kinh nghiệm', technician?['experience']),
           // _buildInfoTile('Mô tả thêm kinh nghiệm', technician?['experienceDescription']),
           _buildInfoTile('Mô tả cá nhân', technician?['bio']),

@@ -914,7 +914,7 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => context.go('/home'),
+                      onPressed: () => context.go('/home-technician'),
                       icon: Icon(Icons.chevron_left, color: ColorConfig.grey),
                       label: Text("Hủy", style: TextStyle(color: ColorConfig.grey)),
                     ),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:spa_app/apis/helper/api_methods_private.dart';
@@ -37,7 +38,7 @@ class TechnicianService {
       String id,
     Map<String, dynamic> data,
   ) async {
-    // print("$id - data update: $data");
+    // debugPrint("$id - data update: $data");
     // print("URL: ${TechnicianApiRoutes.updateTechnician}/$id - data update: $data");
     return await ApiMethodsPrivate.putRequest(
       '${TechnicianApiRoutes.updateTechnician}/$id',
@@ -68,6 +69,11 @@ class TechnicianService {
   Future<Map<String, dynamic>> getListTechnicianCreateByUser() async {
     return await ApiMethodsPrivate.getRequest(
       TechnicianApiRoutes.listTechnicianCreateByUser
+    );
+  }
+  Future<Map<String, dynamic>> deleteTechnicianCreateByUser(String? id) async {
+    return await ApiMethodsPrivate.deleteRequest(
+      '${TechnicianApiRoutes.deleteTechnicianCreateByUser}/$id'
     );
   }
 }

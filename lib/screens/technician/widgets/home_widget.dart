@@ -332,13 +332,17 @@ class _HomeTabState extends State<HomeTab> {
 
             const SizedBox(height: 16),
 
-            // Profile Information Card
             if (technicianData != null) ...[
               if (isTechnicianActive) ...[
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => context.go("/user-edit-technician"),
+                    onPressed: () async {
+                      final result = await context.push('/user-edit-technician');
+                      if (result == true) {
+                        _loadUserDetail();
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ColorConfig.secondary,
                       foregroundColor: Colors.white,
@@ -362,7 +366,7 @@ class _HomeTabState extends State<HomeTab> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () => context.go(''),
+                    onPressed: () => context.push('/home-technician/add-technician'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: ColorConfig.secondary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
