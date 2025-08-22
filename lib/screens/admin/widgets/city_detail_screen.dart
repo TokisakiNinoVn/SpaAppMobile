@@ -1,17 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:spa_app/config/color_config.dart';
-import 'package:spa_app/screens/admin/widgets/user_detail.dart';
 
+import 'package:spa_app/screens/admin/widgets/user_detail.dart';
 import 'package:spa_app/services/user_service.dart';
-import 'package:spa_app/helper/full_screen_single_image.dart';
-import 'package:spa_app/helper/full_screen_list_image.dart';
-import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/services/realtime_service.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/tinhthanh_service.dart';
-
-import '../../quanly/widgets/list_technician_quanly_widget.dart';
 
 class CityDetailScreen extends StatefulWidget {
   final String cityName;
@@ -56,6 +49,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
   @override
   void initState() {
     super.initState();
+    print("cityName: ${widget.cityName}");
     _loadUsers();
     _realtimeService = RealtimeService(
       context,
@@ -90,6 +84,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
       final response = await userService.getAllUserService();
       if (response['success']) {
         final allUsers = List<Map<String, dynamic>>.from(response['data']);
+        debugPrint('All Users: $allUsers');
 
         final filteredUsers = allUsers.where((user) =>
         user['roles'] == 'ktv' && user['isAcceptHaveApprovalRequest'] == true && user['technician']?['province'] == widget.cityName

@@ -692,7 +692,7 @@ class UserDetailWidget extends StatelessWidget {
                   if (hasTechnician) ...[
                     const SizedBox(height: 16),
                     const Text(
-                      'Thông tin Kỹ thuật viên',
+                      'Thông tin Kỹ thuật viên - list',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

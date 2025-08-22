@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 class AccountQuanLyTab extends StatefulWidget {
   const AccountQuanLyTab({super.key});
 
@@ -44,15 +45,69 @@ class _AccountQuanLyTabState extends State<AccountQuanLyTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        children: [
-          const Text('Màn hình tài khoản', style: TextStyle(fontSize: 20)),
-          ElevatedButton(
-            onPressed: () => _showLogoutDialog(context),
-            child: const Text('Đăng xuất'),
+    return Scaffold(
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Avatar
+              const CircleAvatar(
+                radius: 50,
+                backgroundImage: AssetImage('lib/assets/images/img_1.png'),
+                // Nếu có link thì thay NetworkImage(...)
+              ),
+              const SizedBox(height: 12),
+
+              // Tên user
+              const Text(
+                'Serene Spa',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const Text(
+                'Tận tâm với khách hàng',
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 20),
+
+              // const Divider(),
+
+              // Các tuỳ chọn khác
+              // ListTile(
+              //   leading: const Icon(Icons.lock_outline),
+              //   title: const Text("Đổi mật khẩu"),
+              //   onTap: () {},
+              // ),
+              // ListTile(
+              //   leading: const Icon(Icons.support_agent),
+              //   title: const Text("Hỗ trợ khách hàng"),
+              //   onTap: () {},
+              // ),
+              // ListTile(
+              //   leading: const Icon(Icons.info_outline),
+              //   title: const Text("Giới thiệu Serene Spa"),
+              //   onTap: () {},
+              // ),
+
+              const Divider(),
+
+              // Nút đăng xuất
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                ),
+                onPressed: () => _showLogoutDialog(context),
+                icon: const Icon(Icons.logout, color: Colors.white,),
+                label: const Text('Đăng xuất', style: TextStyle(fontSize: 18, color: Colors.white)),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

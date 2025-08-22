@@ -210,21 +210,34 @@ class _ApproveTabState extends State<ApproveTab> {
                     ),
                     const SizedBox(height: 24),
                   ],
+                  if(request['isCreatedForTechnician'] == true) ...[
+                    _buildInfoRow('Giới thiệu bởi: ', '${request['referrerName'] ?? 'Không có'}'),
+                    _buildInfoRow('Số điện thoại: ', '${request['referrerPhoneNumber'] ?? 'Không có'}'),
+                  ],
+                  const Divider(),
                   _buildInfoRow('Họ và Tên', isTechnicianRequest
                       ? request['technician']['fullName'] ?? 'Không có'
                       : request['user']['fullname'] ?? 'Không có'),
-                  _buildInfoRow('Số điện thoại', request['user']['phone'] ?? 'Không có'),
+                  if(!request['isCreatedForTechnician'] == true) ...[
+                    _buildInfoRow('Số điện thoại', request['user']['phone'] ?? 'Không có'),
+                  ],
+                  // _buildInfoRow('Số điện thoại', request['user']['phone'] ?? 'Không có'),
                   if (isTechnicianRequest) ...[
                     _buildInfoRow(
-                      'Địa chỉ',
-                      '${request['technician']['province'] ?? ''}, ${request['technician']['district'] ?? ''}, ${request['technician']['commune'] ?? ''}, ${request['technician']['address'] ?? ''}',
+                      'Thành phố làm việc',
+                      '${request['technician']['province'] ?? ''}',
                     ),
+                    _buildInfoRow('Địa chỉ chi tiết', '${request['technician']['address'] ?? 'Không có'}'),
                     _buildInfoRow('Kinh nghiệm', request['technician']['experience'] ?? 'Không có'),
                     _buildInfoRow('Tiểu sử', request['technician']['bio'] ?? 'Không có'),
                   ],
-                  _buildInfoRow('Vai trò', request['user']['roles'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'),
+                  if(request['isCreatedForTechnician'] == true) ...[
+                    _buildInfoRow('Vai trò', request['role'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'),
+                  ] else ...[
+                    _buildInfoRow('Vai trò', request['role'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'),
+                  ],
                   _buildInfoRow('Trạng thái', request['status'] == 'approved' ? 'Đã phê duyệt' : 'Chưa phê duyệt'),
-                  _buildInfoRow('Ngày gửi', FormatHelper.formatDateTime(request['submittedAt']) ?? 'Không có'),
+                  _buildInfoRow('Ngày gửi', FormatHelper.formatDateTime(request['submittedAt'])),
                   if (isTechnicianRequest) ...[
                     const SizedBox(height: 24),
                     Text(
@@ -439,10 +452,16 @@ class _ApproveTabState extends State<ApproveTab> {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                          '${request['user']['roles'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'}',
-                          style: ThemeConfig.appTextStyle(fontSize: 14, color: ColorConfig.textSecondary)
-                      ),
+                      if(request['user'] == null) ...[
+                        Text(
+                            '${request['role'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'}',
+                            style: ThemeConfig.appTextStyle(fontSize: 14, color: ColorConfig.textSecondary)
+                        ),
+                      ] else
+                        Text(
+                            '${request['user']['roles'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'}',
+                            style: ThemeConfig.appTextStyle(fontSize: 14, color: ColorConfig.textSecondary)
+                        ),
                     ],
                   ),
                   onTap: () => _showRequestDetails(context, request),

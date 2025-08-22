@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:collection/collection.dart';
@@ -15,16 +14,16 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 
-class EditTechnicianScreen extends StatefulWidget {
+class EditAddTechnicianScreen extends StatefulWidget {
   final Map<String, dynamic> data;
 
-  const EditTechnicianScreen({super.key, required this.data});
+  const EditAddTechnicianScreen({super.key, required this.data});
 
   @override
-  State<EditTechnicianScreen> createState() => _EditTechnicianScreenState();
+  State<EditAddTechnicianScreen> createState() => _EditAddTechnicianScreenState();
 }
 
-class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
+class _EditAddTechnicianScreenState extends State<EditAddTechnicianScreen> {
   final fullnameController = TextEditingController();
   final addressController = TextEditingController();
   final bioController = TextEditingController();
@@ -68,8 +67,9 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
   }
 
   void _initializeData() {
-    // print('Initializing data: ${widget.data}');
-    final technicianData = widget.data['technician'];
+    debugPrint('Initializing data: ${widget.data}');
+    // final technicianData = widget.data['technician'];
+    final technicianData = widget.data;
 
     fullnameController.text = technicianData['fullName'] ?? '';
     addressController.text = technicianData['address'] ?? '';
@@ -1093,7 +1093,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => context.go('/home-admin'),
+                        onPressed: () => context.go('/home-quanly'),
                         icon: Icon(Icons.chevron_left, color: ColorConfig.grey),
                         label: Text(
                           "Hủy",

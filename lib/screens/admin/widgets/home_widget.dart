@@ -9,18 +9,22 @@ class HomeTab extends StatelessWidget {
     final cities = [
       {
         'name': 'Hà Nội',
+        'value': 'Hà Nội',
         'image': 'lib/assets/images/ha_noi.jpg',
       },
       {
         'name': 'Hải Phòng',
+        'value': 'Hải Phòng',
         'image': 'lib/assets/images/hai_phong.jpg',
       },
       {
         'name': 'Đà Nẵng',
+        'value': 'Đà Nẵng',
         'image': 'lib/assets/images/da_nang.jpg',
       },
       {
         'name': 'Thành phố Hồ Chí Minh',
+        'value': 'TP. Hồ Chí Minh',
         'image': 'lib/assets/images/tphcm.jpg',
       },
     ];
@@ -47,7 +51,7 @@ class HomeTab extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => CityDetailScreen(
-                          cityName: city['name']!,
+                          cityName: city['value']!,
                         ),
                       ),
                     );

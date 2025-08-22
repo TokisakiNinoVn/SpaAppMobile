@@ -16,6 +16,7 @@ import '../screens/quanly/home_quanly_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/auth/forgetpasword/reset_password.dart';
 import '../screens/technician/add_technician_screen.dart';
+import '../screens/technician/edit_add_technician.dart';
 import '../screens/technician/home_technician_screen.dart';
 import '../screens/technician/technician/user_edit_technician.dart';
 
@@ -91,6 +92,13 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final data = state.extra as Map<String, dynamic>;
         return EditTechnicianScreen(data: data);
+      },
+    ),
+    GoRoute(
+      path: '/edit-add-technician',
+      builder: (context, state) {
+        final data = state.extra as Map<String, dynamic>;
+        return EditAddTechnicianScreen(data: data);
       },
     ),
     GoRoute(
