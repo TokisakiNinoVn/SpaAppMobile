@@ -50,7 +50,7 @@ class _QuanLyListTechnicianTabState extends State<QuanLyListTechnicianTab> {
     super.initState();
     _loadUsers();
     _realtimeService = RealtimeService(
-      context,
+      context: context,
       onUserStatusUpdate: (data) {
         if (!mounted) return;
         setState(() {

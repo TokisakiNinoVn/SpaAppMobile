@@ -36,7 +36,7 @@ class _AccountTabState extends State<AccountTab> {
     super.initState();
     _loadUsers();
     _realtimeService = RealtimeService(
-      context,
+      context: context,
       onUserStatusUpdate: (data) {
         if (!mounted) return;
         setState(() {
@@ -704,7 +704,8 @@ class UserDetailWidget extends StatelessWidget {
                     _buildDetailRow('Địa chỉ', technician?['address']),
                     _buildDetailRow('Kinh nghiệm', technician?['experience']),
                     _buildDetailRow('Giới thiệu', technician?['bio']),
-                    _buildDetailRow('Đã được phê duyệt', technician?['isActive'] == false ? 'Có' : 'Không'),
+                    _buildDetailRow('Phê duyệt', technician?['isActive'] == false ? 'Chưa duyệt' : 'Chưa duyệt'),
+                    // _buildDetailRow('Đã được phê duyệt - ', user['isAcceptHaveApprovalRequest'] == false ? 'Có' : 'Không'),
 
                     if (technician?['images'] != null &&
                         (technician!['images'] as List).isNotEmpty) ...[
