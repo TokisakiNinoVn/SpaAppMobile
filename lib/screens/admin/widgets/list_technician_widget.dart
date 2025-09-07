@@ -50,7 +50,7 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
     super.initState();
     _loadUsers();
     _realtimeService = RealtimeService(
-      context,
+      context: context,
       onUserStatusUpdate: (data) {
         if (!mounted) return;
         setState(() {
@@ -59,6 +59,7 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
       },
     );
     _realtimeService.connect();
+
     _loadProvinces();
   }
 

@@ -52,7 +52,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     super.initState();
     _loadUsers();
     _realtimeService = RealtimeService(
-      context,
+      context: context,
       onUserStatusUpdate: (data) {
         if (!mounted) return;
         setState(() {

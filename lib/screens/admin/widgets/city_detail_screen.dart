@@ -49,10 +49,10 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
   @override
   void initState() {
     super.initState();
-    print("cityName: ${widget.cityName}");
+    // print("cityName: ${widget.cityName}");
     _loadUsers();
     _realtimeService = RealtimeService(
-      context,
+      context: context,
       onUserStatusUpdate: (data) {
         if (!mounted) return;
         setState(() {
@@ -84,7 +84,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
       final response = await userService.getAllUserService();
       if (response['success']) {
         final allUsers = List<Map<String, dynamic>>.from(response['data']);
-        debugPrint('All Users: $allUsers');
+        // debugPrint('All Users: $allUsers');
 
         final filteredUsers = allUsers.where((user) =>
         user['roles'] == 'ktv' && user['isAcceptHaveApprovalRequest'] == true && user['technician']?['province'] == widget.cityName

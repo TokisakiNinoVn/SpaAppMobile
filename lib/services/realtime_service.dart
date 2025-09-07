@@ -17,17 +17,18 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterL
 
 class RealtimeService {
   late WebSocketChannel _channel;
-  final BuildContext context;
+  final BuildContext? context;
   final void Function(Map<String, dynamic>)? onUserStatusUpdate;
 
-  RealtimeService(this.context, {this.onUserStatusUpdate});
+  // RealtimeService(this.context, {this.onUserStatusUpdate});
+  RealtimeService({this.context, this.onUserStatusUpdate});
 
   // Future<void> connect() async {
   //   final prefs = await SharedPreferences.getInstance();
   //   final token = prefs.getString('token');
   //   final uri = Uri(
   //     scheme: 'ws',
-  //     host: AppConfig.ip, //
+  //     host: AppConfig.ip,
   //     port: 5001,
   //     path: '/api/private/ws/account-status',
   //   );
@@ -94,11 +95,13 @@ class RealtimeService {
       debugPrint('[RealtimeService] ❌ Không thể kết nối WebSocket: $e');
     }
   }
-  
+
+
+
   Future<void> _handleEvent(dynamic event) async {
     try {
       final data = jsonDecode(event);
-      // print("Data websocket: $data");
+      print("Data websocket: $data");
       if (data is Map<String, dynamic> && data['type'] == 'user_status_updated') {
         final userId = data['userId'];
         final technicianName = data['technicianName'];
@@ -119,7 +122,19 @@ class RealtimeService {
         //   debugPrint('[RealtimeService] 👤 Nhân viên $technicianName không hoạt động. Không gửi thông báo.');
         // }
         onUserStatusUpdate?.call(data);
+      } else if (data is Map<String, dynamic> && data['type'] == 'notification_from_admin') {
+        final prefs = await SharedPreferences.getInstance();
+        final String role = prefs.getString('role')?.replaceAll('"', '') ?? 'admin';
+
+        // Nếu role là kỹ thuật viên thì nhận thông báo từ admin
+        if (role == 'ktv') {
+          _showNotification(
+            title: data['title'] ?? 'Thông báo từ admin',
+            body: data['content'] ?? '',
+          );
+        }
       }
+
     } catch (e) {
       debugPrint('[RealtimeService] ❌ Lỗi khi decode dữ liệu: $e');
     }
@@ -172,7 +187,7 @@ class RealtimeService {
       debugPrint("🛑 Không có quyền hiển thị thông báo");
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+        final scaffoldMessenger = ScaffoldMessenger.maybeOf(context!);
         if (scaffoldMessenger != null) {
           scaffoldMessenger.showSnackBar(
             SnackBar(
