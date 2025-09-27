@@ -1,6 +1,6 @@
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart' as http;
+// import 'dart:convert';
+// import 'package:flutter/cupertino.dart';
+// import 'package:http/http.dart' as http;
 
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/technician_api.dart';
@@ -26,7 +26,7 @@ class TechnicianService {
   Future<Map<String, dynamic>> addTechnicianService(
       Map<String, dynamic> data,
       ) async {
-    final prettyJson = const JsonEncoder.withIndent('  ').convert(data);
+    // final prettyJson = const JsonEncoder.withIndent('  ').convert(data);
       // print("data request: $prettyJson");
     return await ApiMethodsPrivate.postRequest(
       TechnicianApiRoutes.addTechnician,

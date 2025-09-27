@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:spa_app/apis/helper/api_methods_private.dart';
+// import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/upload_api.dart';
 
 class UploadService {
@@ -14,7 +14,6 @@ class UploadService {
     String? token = prefs.getString('token');
 
     final uri = Uri.parse(UploadApiRoutes.singleFile);
-    // print("URL upload: $uri");
     final request = http.MultipartRequest('POST', uri);
 
     if (token != null && token.isNotEmpty) {

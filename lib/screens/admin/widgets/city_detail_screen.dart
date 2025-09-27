@@ -114,7 +114,8 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
           (user['technician']?['fullName'].toString() ?? '').toLowerCase().contains(searchQuery.toLowerCase());
       final matchesStatus = statusFilter == null || user['status'] == statusFilter;
       final matchesProvince = selectedProvince == null || selectedProvince == 'Tất cả' || user['technician']?['province'] == selectedProvince;
-      final matchesServices = selectedServices.isEmpty || (user['technician']?['services'] as List?)!.any((s) => selectedServices.contains(s)) ?? false;
+      final matchesServices = selectedServices.isEmpty || (user['technician']?['services'] as List?)!.any((s) => selectedServices.contains(s));
+      // final matchesServices = selectedServices.isEmpty || (user['technician']?['services'] as List?)!.any((s) => selectedServices.contains(s)) ?? false;
       return matchesSearch && matchesStatus && matchesProvince && matchesServices;
     }).toList();
 
@@ -146,15 +147,68 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea( // ✅ tránh bị che bởi thanh trạng thái
+      body: SafeArea(
         child: Stack(
           children: [
             Column(
               children: [
+                Row(
+                  children: [
+                    // Nút back bên trái
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+
+                    // Spacer đẩy cityName ra giữa
+                    const Spacer(),
+
+                    // Tên thành phố chính giữa
+                    Text(
+                      '${widget.cityName}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    // Spacer đẩy icon sang phải
+                    const Spacer(),
+
+                    // Nhóm nút filter bên phải
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.filter_alt_outlined),
+                          color: statusFilter != null ? Colors.blue : Colors.grey,
+                          onPressed: () {
+                            setState(() {
+                              showStatusList = true;
+                              showServiceList = false;
+                            });
+                          },
+                          tooltip: 'Lọc theo trạng thái',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.filter_center_focus),
+                          color: selectedServices.isNotEmpty ? Colors.blue : Colors.grey,
+                          onPressed: () {
+                            setState(() {
+                              showServiceList = true;
+                              showStatusList = false;
+                            });
+                          },
+                          tooltip: 'Lọc theo dịch vụ',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
                 _buildSearchSection(),
+
                 Expanded(
                   child: _buildUserListSection(),
                 ),
@@ -168,9 +222,10 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     );
   }
 
+
   Widget _buildSearchSection() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8), // ✅ giảm padding top & bottom
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Row(
         children: [
           Expanded(
@@ -207,30 +262,30 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
               },
             ),
           ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.filter_alt_outlined),
-            color: statusFilter != null ? Colors.blue : Colors.grey,
-            onPressed: () {
-              setState(() {
-                showStatusList = true;
-                showServiceList = false;
-              });
-            },
-            tooltip: 'Lọc theo trạng thái',
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.filter_center_focus),
-            color: selectedServices.isNotEmpty ? Colors.blue : Colors.grey,
-            onPressed: () {
-              setState(() {
-                showServiceList = true;
-                showStatusList = false;
-              });
-            },
-            tooltip: 'Lọc theo dịch vụ',
-          ),
+          // const SizedBox(width: 8),
+          // IconButton(
+          //   icon: const Icon(Icons.filter_alt_outlined),
+          //   color: statusFilter != null ? Colors.blue : Colors.grey,
+          //   onPressed: () {
+          //     setState(() {
+          //       showStatusList = true;
+          //       showServiceList = false;
+          //     });
+          //   },
+          //   tooltip: 'Lọc theo trạng thái',
+          // ),
+          // const SizedBox(width: 8),
+          // IconButton(
+          //   icon: const Icon(Icons.filter_center_focus),
+          //   color: selectedServices.isNotEmpty ? Colors.blue : Colors.grey,
+          //   onPressed: () {
+          //     setState(() {
+          //       showServiceList = true;
+          //       showStatusList = false;
+          //     });
+          //   },
+          //   tooltip: 'Lọc theo dịch vụ',
+          // ),
         ],
       ),
     );

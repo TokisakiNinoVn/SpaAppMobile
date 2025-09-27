@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+// import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/screens/quanly/widgets/list_city.dart';
 
 // import '../admin/widgets/account_widget.dart';
-import '../admin/widgets/approve_widget.dart';
+// import '../admin/widgets/approve_widget.dart';
 // import '../admin/widgets/account_admin_widget.dart';
-import 'package:spa_app/screens/quanly/widgets/list_technician_quanly_widget.dart';
+// import 'package:spa_app/screens/quanly/widgets/list_technician_quanly_widget.dart';
 import 'package:spa_app/screens/quanly/widgets/account_widget.dart';
 
 class HomeQuanLyScreen extends StatefulWidget {
@@ -47,10 +47,10 @@ class _HomeAdminScreenState extends State<HomeQuanLyScreen> {
     });
   }
 
-  Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-  }
+  // Future<void> _logout() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.clear();
+  // }
 
   @override
   Widget build(BuildContext context) {

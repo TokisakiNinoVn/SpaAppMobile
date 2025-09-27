@@ -1,9 +1,9 @@
-import 'dart:convert';
+// import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {

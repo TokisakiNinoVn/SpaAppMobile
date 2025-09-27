@@ -59,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    final isLogin = prefs.getString('isLogin');
+    // final isLogin = prefs.getString('isLogin');
     final isTechnicianActive = prefs.getString('isTechnicianActive');
     final role = prefs.getString('role')?.replaceAll('"', '').trim() ?? '';
 

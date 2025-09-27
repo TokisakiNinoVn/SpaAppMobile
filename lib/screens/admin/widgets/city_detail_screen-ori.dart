@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:spa_app/config/color_config.dart';
+// import 'package:spa_app/config/color_config.dart';
 
 import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
@@ -129,14 +129,14 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     }
   }
 
-  void _filterProvinces(String query) {
-    setState(() {
-      filteredProvinces = provinces.where((province) {
-        return province['name'].toString().toLowerCase().contains(query.toLowerCase());
-      }).toList();
-      filteredProvinces.insert(0, {'name': 'Tất cả'});
-    });
-  }
+  // void _filterProvinces(String query) {
+  //   setState(() {
+  //     filteredProvinces = provinces.where((province) {
+  //       return province['name'].toString().toLowerCase().contains(query.toLowerCase());
+  //     }).toList();
+  //     filteredProvinces.insert(0, {'name': 'Tất cả'});
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
