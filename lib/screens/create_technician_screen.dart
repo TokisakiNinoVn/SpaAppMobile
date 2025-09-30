@@ -11,7 +11,7 @@ import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
 import 'package:spa_app/services/tinhthanh_service_v2.dart';
 import 'package:spa_app/services/file_service.dart';
-import 'package:spa_app/helper/format_helper.dart';
+// import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
 
 class CreateTechnicianScreen extends StatefulWidget {
@@ -786,7 +786,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
               const SizedBox(height: 7),
               _buildTextField(
                 controller: fullnameController,
-                label: 'Họ và tên',
+                label: 'Họ và tên (Kèm thêm tên Zalo)',
+                hint: 'vd: Nguyễn Như Ngọc - Như Ngọc'
               ),
               const SizedBox(height: 7),
               Row(
@@ -852,7 +853,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
               _buildTextField(
                 controller: addressController,
                 label: 'Địa chỉ nơi ở',
-                hint: 'Số nhà, đường, phường, xã, thành phố, tỉnh...',
+                hint: 'Số nhà, đường,...',
                 maxLines: 1,
               ),
               const SizedBox(height: 7),
@@ -875,12 +876,6 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              _buildTextField(
-                controller: bioController,
-                label: 'Giới thiệu bản thân',
-                maxLines: 2,
               ),
               const SizedBox(height: 12),
               _buildServicesSection(),
@@ -937,6 +932,39 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     );
   }
 
+  // Widget _buildTextField({
+  //   required TextEditingController controller,
+  //   required String label,
+  //   String? hint,
+  //   int maxLines = 1,
+  //   int? maxLength,
+  // }) {
+  //   return TextField(
+  //     controller: controller,
+  //     maxLines: maxLines,
+  //     maxLength: maxLength,
+  //     decoration: InputDecoration(
+  //
+  //       labelText: label,
+  //       hintText: hint,
+  //       labelStyle: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
+  //       filled: true,
+  //       fillColor: Colors.white.withOpacity(0.9),
+  //       enabledBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(50),
+  //         borderSide: BorderSide(color: Colors.grey[300]!),
+  //       ),
+  //       focusedBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(50),
+  //         borderSide: const BorderSide(color: Color(0xFFD4A373), width: 1),
+  //       ),
+  //       contentPadding:
+  //       const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+  //     ),
+  //     style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
+  //   );
+  // }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -944,28 +972,47 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     int maxLines = 1,
     int? maxLength,
   }) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      maxLength: maxLength,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        labelStyle: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: ThemeConfig.appTextStyle(
+            color: ColorConfig.textPrimary,
+            fontSize: 14,
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: const BorderSide(color: Color(0xFFD4A373), width: 1),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          maxLength: maxLength,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: ThemeConfig.appTextStyle(
+              color: ColorConfig.textSecondary.withOpacity(0.6),
+              fontSize: 14,
+            ),
+            labelStyle: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.9),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(50),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(50),
+              borderSide: BorderSide(color: ColorConfig.textSecondary, width: 1),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 12,
+              horizontal: 16,
+            ),
+          ),
+          style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
         ),
-        contentPadding:
-        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      ),
-      style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
+      ],
     );
   }
+
 }

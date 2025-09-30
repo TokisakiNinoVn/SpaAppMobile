@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:collection/collection.dart';
@@ -841,89 +840,95 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
-    required IconData icon,
+    String? hint,
     int maxLines = 1,
     int? maxLength,
-    TextInputType? keyboardType,
-    ValueChanged<String>? onChanged,
   }) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      maxLength: maxLength,
-      keyboardType: keyboardType,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF8B5E3C)),
-        labelStyle: ThemeConfig.appTextStyle(
-          color: ColorConfig.textPrimary,
-          fontSize: 16,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: ThemeConfig.appTextStyle(
+            color: ColorConfig.textPrimary,
+            fontSize: 14,
+          ),
         ),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          maxLength: maxLength,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: ThemeConfig.appTextStyle(
+              color: ColorConfig.textSecondary.withOpacity(0.6),
+              fontSize: 14,
+            ),
+            labelStyle: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.9),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(50),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(50),
+              borderSide: BorderSide(color: ColorConfig.textSecondary, width: 1),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 12,
+              horizontal: 16,
+            ),
+          ),
+          style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: const BorderSide(color: Color(0xFFD4A373), width: 1),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: 10,
-        ),
-      ),
-      style: ThemeConfig.appTextStyle(
-        color: ColorConfig.textBlack,
-        fontSize: 16,
-      ),
+      ],
     );
   }
 
-  Widget _buildBioTextField({
-    required TextEditingController controller,
-    required String label,
-    // required IconData icon,
-    int maxLines = 1,
-    int? maxLength,
-    TextInputType? keyboardType,
-    ValueChanged<String>? onChanged,
-  }) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      maxLength: maxLength,
-      keyboardType: keyboardType,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: ThemeConfig.appTextStyle(
-          color: ColorConfig.textPrimary,
-          fontSize: 16,
-        ),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: const BorderSide(color: Color(0xFFD4A373), width: 1),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: 14,
-        ),
-      ),
-      style: ThemeConfig.appTextStyle(
-        color: ColorConfig.textBlack,
-        fontSize: 16,
-      ),
-    );
-  }
+  // Widget _buildBioTextField({
+  //   required TextEditingController controller,
+  //   required String label,
+  //   // required IconData icon,
+  //   int maxLines = 1,
+  //   int? maxLength,
+  //   TextInputType? keyboardType,
+  //   ValueChanged<String>? onChanged,
+  // }) {
+  //   return TextField(
+  //     controller: controller,
+  //     maxLines: maxLines,
+  //     maxLength: maxLength,
+  //     keyboardType: keyboardType,
+  //     onChanged: onChanged,
+  //     decoration: InputDecoration(
+  //       labelText: label,
+  //       labelStyle: ThemeConfig.appTextStyle(
+  //         color: ColorConfig.textPrimary,
+  //         fontSize: 16,
+  //       ),
+  //       filled: true,
+  //       fillColor: Colors.white.withOpacity(0.9),
+  //       enabledBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(16),
+  //         borderSide: BorderSide(color: Colors.grey[300]!),
+  //       ),
+  //       focusedBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(50),
+  //         borderSide: const BorderSide(color: Color(0xFFD4A373), width: 1),
+  //       ),
+  //       contentPadding: const EdgeInsets.symmetric(
+  //         vertical: 12,
+  //         horizontal: 14,
+  //       ),
+  //     ),
+  //     style: ThemeConfig.appTextStyle(
+  //       color: ColorConfig.textBlack,
+  //       fontSize: 16,
+  //     ),
+  //   );
+  // }
 
   String _getDistrictsDisplayText() {
     if (selectedDistricts.isEmpty) return 'Chọn quận/huyện';
@@ -957,8 +962,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
                 _buildAvatarSection(),
                 _buildTextField(
                   controller: fullnameController,
-                  label: 'Họ và tên',
-                  icon: Icons.person,
+                  label: 'Họ và tên (Kèm theo tên Zalo)',
                 ),
                 const SizedBox(height: 8),
 
@@ -1067,18 +1071,18 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
                 _buildTextField(
                   controller: addressController,
                   label: 'Địa chỉ cụ thể',
-                  icon: Icons.location_on,
+                  hint: 'Số nhà, đường,...'
                 ),
                 const SizedBox(height: 8),
                 _buildServicesSection(),
                 const SizedBox(height: 14),
-                _buildBioTextField(
-                  controller: bioController,
-                  label: 'Giới thiệu bản thân (tối đa 100 ký tự)',
-                  // icon: Icons.info,
-                  maxLines: 3,
-                  maxLength: 100,
-                ),
+                // _buildBioTextField(
+                //   controller: bioController,
+                //   label: 'Giới thiệu bản thân (tối đa 100 ký tự)',
+                //   // icon: Icons.info,
+                //   maxLines: 3,
+                //   maxLength: 100,
+                // ),
                 const SizedBox(height: 8),
                 Text(
                   'Hình ảnh (tối đa 5 ảnh)',

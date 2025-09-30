@@ -363,8 +363,8 @@ class _AccountTabState extends State<AccountTab> {
                   ),
                   items: const [
                     DropdownMenuItem(value: 'ktv', child: Text('Kỹ thuật viên')),
-                    DropdownMenuItem(value: 'quanly', child: Text('Quản lý')),
-                    DropdownMenuItem(value: 'admin', child: Text('Quản trị viên')),
+                    DropdownMenuItem(value: 'quanly', child: Text('Đầu bắn tour')),
+                    DropdownMenuItem(value: 'admin', child: Text('Boss (Amin)')),
                   ],
                   onChanged: (value) {
                     setState(() {

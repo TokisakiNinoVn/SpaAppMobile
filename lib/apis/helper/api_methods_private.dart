@@ -1,14 +1,11 @@
 import 'dart:convert';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helper/snackbar_helper.dart';
 import '../../routes/app_router.dart';
-import '../../screens/login_screen.dart';
 
 class ApiMethodsPrivate {
   // Hàm lấy token từ SharedPreferences

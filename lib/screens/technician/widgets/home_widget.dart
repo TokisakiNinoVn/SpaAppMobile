@@ -475,35 +475,35 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: Colors.grey.shade600),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  // Widget _buildInfoRow(IconData icon, String label, String value) {
+  //   return Row(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Icon(icon, size: 20, color: Colors.grey.shade600),
+  //       const SizedBox(width: 12),
+  //       Expanded(
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             Text(
+  //               label,
+  //               style: TextStyle(
+  //                 fontSize: 13,
+  //                 color: Colors.grey.shade600,
+  //               ),
+  //             ),
+  //             const SizedBox(height: 4),
+  //             Text(
+  //               value,
+  //               style: const TextStyle(
+  //                 fontSize: 15,
+  //                 color: Colors.black87,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 }

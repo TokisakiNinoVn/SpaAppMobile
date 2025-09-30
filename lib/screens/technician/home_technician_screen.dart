@@ -7,7 +7,7 @@ import 'package:spa_app/screens/technician/widgets/home_widget.dart';
 import 'package:spa_app/screens/technician/widgets/management_technician_widget_tab.dart';
 import 'package:spa_app/screens/technician/widgets/policy_tab_widget.dart';
 import 'package:spa_app/screens/technician/widgets/support_tab_widget.dart';
-import 'package:spa_app/services/realtime_service.dart';
+// import 'package:spa_app/services/realtime_service.dart';
 
 class HomeTechnicianScreen extends StatefulWidget {
   const HomeTechnicianScreen({super.key});

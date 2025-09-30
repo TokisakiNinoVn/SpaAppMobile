@@ -8,7 +8,7 @@ import '../admin/widgets/account_widget.dart';
 import '../admin/widgets/approve_widget.dart';
 import '../admin/widgets/home_widget.dart';
 import '../admin/widgets/account_admin_widget.dart';
-import '../admin/widgets/list_technician_widget.dart';
+// import '../admin/widgets/list_technician_widget.dart';
 
 class HomeAdminScreen extends StatefulWidget {
   const HomeAdminScreen({super.key});

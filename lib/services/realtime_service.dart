@@ -65,8 +65,8 @@ class RealtimeService {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     final uri = Uri.parse(AppConfig.apiWebsocket);
-    print("URL websocket: $uri");
-    print("Token: $token");
+    // print("URL websocket: $uri");
+    // print("Token: $token");
 
     try {
       final socket = await WebSocket.connect(
@@ -101,9 +101,9 @@ class RealtimeService {
   Future<void> _handleEvent(dynamic event) async {
     try {
       final data = jsonDecode(event);
-      print("Data websocket: $data");
+      // print("Data websocket: $data");
       if (data is Map<String, dynamic> && data['type'] == 'user_status_updated') {
-        final userId = data['userId'];
+        // final userId = data['userId'];
         final technicianName = data['technicianName'];
         final status = data['status'] == true;
         final prefs = await SharedPreferences.getInstance();

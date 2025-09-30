@@ -484,79 +484,79 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
     );
   }
 
-  void _showExperienceBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Chọn kinh nghiệm',
-              style: ThemeConfig.appTextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 300,
-              child: ListView(
-                children: experiences.map((exp) {
-                  return ListTile(
-                    title: Text(exp),
-                    onTap: () {
-                      setState(() => experience = exp);
-                      Navigator.pop(context);
-                    },
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showYearBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Chọn năm sinh',
-              style: ThemeConfig.appTextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 300,
-              child: ListView(
-                children: years.map((year) {
-                  return ListTile(
-                    title: Text(year.toString()),
-                    onTap: () {
-                      setState(() => yearOfBirth = year);
-                      Navigator.pop(context);
-                    },
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // void _showExperienceBottomSheet() {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     builder: (context) => Container(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           Text(
+  //             'Chọn kinh nghiệm',
+  //             style: ThemeConfig.appTextStyle(
+  //               fontSize: 18,
+  //               fontWeight: FontWeight.bold,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 16),
+  //           SizedBox(
+  //             height: 300,
+  //             child: ListView(
+  //               children: experiences.map((exp) {
+  //                 return ListTile(
+  //                   title: Text(exp),
+  //                   onTap: () {
+  //                     setState(() => experience = exp);
+  //                     Navigator.pop(context);
+  //                   },
+  //                 );
+  //               }).toList(),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+  //
+  // void _showYearBottomSheet() {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     builder: (context) => Container(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           Text(
+  //             'Chọn năm sinh',
+  //             style: ThemeConfig.appTextStyle(
+  //               fontSize: 18,
+  //               fontWeight: FontWeight.bold,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 16),
+  //           SizedBox(
+  //             height: 300,
+  //             child: ListView(
+  //               children: years.map((year) {
+  //                 return ListTile(
+  //                   title: Text(year.toString()),
+  //                   onTap: () {
+  //                     setState(() => yearOfBirth = year);
+  //                     Navigator.pop(context);
+  //                   },
+  //                 );
+  //               }).toList(),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   void _showDistrictBottomSheet() {
     showModalBottomSheet(
@@ -754,7 +754,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    int maximization = 1,
+    // int maximization = 1,
     int? maxLength,
     TextInputType? keyboardType,
     ValueChanged<String>? onChanged,
