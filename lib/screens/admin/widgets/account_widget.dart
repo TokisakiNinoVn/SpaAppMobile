@@ -22,7 +22,6 @@ class _AccountTabState extends State<AccountTab> {
   final TextEditingController _searchController = TextEditingController();
   late RealtimeService _realtimeService;
 
-
   List<Map<String, dynamic>> users = [];
   List<Map<String, dynamic>> filteredUsers = [];
   bool isLoading = true;
@@ -77,8 +76,19 @@ class _AccountTabState extends State<AccountTab> {
 
   void _applyFilters() {
     filteredUsers = users.where((user) {
-      final matchesSearch = user['phone'].toString().contains(searchQuery) || (user['technician']?['fullName']?.toString() ?? '').toLowerCase().contains(searchQuery.toLowerCase());
-      final matchesRole = user['roles'] == roleFilter;
+      final matchesSearch = user['phone'].toString().contains(searchQuery) ||
+          (user['technician']?['fullName']?.toString() ?? '').toLowerCase().contains(searchQuery.toLowerCase()) ||
+          (user['fullname']?.toString() ?? '').toLowerCase().contains(searchQuery.toLowerCase());
+
+      bool matchesRole = false;
+      if (roleFilter == 'empty') {
+        matchesRole = user['roles'] == 'ktv' && (user['technician'] == null || user['technician'].isEmpty);
+      } else if (roleFilter == 'ktv') {
+        matchesRole = user['roles'] == 'ktv' && user['technician'] != null && user['technician'].isNotEmpty;
+      } else {
+        matchesRole = user['roles'] == roleFilter;
+      }
+
       final matchesStatus = statusFilter == 'all' || user['status'] == statusFilter;
       return matchesSearch && matchesRole && matchesStatus;
     }).toList();
@@ -197,7 +207,6 @@ class _AccountTabState extends State<AccountTab> {
     );
   }
 
-
   Future<void> _toggleUserStatus(String id, bool currentStatus) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -222,7 +231,7 @@ class _AccountTabState extends State<AccountTab> {
     if (confirmed == true) {
       try {
         await userService.lockOrUnlockUserService(id, {'isActive': !currentStatus});
-        _loadUsers(); // Refresh the list
+        _loadUsers();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(currentStatus
               ? 'Đã khóa tài khoản thành công'
@@ -356,15 +365,28 @@ class _AccountTabState extends State<AccountTab> {
                   value: roleFilter,
                   decoration: InputDecoration(
                     labelText: 'Vai trò',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                      borderSide: BorderSide(color: ColorConfig.secondary),
+                    labelStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: ColorConfig.secondary, width: 1.2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.amber.shade700, width: 1.5),
                     ),
                   ),
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
                   items: const [
                     DropdownMenuItem(value: 'ktv', child: Text('Kỹ thuật viên')),
+                    DropdownMenuItem(value: 'empty', child: Text('Tài khoản trống')),
                     DropdownMenuItem(value: 'quanly', child: Text('Đầu bắn tour')),
-                    DropdownMenuItem(value: 'admin', child: Text('Boss (Amin)')),
+                    DropdownMenuItem(value: 'admin', child: Text('Boss (Admin)')),
                   ],
                   onChanged: (value) {
                     setState(() {
@@ -374,16 +396,35 @@ class _AccountTabState extends State<AccountTab> {
                   },
                 ),
               ),
+
               const SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: statusFilter,
                   decoration: InputDecoration(
                     labelText: 'Trạng thái',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+                    labelStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: ColorConfig.secondary, width: 1.2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.amber.shade700, width: 1.5),
                     ),
                   ),
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
                   items: const [
                     DropdownMenuItem(value: 'all', child: Text('Tất cả')),
                     DropdownMenuItem(value: 'active', child: Text('Hoạt động')),
@@ -397,6 +438,7 @@ class _AccountTabState extends State<AccountTab> {
                   },
                 ),
               ),
+
             ],
           ),
         ],
@@ -443,16 +485,29 @@ class _AccountTabState extends State<AccountTab> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.grey[100],
-                    backgroundImage:
-                    avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                    child: avatarUrl == null
-                        ? Icon(Icons.person, size: 30, color: ColorConfig.secondary)
-                        : null,
+                  // Avatar + viền theo trạng thái
+                  Container(
+                    padding: const EdgeInsets.all(2), // khoảng cách viền
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: user['status'] == 'active' ? Colors.green : Colors.grey[300]!,
+                        width: 3,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.grey[100],
+                      backgroundImage:
+                      avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      child: avatarUrl == null
+                          ? Icon(Icons.person, size: 30, color: ColorConfig.secondary)
+                          : null,
+                    ),
                   ),
                   const SizedBox(width: 16),
+
+                  // Nội dung bên phải
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -463,15 +518,14 @@ class _AccountTabState extends State<AccountTab> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (user['role'] == 'ktv')
+                                  if (user['roles'] == 'ktv')
                                     Text(
-                                      user['fullname'] ?? 'Không có tên',
+                                      technician?['fullName'] ?? '',
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-
                                   const SizedBox(height: 4),
                                   Text(
                                     user['phone'] ?? '',
@@ -479,10 +533,6 @@ class _AccountTabState extends State<AccountTab> {
                                   ),
                                   if (hasTechnician) ...[
                                     const SizedBox(height: 4),
-                                    Text(
-                                      technician?['fullName'] ?? '',
-                                      style: TextStyle(color: ColorConfig.primary),
-                                    ),
                                   ] else if (user['roles'] == 'quanly') ...[
                                     const SizedBox(height: 4),
                                     Text(
@@ -499,32 +549,12 @@ class _AccountTabState extends State<AccountTab> {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            // Cập nhật realtime cho cái này
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: user['status'] == 'active'
-                                    ? Colors.green[50]
-                                    : Colors.red[50],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                user['status'] == 'active'
-                                    ? 'Hoạt động'
-                                    : 'Không hoạt động',
-                                style: TextStyle(
-                                  color: user['status'] == 'active'
-                                      ? Colors.green
-                                      : Colors.red,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            )
+                            // 👉 Đã bỏ Container trạng thái ở đây
                           ],
                         ),
                         const SizedBox(height: 12),
+
+                        // Các nút hành động
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -538,39 +568,37 @@ class _AccountTabState extends State<AccountTab> {
                             if (user['roles'] == 'ktv' && user['technician'] != null) ...[
                               IconButton(
                                 icon: const Icon(Icons.edit),
-                                  tooltip: 'Chỉnh sửa thông tin',
-                                  onPressed: () async {
-                                    // context.push('/edit-technician', extra: user);
-                                    final result = await context.push('/edit-technician', extra: user);
-                                    if (result == true) {
-                                      _loadUsers();
-                                    }
+                                tooltip: 'Chỉnh sửa thông tin',
+                                onPressed: () async {
+                                  final result = await context.push(
+                                    '/edit-technician',
+                                    extra: user,
+                                  );
+                                  if (result == true) {
+                                    _loadUsers();
                                   }
-                                )
+                                },
+                              )
                             ],
-                            user['roles'] == 'admin' ? const SizedBox() : IconButton(
-                              icon: Icon(
-                                user['isActive']
-                                    ? Icons.lock_open
-                                    : Icons.lock,
-                                color: user['isActive']
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
-                              tooltip: user['isActive']
-                                  ? 'Khoá tài khoản'
-                                  : 'Mở khóa tài khoản',
-                              onPressed: () => _toggleUserStatus(
-                                  user['_id'], user['isActive']),
-                            ),
-                            if (user['roles'] != 'admin') ...[
+                            if (user['roles'] != 'admin')
                               IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.red),
+                                icon: Icon(
+                                  user['isActive'] ? Icons.lock_open : Icons.lock,
+                                  color:
+                                  user['isActive'] ? Colors.green : Colors.red,
+                                ),
+                                tooltip: user['isActive']
+                                    ? 'Khoá tài khoản'
+                                    : 'Mở khóa tài khoản',
+                                onPressed: () =>
+                                    _toggleUserStatus(user['_id'], user['isActive']),
+                              ),
+                            if (user['roles'] != 'admin')
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
                                 onPressed: () => _deleteUser(user['_id']),
                                 tooltip: 'Xóa tài khoản',
                               ),
-                            ]
                           ],
                         ),
                       ],
@@ -580,6 +608,7 @@ class _AccountTabState extends State<AccountTab> {
               ),
             ),
           );
+
         },
       ),
     );
@@ -607,11 +636,7 @@ class UserDetailWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Origin
-    // final hasTechnician = user['technician'] != null && (user['technician'] as List).isNotEmpty;
-    // final technician = hasTechnician ? (user['technician'] as List).first : null;
-
-    final bool hasTechnician = user['technician'] != null;
+    final bool hasTechnician = user['technician'] != null && user['technician'].isNotEmpty;
     final technician = hasTechnician ? user['technician'] : null;
 
     return Container(
@@ -696,16 +721,11 @@ class UserDetailWidget extends StatelessWidget {
                     ),
                     const Divider(),
                     _buildDetailRow('Tên đầy đủ', technician?['fullName']),
-                    // _buildDetailRow('Tỉnh/Thành phố', technician?['province']),
                     _buildDetailRow('Tỉnh/Thành phố làm việc', technician?['province']),
                     _buildListDetail('Quận/Huyện làm việc', technician?['districts']),
-
-                    // _buildDetailRow('Phường/Xã', technician?['commune']),
                     _buildDetailRow('Địa chỉ', technician?['address']),
                     _buildDetailRow('Kinh nghiệm', technician?['experience']),
-                    _buildDetailRow('Giới thiệu', technician?['bio']),
                     _buildDetailRow('Phê duyệt', technician?['isActive'] == false ? 'Chưa duyệt' : 'Chưa duyệt'),
-                    // _buildDetailRow('Đã được phê duyệt - ', user['isAcceptHaveApprovalRequest'] == false ? 'Có' : 'Không'),
 
                     if (technician?['images'] != null &&
                         (technician!['images'] as List).isNotEmpty) ...[

@@ -225,10 +225,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                     ),
                   ),
 
-                  Text('role: $_role | type: ${_role.runtimeType}' ),
-
                   const Divider(height: 32),
-                  // User basic info
                   _buildCopyableDetailRow(context, 'Số điện thoại', widget.user['phone']),
                   if (_role == 'admin')
                     _buildCopyableDetailRow(context, 'Mật khẩu', widget.user['password']),
@@ -237,11 +234,6 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                       'Trạng thái tài khoản',
                       widget.user['isActive'] == true ? 'Kích hoạt' : 'Không kích hoạt',
                     ),
-                  // if (_role == 'admin')
-                  //   _buildDetailRow(
-                  //     'Trạng thái hoạt động',
-                  //     widget.user['status'] == 'active' ? 'Hoạt động' : 'Không hoạt động',
-                  //   ),
                   if (_role == 'admin')
                     _buildDetailRow(
                       'Lần đăng nhập cuối',

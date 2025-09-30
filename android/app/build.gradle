@@ -2,7 +2,7 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
-//    apply plugin: 'com.google.gms.google-services'
+    id "com.google.gms.google-services"
 
 }
 
@@ -19,7 +19,7 @@ def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "
 
 android {
     namespace = "com.example.spa_app"
-    compileSdkVersion 35 // Đảm bảo sử dụng phiên bản mới nhất
+    compileSdkVersion 35
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -43,7 +43,7 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug // Giữ nguyên cấu hình debug
+            signingConfig = signingConfigs.debug
         }
     }
     buildFeatures {
@@ -52,7 +52,7 @@ android {
 }
 
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5' // Thêm dependency cho desugaring
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 //    id("com.google.gms.google-services") version "4.4.3" apply false
     apply plugin: 'com.google.gms.google-services'
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marquee/marquee.dart';
 
 import 'package:spa_app/screens/admin/widgets/user_detail.dart';
 import 'package:spa_app/services/user_service.dart';
@@ -115,7 +116,6 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
       final matchesStatus = statusFilter == null || user['status'] == statusFilter;
       final matchesProvince = selectedProvince == null || selectedProvince == 'Tất cả' || user['technician']?['province'] == selectedProvince;
       final matchesServices = selectedServices.isEmpty || (user['technician']?['services'] as List?)!.any((s) => selectedServices.contains(s));
-      // final matchesServices = selectedServices.isEmpty || (user['technician']?['services'] as List?)!.any((s) => selectedServices.contains(s)) ?? false;
       return matchesSearch && matchesStatus && matchesProvince && matchesServices;
     }).toList();
 
@@ -161,11 +161,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () => Navigator.pop(context),
                     ),
-
-                    // Spacer đẩy cityName ra giữa
                     const Spacer(),
-
-                    // Tên thành phố chính giữa
                     Text(
                       '${widget.cityName}',
                       style: const TextStyle(
@@ -173,11 +169,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
-                    // Spacer đẩy icon sang phải
                     const Spacer(),
-
-                    // Nhóm nút filter bên phải
                     Row(
                       children: [
                         IconButton(
@@ -222,7 +214,6 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     );
   }
 
-
   Widget _buildSearchSection() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -262,30 +253,6 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
               },
             ),
           ),
-          // const SizedBox(width: 8),
-          // IconButton(
-          //   icon: const Icon(Icons.filter_alt_outlined),
-          //   color: statusFilter != null ? Colors.blue : Colors.grey,
-          //   onPressed: () {
-          //     setState(() {
-          //       showStatusList = true;
-          //       showServiceList = false;
-          //     });
-          //   },
-          //   tooltip: 'Lọc theo trạng thái',
-          // ),
-          // const SizedBox(width: 8),
-          // IconButton(
-          //   icon: const Icon(Icons.filter_center_focus),
-          //   color: selectedServices.isNotEmpty ? Colors.blue : Colors.grey,
-          //   onPressed: () {
-          //     setState(() {
-          //       showServiceList = true;
-          //       showStatusList = false;
-          //     });
-          //   },
-          //   tooltip: 'Lọc theo dịch vụ',
-          // ),
         ],
       ),
     );
@@ -529,15 +496,22 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                           ),
                         ],
                         Flexible(
-                          child: Text(
-                            technician?['fullName'] ?? 'Không có tên',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          child: SizedBox(
+                            height: 20, // chiều cao text
+                            child: Marquee(
+                              text: technician?['fullName'] ?? 'Không có tên',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              scrollAxis: Axis.horizontal,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              blankSpace: 50.0, // khoảng cách giữa 2 lần chạy
+                              velocity: 30.0, // tốc độ chạy
+                              startAfter: const Duration(seconds: 1), // delay 1s rồi chạy
+                              pauseAfterRound: const Duration(seconds: 1), // nghỉ 1s mỗi vòng
+                              showFadingOnlyWhenScrolling: false,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
                           ),
                         ),
                       ],
