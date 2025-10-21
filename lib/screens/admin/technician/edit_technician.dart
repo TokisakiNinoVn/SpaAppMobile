@@ -487,7 +487,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
         ElevatedButton.icon(
           onPressed: () => _pickImage(isAvatar: true),
           icon: const Icon(Icons.camera_alt),
-          label: const Text('Chọn ảnh đại diện'),
+          label: const Text('Chọn ảnh đại diện', style: TextStyle(fontSize: 14),),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFD4A373),
             foregroundColor: Colors.white,
@@ -881,7 +881,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
               horizontal: 16,
             ),
           ),
-          style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
+          // style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
         ),
       ],
     );
@@ -948,11 +948,11 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8F4E9), Color(0xFFE9D8C8)],
-          ),
+          // gradient: LinearGradient(
+          //   begin: Alignment.topCenter,
+          //   end: Alignment.bottomCenter,
+          //   colors: [Color(0xFFF8F4E9), Color(0xFFE9D8C8)],
+          // ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(

@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
+
 import 'package:spa_app/services/auth_service.dart';
-import 'package:spa_app/helper/snackbar_helper.dart';
+
+import '../helper/snackbar_helper.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,18 +26,72 @@ class _LoginScreenState extends State<LoginScreen> {
   bool showPassword = false;
   bool rememberMe = true;
 
-  final String urlPrivacy = "https://serene-spa-green.vercel.app/privacy";
-  final String urlSupport = "https://serene-spa-green.vercel.app/support";
-
   @override
   void initState() {
     super.initState();
+    // _checkToken();
     _loadLoginData();
   }
+
+  // Future<void> _checkToken() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final token = prefs.getString('token');
+  //   final isLogin = prefs.getString('isLogin');
+  //   final role = prefs.getString('role');
+  //
+  //
+  //   if (token == null) {
+  //     context.go('/login');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(
+  //           content: Text("Phiên đăng nhập hết hạn vui lòng đăng nhập lại! Login")),
+  //     );
+  //     return;
+  //   }
+  //
+  //   final response = await authService.checkTokenService();
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Text("Response check token login: ${response}")),
+  //   );
+  //   if (response['data'] != null || response['success'] == true || response['status'] == 'success') {
+  //     if (role == 'admin') {
+  //       context.go('/home-admin');
+  //     } else if (role == 'ktv') {
+  //       context.go('/home-technician');
+  //     }
+  //     // else if (role == 'customer') {
+  //     //   context.go('/home-customer');
+  //     // }
+  //     else {
+  //       // prefs.remove('token');
+  //       context.go('/login');
+  //     }
+  //   } else {
+  //     // prefs.remove('token');
+  //     context.go('/login');
+  //   }
+  // }
 
   Future<void> _loadLoginData() async {
     final prefs = await SharedPreferences.getInstance();
     final remember = prefs.getBool('rememberMe') ?? false;
+    // final token = prefs.getString('token');
+    // final isLogin = prefs.getString('isLogin');
+
+    // if (token != null && isLogin == 'true') {
+    //   context.go('/home');
+    // } else {
+    //   context.go('/login');
+    // }
+    //
+    // final response = await authService.checkTokenService();
+    // if (response['success'] == true || response['status'] == 'success') {
+    //   context.go('/home');
+    // } else {
+    //   prefs.remove('token');
+    //   context.go('/login');
+    // }
 
     if (!remember) return;
 
@@ -100,7 +154,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
           if (response['data']['role'] == 'admin') {
             context.go('/home-admin');
-
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (_) => HomeAdminScreen(),
+            //   ),
+            // );
           } else if (response['data']['role'] == 'ktv') {
             await prefs.setString('statusAccount', jsonEncode(response['data']?['status']));
             await prefs.setString('isTechnicianActive', jsonEncode(response['data']?['isTechnicianActive']));
@@ -111,6 +170,8 @@ class _LoginScreenState extends State<LoginScreen> {
               SnackbarHelper.showWarning(context, "Bạn đã đăng ký tài khoản nhưng chưa tạo hồ sơ!");
               context.go('/create-technician');
             }
+            // _showSnack('Bạn đã đăng ký tài khoản nhưng chưa tạo hồ sơ!');
+            // context.go('/create-technician');
           } else if (response['data']['role'] == 'quanly') {
             context.go('/home-quanly');
           } else if (response['data']['role'] == 'customer') {
@@ -124,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackbarHelper.showError(context,response['message'] ?? "Đăng nhập thất bại");
       }
     } catch (e) {
-      SnackbarHelper.showError(context, "Lỗi hệ thống: $e");
+        SnackbarHelper.showError(context, "Lỗi hệ thống: $e");
     } finally {
       setState(() => isLoading = false);
     }
@@ -301,45 +362,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                // Thêm 2 link Privacy và Support
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        launchUrl(Uri.parse(urlPrivacy));
-                      },
-                      child: Text(
-                        'Privacy Policy',
-                        style: ThemeConfig.appTextStyle(
-                          color: ColorConfig.primary,
-                          fontSize: 12,
-                          // decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      height: 12,
-                      color: ColorConfig.textPrimary,
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        launchUrl(Uri.parse(urlSupport));
-                      },
-                      child: Text(
-                        'Support',
-                        style: ThemeConfig.appTextStyle(
-                          color: ColorConfig.primary,
-                          fontSize: 12,
-                          // decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
                 Column(
                   children: [
                     Text(

@@ -67,7 +67,7 @@ class _EditAddTechnicianScreenState extends State<EditAddTechnicianScreen> {
   }
 
   void _initializeData() {
-    debugPrint('Initializing data: ${widget.data}');
+    // debugPrint('Initializing data: ${widget.data}');
     // final technicianData = widget.data['technician'];
     final technicianData = widget.data;
 
@@ -104,15 +104,17 @@ class _EditAddTechnicianScreenState extends State<EditAddTechnicianScreen> {
     setState(() => isProvincesLoading = true);
     try {
       final listTinhThanh = await tinhThanhService.getTinhThanh();
-      print("List tỉnh thành: ${listTinhThanh}");
+      // print("List tỉnh thành: ${listTinhThanh}");
       if (listTinhThanh.isEmpty) {
         SnackbarHelper.showError(context, 'Không thể tải danh sách tỉnh thành');
       } else {
         setState(() {
           provinces = listTinhThanh;
           filteredProvinces = provinces;
-          if (widget.data['technician']['province'] != null) {
-            selectedProvince = provinces.firstWhereOrNull((prov) => prov['name'] == widget.data['technician']['province']);
+          // print('technician data: ${widget.data}');
+          // print('technician province: ${widget.data['province']}');
+          if (widget.data['province'] != null) {
+            selectedProvince = provinces.firstWhereOrNull((prov) => prov['name'] == widget.data['province']);
             if (selectedProvince != null) {
               _loadDistricts(selectedProvince['id']);
             }
@@ -137,11 +139,11 @@ class _EditAddTechnicianScreenState extends State<EditAddTechnicianScreen> {
         setState(() {
           districts = listQuanHuyen;
           filteredDistricts = districts;
-          if (widget.data['technician']['districts'] != null) {
+          if (widget.data['districts'] != null) {
             selectedDistricts =
                 districts
                     .where(
-                      (district) => widget.data['technician']['districts']
+                      (district) => widget.data['districts']
                           .contains(district['name']),
                     )
                     .toList();
@@ -192,13 +194,13 @@ class _EditAddTechnicianScreenState extends State<EditAddTechnicianScreen> {
         'experience': experience,
         'images': images,
         'services': services,
-        'bio': bio,
+        // 'bio': bio,
         'yearOfBirth': yearOfBirth,
         if (avatarImage != null) 'avatar': avatarImage,
       };
 
       final response = await technicianService.updateTechnicianService(
-        widget.data['technician']['_id'],
+        widget.data['_id'],
         data,
       );
 
@@ -841,44 +843,50 @@ class _EditAddTechnicianScreenState extends State<EditAddTechnicianScreen> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
-    required IconData icon,
+    String? hint,
     int maxLines = 1,
     int? maxLength,
-    TextInputType? keyboardType,
-    ValueChanged<String>? onChanged,
   }) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      maxLength: maxLength,
-      keyboardType: keyboardType,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF8B5E3C)),
-        labelStyle: ThemeConfig.appTextStyle(
-          color: ColorConfig.textPrimary,
-          fontSize: 16,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: ThemeConfig.appTextStyle(
+            color: ColorConfig.textPrimary,
+            fontSize: 14,
+          ),
         ),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          maxLength: maxLength,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: ThemeConfig.appTextStyle(
+              color: ColorConfig.textSecondary.withOpacity(0.6),
+              fontSize: 14,
+            ),
+            labelStyle: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.9),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(50),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(50),
+              borderSide: BorderSide(color: ColorConfig.textSecondary, width: 1),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 12,
+              horizontal: 16,
+            ),
+          ),
+          style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: const BorderSide(color: Color(0xFFD4A373), width: 1),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: 10,
-        ),
-      ),
-      style: ThemeConfig.appTextStyle(
-        color: ColorConfig.textBlack,
-        fontSize: 16,
-      ),
+      ],
     );
   }
 
@@ -942,13 +950,13 @@ class _EditAddTechnicianScreenState extends State<EditAddTechnicianScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8F4E9), Color(0xFFE9D8C8)],
-          ),
-        ),
+        // decoration: const BoxDecoration(
+        //   gradient: LinearGradient(
+        //     begin: Alignment.topCenter,
+        //     end: Alignment.bottomCenter,
+        //     colors: [Color(0xFFF8F4E9), Color(0xFFE9D8C8)],
+        //   ),
+        // ),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
@@ -957,8 +965,8 @@ class _EditAddTechnicianScreenState extends State<EditAddTechnicianScreen> {
                 _buildAvatarSection(),
                 _buildTextField(
                   controller: fullnameController,
-                  label: 'Họ và tên',
-                  icon: Icons.person,
+                  label: 'Họ và tên (Kèm tên Zalo)',
+                  // icon: Icons.person,
                 ),
                 const SizedBox(height: 8),
 
@@ -1067,18 +1075,18 @@ class _EditAddTechnicianScreenState extends State<EditAddTechnicianScreen> {
                 _buildTextField(
                   controller: addressController,
                   label: 'Địa chỉ cụ thể',
-                  icon: Icons.location_on,
+                  // icon: Icons.location_on,
                 ),
                 const SizedBox(height: 8),
                 _buildServicesSection(),
                 const SizedBox(height: 14),
-                _buildBioTextField(
-                  controller: bioController,
-                  label: 'Giới thiệu bản thân (tối đa 100 ký tự)',
-                  // icon: Icons.info,
-                  maxLines: 3,
-                  maxLength: 100,
-                ),
+                // _buildBioTextField(
+                //   controller: bioController,
+                //   label: 'Giới thiệu bản thân (tối đa 100 ký tự)',
+                //   // icon: Icons.info,
+                //   maxLines: 3,
+                //   maxLength: 100,
+                // ),
                 const SizedBox(height: 8),
                 Text(
                   'Hình ảnh (tối đa 5 ảnh)',
@@ -1093,7 +1101,7 @@ class _EditAddTechnicianScreenState extends State<EditAddTechnicianScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => context.go('/home-quanly'),
+                        onPressed: () => context.go('/home-technician'),
                         icon: Icon(Icons.chevron_left, color: ColorConfig.grey),
                         label: Text(
                           "Hủy",

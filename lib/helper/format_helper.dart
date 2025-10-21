@@ -21,5 +21,9 @@ class FormatHelper {
     return '${date.day}/${date.month}/${date.year}';
   }
 
+  static DateTime parseDateTime(String dateString) {
+    return DateTime.parse(dateString);
+  }
+
 
 }

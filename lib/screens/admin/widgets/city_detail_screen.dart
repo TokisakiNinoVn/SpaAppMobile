@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:marquee/marquee.dart';
+import 'package:spa_app/config/color_config.dart';
 
 import 'package:spa_app/screens/admin/widgets/user_detail.dart';
 import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/services/realtime_service.dart';
-import 'package:spa_app/helper/snackbar_helper.dart';
-import 'package:spa_app/services/tinhthanh_service.dart';
+// import 'package:spa_app/helper/snackbar_helper.dart';
+// import 'package:spa_app/services/tinhthanh_service.dart';
+import 'package:spa_app/services/tinhthanh_service_v2.dart';
+import 'package:spa_app/services/technician_service.dart';
 
 class CityDetailScreen extends StatefulWidget {
   final String cityName;
+  final int cityId;
 
-  const CityDetailScreen({super.key, required this.cityName});
+  const CityDetailScreen({super.key, required this.cityName, required this.cityId});
 
   @override
   State<CityDetailScreen> createState() => _CityDetailScreenState();
@@ -22,9 +27,10 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
 
   late RealtimeService _realtimeService;
   final tinhThanhService = TinhThanhService();
+  final technicianService = TechnicianService();
 
-  List<Map<String, dynamic>> users = [];
-  List<Map<String, dynamic>> filteredUsers = [];
+  List<Map<String, dynamic>> technicians = [];
+  List<Map<String, dynamic>> filteredTechnicians = [];
   List<dynamic> provinces = [];
   List<dynamic> filteredProvinces = [];
   List<String> allServices = [];
@@ -36,9 +42,12 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
   bool showProvinceList = false;
   bool showStatusList = false;
   bool showServiceList = false;
+  bool showDistrictList = false;
   String? selectedProvince;
+  String? selectedDistrict;
 
   bool isProvincesLoading = false;
+  List<Map<String, dynamic>> districts = [];
 
   final List<Map<String, dynamic>> statusOptions = [
     {'value': null, 'label': 'Tất cả'},
@@ -49,8 +58,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // print("cityName: ${widget.cityName}");
-    _loadUsers();
+    _loadTechnicians();
     _realtimeService = RealtimeService(
       context: context,
       onUserStatusUpdate: (data) {
@@ -61,89 +69,98 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
       },
     );
     _realtimeService.connect();
-    _loadProvinces();
-
+    _loadDistricts();
   }
 
   void _handleRealtimeUserStatusUpdate(Map<String, dynamic> data) {
     final String userId = data['userId'];
     final bool status = data['status'];
 
-    final int index = users.indexWhere((user) => user['_id'] == userId);
+    final int index = technicians.indexWhere((tech) => tech['userId']?['_id'] == userId);
     if (index != -1) {
       setState(() {
-        users[index]['status'] = status ? 'active' : 'inactive';
+        technicians[index]['userId']['status'] = status ? 'active' : 'inactive';
         _applyFilters();
       });
     }
   }
 
-  Future<void> _loadUsers() async {
+  Future<void> _loadTechnicians() async {
     setState(() => isLoading = true);
     try {
-      final response = await userService.getAllUserService();
+      final response = await technicianService.filterTechnicianByIdProvince(widget.cityId);
+      // print("response: $response");
       if (response['success']) {
-        final allUsers = List<Map<String, dynamic>>.from(response['data']);
-        // debugPrint('All Users: $allUsers');
+        final techniciansData = List<Map<String, dynamic>>.from(response['data']);
 
-        final filteredUsers = allUsers.where((user) =>
-        user['roles'] == 'ktv' && user['isAcceptHaveApprovalRequest'] == true && user['technician']?['province'] == widget.cityName
-        ).toList();
-
+        // Extract all unique services from technicians
         Set<String> serviceSet = {};
-        for (var user in filteredUsers) {
-          if (user['technician']?['services'] != null) {
-            serviceSet.addAll((user['technician']['services'] as List).cast<String>());
+        for (var tech in techniciansData) {
+          if (tech['services'] != null) {
+            serviceSet.addAll((tech['services'] as List).cast<String>());
           }
         }
 
         setState(() {
-          users = filteredUsers;
+          technicians = techniciansData;
           allServices = serviceSet.toList();
           _applyFilters();
         });
       }
+    } catch (e) {
+      print('Error loading technicians: $e');
     } finally {
       setState(() => isLoading = false);
     }
   }
 
+  Future<void> _loadDistricts() async {
+    try {
+      districts = await tinhThanhService.getHuyenByTinhV2(widget.cityId);
+      // debugPrint("List huyen: ${districts}");
+    } catch (e) {
+      print('Error loading districts: $e');
+      districts = [];
+    }
+  }
+
   void _applyFilters() {
-    filteredUsers = users.where((user) {
-      final matchesSearch = user['phone'].toString().contains(searchQuery) ||
-          (user['technician']?['fullName'].toString() ?? '').toLowerCase().contains(searchQuery.toLowerCase());
-      final matchesStatus = statusFilter == null || user['status'] == statusFilter;
-      final matchesProvince = selectedProvince == null || selectedProvince == 'Tất cả' || user['technician']?['province'] == selectedProvince;
-      final matchesServices = selectedServices.isEmpty || (user['technician']?['services'] as List?)!.any((s) => selectedServices.contains(s));
-      // final matchesServices = selectedServices.isEmpty || (user['technician']?['services'] as List?)!.any((s) => selectedServices.contains(s)) ?? false;
-      return matchesSearch && matchesStatus && matchesProvince && matchesServices;
+    filteredTechnicians = technicians.where((tech) {
+      final userPhone = tech['userId']?['phone']?.toString() ?? '';
+      final technicianName = tech['fullName']?.toString() ?? '';
+
+      final matchesSearch = userPhone.contains(searchQuery) ||
+          technicianName.toLowerCase().contains(searchQuery.toLowerCase());
+
+      final userStatus = tech['userId']?['status'] ?? 'inactive';
+      final matchesStatus = statusFilter == null || userStatus == statusFilter;
+
+      final matchesDistrict = selectedDistrict == null ||
+          selectedDistrict == 'Tất cả' ||
+          (tech['districts'] as List?)?.contains(selectedDistrict) == true;
+
+      final matchesServices = selectedServices.isEmpty ||
+          (tech['services'] as List?)?.any((s) => selectedServices.contains(s)) == true;
+
+      return matchesSearch && matchesStatus && matchesDistrict && matchesServices;
     }).toList();
 
-    filteredUsers.sort((a, b) {
-      if (a['status'] == 'active' && b['status'] != 'active') return -1;
-      if (a['status'] != 'active' && b['status'] == 'active') return 1;
+    filteredTechnicians.sort((a, b) {
+      final statusA = a['userId']?['status'] ?? 'inactive';
+      final statusB = b['userId']?['status'] ?? 'inactive';
+
+      if (statusA == 'active' && statusB != 'active') return -1;
+      if (statusA != 'active' && statusB == 'active') return 1;
       return 0;
     });
   }
 
-  Future<void> _loadProvinces() async {
-    setState(() => isProvincesLoading = true);
-    try {
-      final response = await tinhThanhService.getDetailsTinhThanhApiRoutesService();
-      if (response['code'] == 200 || response['status'] == 'success') {
-        setState(() {
-          provinces = response['data'];
-          filteredProvinces = List.from(provinces);
-          filteredProvinces.insert(0, {'name': 'Tất cả'});
-        });
-      } else {
-        SnackbarHelper.showError(context,'Không thể tải danh sách tỉnh thành');
-      }
-    } catch (e) {
-      SnackbarHelper.showError(context,'Lỗi tải tỉnh thành: $e');
-    } finally {
-      setState(() => isProvincesLoading = false);
-    }
+  void _closeAllFilterPanels() {
+    setState(() {
+      showStatusList = false;
+      showServiceList = false;
+      showDistrictList = false;
+    });
   }
 
   @override
@@ -152,20 +169,26 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
       body: SafeArea(
         child: Stack(
           children: [
+            if (showStatusList || showServiceList || showDistrictList)
+              GestureDetector(
+                onTap: _closeAllFilterPanels,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  color: Colors.transparent,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
+
             Column(
               children: [
                 Row(
                   children: [
-                    // Nút back bên trái
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () => Navigator.pop(context),
                     ),
-
-                    // Spacer đẩy cityName ra giữa
                     const Spacer(),
-
-                    // Tên thành phố chính giữa
                     Text(
                       '${widget.cityName}',
                       style: const TextStyle(
@@ -173,13 +196,21 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
-                    // Spacer đẩy icon sang phải
                     const Spacer(),
-
-                    // Nhóm nút filter bên phải
                     Row(
                       children: [
+                        IconButton(
+                          icon: const Icon(Icons.pin_drop_rounded),
+                          color: selectedDistrict != null ? Colors.blue : Colors.grey,
+                          onPressed: () {
+                            setState(() {
+                              showDistrictList = true;
+                              showStatusList = false;
+                              showServiceList = false;
+                            });
+                          },
+                          tooltip: 'Lọc theo quận/huyện',
+                        ),
                         IconButton(
                           icon: const Icon(Icons.filter_alt_outlined),
                           color: statusFilter != null ? Colors.blue : Colors.grey,
@@ -187,17 +218,19 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                             setState(() {
                               showStatusList = true;
                               showServiceList = false;
+                              showDistrictList = false;
                             });
                           },
                           tooltip: 'Lọc theo trạng thái',
                         ),
                         IconButton(
-                          icon: const Icon(Icons.filter_center_focus),
+                          icon: const Icon(Icons.library_add_check_sharp),
                           color: selectedServices.isNotEmpty ? Colors.blue : Colors.grey,
                           onPressed: () {
                             setState(() {
                               showServiceList = true;
                               showStatusList = false;
+                              showDistrictList = false;
                             });
                           },
                           tooltip: 'Lọc theo dịch vụ',
@@ -210,18 +243,20 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                 _buildSearchSection(),
 
                 Expanded(
-                  child: _buildUserListSection(),
+                  child: _buildTechnicianListSection(),
                 ),
               ],
             ),
+
+            // Filter panels
             if (showStatusList) _buildStatusSelectionWidget(),
             if (showServiceList) _buildServiceSelectionWidget(),
+            if (showDistrictList) _buildDistrictSelectionWidget(),
           ],
         ),
       ),
     );
   }
-
 
   Widget _buildSearchSection() {
     return Padding(
@@ -262,30 +297,6 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
               },
             ),
           ),
-          // const SizedBox(width: 8),
-          // IconButton(
-          //   icon: const Icon(Icons.filter_alt_outlined),
-          //   color: statusFilter != null ? Colors.blue : Colors.grey,
-          //   onPressed: () {
-          //     setState(() {
-          //       showStatusList = true;
-          //       showServiceList = false;
-          //     });
-          //   },
-          //   tooltip: 'Lọc theo trạng thái',
-          // ),
-          // const SizedBox(width: 8),
-          // IconButton(
-          //   icon: const Icon(Icons.filter_center_focus),
-          //   color: selectedServices.isNotEmpty ? Colors.blue : Colors.grey,
-          //   onPressed: () {
-          //     setState(() {
-          //       showServiceList = true;
-          //       showStatusList = false;
-          //     });
-          //   },
-          //   tooltip: 'Lọc theo dịch vụ',
-          // ),
         ],
       ),
     );
@@ -325,11 +336,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () {
-                      setState(() {
-                        showStatusList = false;
-                      });
-                    },
+                    onPressed: _closeAllFilterPanels,
                   ),
                 ],
               ),
@@ -344,7 +351,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                     onTap: () {
                       setState(() {
                         statusFilter = option['value'];
-                        showStatusList = false;
+                        _closeAllFilterPanels();
                         _applyFilters();
                       });
                     },
@@ -403,21 +410,12 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                     child: const Text('Reset'),
                   ),
                   TextButton(
-                    onPressed: () {
-                      setState(() {
-                        showServiceList = false;
-                        _applyFilters();
-                      });
-                    },
+                    onPressed: _closeAllFilterPanels,
                     child: const Text('Apply'),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () {
-                      setState(() {
-                        showServiceList = false;
-                      });
-                    },
+                    onPressed: _closeAllFilterPanels,
                   ),
                 ],
               ),
@@ -450,11 +448,105 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     );
   }
 
-  Widget _buildUserListSection() {
+  Widget _buildDistrictSelectionWidget() {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.4,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  const Text(
+                    'Chọn quận/huyện',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        selectedDistrict = null;
+                        _applyFilters();
+                      });
+                    },
+                    child: const Text('Reset'),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: _closeAllFilterPanels,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: districts.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return ListTile(
+                      title: const Text('Tất cả'),
+                      onTap: () {
+                        setState(() {
+                          selectedDistrict = null;
+                          _closeAllFilterPanels();
+                          _applyFilters();
+                        });
+                      },
+                      trailing: selectedDistrict == null
+                          ? const Icon(Icons.check, color: Colors.blue)
+                          : null,
+                    );
+                  }
+
+                  final district = districts[index - 1];
+                  final districtName = district['name'] ?? '';
+                  final isSelected = selectedDistrict == districtName;
+
+                  return ListTile(
+                    title: Text(districtName),
+                    onTap: () {
+                      setState(() {
+                        selectedDistrict = districtName;
+                        _closeAllFilterPanels();
+                        _applyFilters();
+                      });
+                    },
+                    trailing: isSelected
+                        ? const Icon(Icons.check, color: Colors.blue)
+                        : null,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTechnicianListSection() {
     return isLoading
         ? const Center(child: CircularProgressIndicator())
-        : filteredUsers.isEmpty
-        ? const Center(child: Text('Không có người dùng nào phù hợp'))
+        : filteredTechnicians.isEmpty
+        ? const Center(child: Text('Không có kỹ thuật viên nào phù hợp'))
         : Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: GridView.builder(
@@ -464,16 +556,19 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
           mainAxisSpacing: 12,
           childAspectRatio: 120 / 228,
         ),
-        itemCount: filteredUsers.length,
+        itemCount: filteredTechnicians.length,
         itemBuilder: (context, index) {
-          final user = filteredUsers[index];
-          final hasTechnician = user['technician'] != null;
-          final technician = hasTechnician ? user['technician'] : null;
-          final avatarUrl = hasTechnician && technician?['avatar']?['url'] != null
-              ? technician!['avatar']['url'] ?? ''
-              : null;
+          final technician = filteredTechnicians[index];
+          final user = technician['userId'] ?? {};
+          final avatarUrl = technician['avatar']?['url'];
+          final status = user['status'] ?? 'inactive';
+          final fullName = technician['fullName'] ?? 'Không có tên';
+          final yearOfBirth = technician['yearOfBirth']?.toString() ?? 'Chưa có';
+          final services = technician['services'] as List<dynamic>? ?? [];
+          final phone = user['phone'] ?? '';
+
           return GestureDetector(
-            onTap: () => _showUserDetails(user),
+            onTap: () => _showTechnicianDetails(technician),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
@@ -496,19 +591,19 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                     child: avatarUrl != null
                         ? Image.network(
                       avatarUrl,
-                      height: 110,
+                      height: 100,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
                           Container(
-                            height: 200,
+                            height: 100,
                             color: Colors.grey[300],
-                            child: const Icon(Icons.person, size: 50, color: Colors.grey),
+                            child: const Icon(Icons.person, size: 40, color: Colors.grey),
                           ),
                     )
                         : Container(
-                      height: 140,
+                      height: 110,
                       color: Colors.grey[300],
-                      child: const Icon(Icons.person, size: 50, color: Colors.grey),
+                      child: const Icon(Icons.person, size: 40, color: Colors.grey),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -517,7 +612,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (user['status'] == 'active') ...[
+                        if (status == 'active') ...[
                           Container(
                             width: 8,
                             height: 8,
@@ -529,15 +624,22 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                           ),
                         ],
                         Flexible(
-                          child: Text(
-                            technician?['fullName'] ?? 'Không có tên',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          child: SizedBox(
+                            height: 20,
+                            child: Marquee(
+                              text: fullName,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              scrollAxis: Axis.horizontal,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              blankSpace: 50.0,
+                              velocity: 30.0,
+                              startAfter: const Duration(seconds: 1),
+                              pauseAfterRound: const Duration(seconds: 1),
+                              showFadingOnlyWhenScrolling: false,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
                           ),
                         ),
                       ],
@@ -549,23 +651,33 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          '${technician?['yearOfBirth'] ?? 'N/A'}',
+                          'Năm sinh: $yearOfBirth',
                           style: const TextStyle(fontSize: 12),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                         ),
-
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: (technician?['services'] as List<dynamic>? ?? [])
-                              .map((service) => Text(
-                            service.toString(),
-                            style: const TextStyle(fontSize: 12),
-                            textAlign: TextAlign.center,
-                          ))
-                              .toList(),
-                        )
+                        // Text(
+                        //   'SĐT: $phone',
+                        //   style: const TextStyle(fontSize: 10, color: Colors.grey),
+                        //   maxLines: 1,
+                        //   overflow: TextOverflow.ellipsis,
+                        //   textAlign: TextAlign.center,
+                        // ),
+                        const SizedBox(height: 4),
+                        ...services.take(3).map((service) => Text(
+                          service.toString(),
+                          style: TextStyle(fontSize: 12, color: ColorConfig.textPrimary),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )).toList(),
+                        // if (services.length > 2)
+                        //   Text(
+                        //     '+${services.length - 2} dịch vụ khác',
+                        //     style: const TextStyle(fontSize: 9, color: Colors.grey),
+                        //     textAlign: TextAlign.center,
+                        //   ),
                       ],
                     ),
                   ),
@@ -578,11 +690,11 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
     );
   }
 
-  void _showUserDetails(Map<String, dynamic> user) {
+  void _showTechnicianDetails(Map<String, dynamic> technician) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => UserDetailWidgetAdmin(user: user),
+      builder: (context) => UserDetailWidgetAdmin(user: technician),
     );
   }
 

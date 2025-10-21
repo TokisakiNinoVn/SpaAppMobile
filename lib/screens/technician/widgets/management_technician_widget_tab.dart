@@ -519,7 +519,7 @@ class _UserDetailWidgetState extends State<UserDetailWidget> {
                       ),
                     ),
                   ),
-                  const Divider(height: 32),
+                  // const Divider(height: 32),
                   const SizedBox(height: 16),
                   const Text(
                     'Thông tin Kỹ thuật viên',
@@ -527,27 +527,33 @@ class _UserDetailWidgetState extends State<UserDetailWidget> {
                   ),
                   const Divider(),
                   _buildDetailRow('Tên đầy đủ', widget.user['fullName']),
+                  const Divider(height: 10),
                   _buildDetailRow('Tỉnh/Thành phố', widget.user['province']),
+                  const Divider(height: 10),
                   _buildDetailRow('Địa chỉ', widget.user['address']),
-                  _buildDetailRow('Kinh nghiệm', widget.user['experience']),
-                  _buildDetailRow('Giới thiệu', widget.user['bio']),
+                  const Divider(height: 10),
+
+                  // _buildDetailRow('Kinh nghiệm', widget.user['experience']),
+                  // _buildDetailRow('Giới thiệu', widget.user['bio']),
                   _buildDetailRow(
                     'Tình trạng hồ sơ',
                     widget.user['isActive'] == true
                         ? 'Đã được phê duyệt'
                         : 'Chưa được phê duyệt',
                   ),
+                  const Divider(height: 10),
+
                   if (widget.user['images'] != null &&
                       (widget.user['images'] as List).isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    const Text(
-                      'Hình ảnh',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Divider(),
+                    // const Text(
+                    //   'Hình ảnh',
+                    //   style: TextStyle(
+                    //     fontSize: 18,
+                    //     fontWeight: FontWeight.bold,
+                    //   ),
+                    // ),
+                    // const Divider(),
                     SizedBox(
                       height: 100,
                       child: ListView.builder(

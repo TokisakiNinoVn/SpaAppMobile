@@ -168,11 +168,12 @@ class _AccountAdminTabState extends State<AccountAdminTab> {
                           width: 2,
                         ),
                       ),
-                      child: Icon(
-                        Icons.person,
-                        size: 50,
-                        color: ColorConfig.primary,
-                      ),
+                      // child: Icon(
+                      //   Icons.person,
+                      //   size: 50,
+                      //   color: ColorConfig.primary,
+                      // ),
+                      child: Image.asset('lib/assets/images/spa_logo.png'),
                     ),
                     const SizedBox(height: 16),
                     Text(

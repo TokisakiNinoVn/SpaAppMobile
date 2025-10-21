@@ -25,7 +25,7 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
   final fullnameController = TextEditingController();
   final addressController = TextEditingController();
   final experienceDescriptionController = TextEditingController();
-  final bioController = TextEditingController();
+  // final bioController = TextEditingController();
   final technicianService = TechnicianService();
   final tinhThanhService = TinhThanhService();
 
@@ -80,7 +80,7 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
     fullnameController.dispose();
     addressController.dispose();
     // experienceDescriptionController.dispose();
-    bioController.dispose();
+    // bioController.dispose();
     super.dispose();
   }
 
@@ -153,7 +153,7 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
     final fullname = fullnameController.text.trim();
     final address = addressController.text.trim();
     // final experienceDesc = experienceDescriptionController.text.trim();
-    final bio = bioController.text.trim();
+    // final bio = bioController.text.trim();
 
     if (fullname.isEmpty) {
       SnackbarHelper.showWarning(context, 'Vui lòng nhập họ tên');
@@ -196,7 +196,7 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
             .map((entry) => entry.key)
             .toList(),
         'images': images,
-        'bio': bio,
+        // 'bio': bio,
       };
 
 
@@ -205,9 +205,8 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
         SnackbarHelper.showSuccess(context, 'Đã thêm hồ sơ vui lòng chờ duyệt');
         context.go('/home-technician');
       } else {
-        SnackbarHelper.showError(
-            context, response['message'] ?? 'Có lỗi xảy ra khi tạo hồ sơ');
-        print('Lỗi khi tạo hồ sơ: ${response['message']}');
+        SnackbarHelper.showError(context, response['message'] ?? 'Có lỗi xảy ra khi tạo hồ sơ');
+        print('Lỗi khi tạo hồ sơ: ${response['message']} - $response');
       }
     } catch (e) {
       SnackbarHelper.showError(context, 'Lỗi hệ thống: $e');
@@ -367,7 +366,6 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
       ),
     );
   }
-
 
   void _showProvinceBottomSheet() {
     showModalBottomSheet(
@@ -788,7 +786,8 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
               const SizedBox(height: 7),
               _buildTextField(
                 controller: fullnameController,
-                label: 'Họ và tên',
+                label: 'Họ và tên (Kèm theo tên Zalo)',
+                hint: 'vd: Hoàng Anh Thư - Anh Thư'
               ),
               const SizedBox(height: 7),
               Row(
@@ -854,7 +853,7 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
               _buildTextField(
                 controller: addressController,
                 label: 'Địa chỉ nơi ở',
-                hint: 'Số nhà, đường, phường, xã, thành phố, tỉnh...',
+                hint: 'Số nhà, đường,...',
                 maxLines: 1,
               ),
               const SizedBox(height: 7),
@@ -879,11 +878,11 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              _buildTextField(
-                controller: bioController,
-                label: 'Giới thiệu thêm',
-                maxLines: 2,
-              ),
+              // _buildTextField(
+              //   controller: bioController,
+              //   label: 'Giới thiệu thêm',
+              //   maxLines: 2,
+              // ),
               const SizedBox(height: 12),
               _buildServicesSection(),
               const SizedBox(height: 12),
@@ -939,6 +938,38 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
     );
   }
 
+  // Widget _buildTextField({
+  //   required TextEditingController controller,
+  //   required String label,
+  //   String? hint,
+  //   int maxLines = 1,
+  //   int? maxLength,
+  // }) {
+  //   return TextField(
+  //     controller: controller,
+  //     maxLines: maxLines,
+  //     maxLength: maxLength,
+  //     decoration: InputDecoration(
+  //       labelText: label,
+  //       hintText: hint,
+  //       labelStyle: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary, fontSize: 14),
+  //       filled: true,
+  //       fillColor: Colors.white.withOpacity(0.9),
+  //       enabledBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(50),
+  //         borderSide: BorderSide(color: Colors.grey[300]!),
+  //       ),
+  //       focusedBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(50),
+  //         borderSide: const BorderSide(color: Color(0xFFD4A373), width: 1),
+  //       ),
+  //       contentPadding:
+  //       const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+  //     ),
+  //     style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
+  //   );
+  // }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -946,28 +977,46 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
     int maxLines = 1,
     int? maxLength,
   }) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      maxLength: maxLength,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        labelStyle: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: ThemeConfig.appTextStyle(
+            color: ColorConfig.textPrimary,
+            fontSize: 14,
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: const BorderSide(color: Color(0xFFD4A373), width: 1),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          maxLength: maxLength,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: ThemeConfig.appTextStyle(
+              color: ColorConfig.textSecondary.withOpacity(0.6),
+              fontSize: 14,
+            ),
+            labelStyle: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.9),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(50),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(50),
+              borderSide: BorderSide(color: ColorConfig.textSecondary, width: 1),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 12,
+              horizontal: 16,
+            ),
+          ),
+          style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
         ),
-        contentPadding:
-        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      ),
-      style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary),
+      ],
     );
   }
 }

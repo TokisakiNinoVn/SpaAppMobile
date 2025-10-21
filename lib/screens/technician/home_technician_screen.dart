@@ -62,9 +62,9 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
         return const PolicyTabWidget();
       case 2:
         return const SupportTabWidget();
-      case 3:
-        return const AccountTab();
       case 4:
+        return const AccountTab();
+      case 3:
         if (!isTechnicianActive) {
           return const Center(child: Text("Hồ sơ chưa được duyệt"));
         }
@@ -92,8 +92,8 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Chính sách'),
           BottomNavigationBarItem(icon: Icon(Icons.phone), label: 'Hỗ trợ'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Tài khoản'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Hồ sơ'),
+          BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Tài khoản'),
         ]
             : const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),

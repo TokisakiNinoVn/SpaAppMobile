@@ -1,6 +1,6 @@
 [
   {
-    "id": 1,
+    "id": 4,
     "name": "TP. Hồ Chí Minh",
     "children": [
       { "id": 101, "name": "Quận 1" },
@@ -21,7 +21,7 @@
     ]
   },
   {
-    "id": 2,
+    "id": 1,
     "name": "Hà Nội",
     "children": [
       { "id": 201, "name": "Quận Ba Đình" },
@@ -52,7 +52,7 @@
     ]
   },
   {
-    "id": 4,
+    "id": 2,
     "name": "Hải Phòng",
     "children": [
       { "id": 401, "name": "Quận Hồng Bàng" },

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+// import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 
@@ -11,6 +11,8 @@ import 'package:spa_app/services/tinhthanh_service.dart';
 import 'package:spa_app/services/file_service.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
+
+import '../../../config/color_config.dart';
 
 class UserUpdateTechnicianScreen extends StatefulWidget {
   const UserUpdateTechnicianScreen({super.key});
@@ -146,7 +148,7 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
         'commune': selectedCommune['name'],
         'address': address,
         'experience': experience,
-        'experienceDescription': experienceDesc,
+        // 'experienceDescription': experienceDesc,
         'images': images,
         'bio': bio,
       };
@@ -272,7 +274,7 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
   void _showSnack(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: GoogleFonts.lora(color: Colors.white)),
+        content: Text(message, style: TextStyle(color: Colors.white)),
         backgroundColor: isError ? Colors.redAccent : Colors.green,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -298,11 +300,11 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
         value: value,
         isExpanded: true,
         underline: const SizedBox(),
-        hint: Text(label, style: GoogleFonts.lora(color: const Color(0xFF8B5E3C))),
+        hint: Text(label),
         items: items.map((item) {
           return DropdownMenuItem(
             value: item,
-            child: Text(item['name'], style: GoogleFonts.lora()),
+            child: Text(item['name'], style: TextStyle(color: ColorConfig.textSecondary)),
           );
         }).toList(),
         onChanged: isLoading ? null : onChanged,
@@ -458,10 +460,8 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
               children: [
                 // Image.asset('lib/assets/images/spa_logo.png', height: 100),
                 // const SizedBox(height: 16),
-                Text('Serene Spa', style: GoogleFonts.playfairDisplay(
-                    fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF8B5E3C))),
-                Text('Tạo hồ sơ kĩ thuật viên', style: GoogleFonts.lora(
-                    fontSize: 18, color: const Color(0xFF8B5E3C))),
+                Text('Serene Spa', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF8B5E3C))),
+                Text('Tạo hồ sơ kĩ thuật viên', style: TextStyle( fontSize: 18, color: const Color(0xFF8B5E3C))),
                 const SizedBox(height: 40),
 
                 // Avatar Section
@@ -531,7 +531,7 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
                     value: experience,
                     isExpanded: true,
                     underline: const SizedBox(),
-                    hint: Text('Chọn kinh nghiệm', style: GoogleFonts.lora(color: const Color(0xFF8B5E3C))),
+                    hint: Text('Chọn kinh nghiệm', style: TextStyle(color: const Color(0xFF8B5E3C))),
                     items: const [
                       DropdownMenuItem(value: 'Có kinh nghiệm', child: Text('Có kinh nghiệm')),
                       DropdownMenuItem(value: 'Không có kinh nghiệm', child: Text('Không có kinh nghiệm')),
@@ -561,7 +561,7 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
                 const SizedBox(height: 16),
 
                 // Image Upload
-                Text('Hình ảnh (tối đa 5 ảnh)', style: GoogleFonts.lora(fontSize: 16)),
+                Text('Hình ảnh (tối đa 5 ảnh)', style: TextStyle(fontSize: 16)),
                 const SizedBox(height: 8),
                 _buildImageGrid(),
                 const SizedBox(height: 20),
@@ -581,7 +581,7 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
                     ),
                     child: isLoading
                         ? const CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                        : Text('Tạo hồ sơ', style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w600)),
+                        : Text('Tạo hồ sơ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -600,7 +600,7 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
                       elevation: 5,
                       shadowColor: Colors.black.withOpacity(0.2),
                     ),
-                    child: Text('Hủy', style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w600)),
+                    child: Text('Hủy', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],
@@ -625,7 +625,7 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: const Color(0xFF8B5E3C)),
-        labelStyle: GoogleFonts.lora(color: const Color(0xFF8B5E3C), fontSize: 16),
+        labelStyle: TextStyle(color: const Color(0xFF8B5E3C), fontSize: 16),
         filled: true,
         fillColor: Colors.white.withOpacity(0.9),
         enabledBorder: OutlineInputBorder(
@@ -638,7 +638,7 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
         ),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
-      style: GoogleFonts.lora(color: Colors.black87, fontSize: 16),
+      style: TextStyle(color: Colors.black87, fontSize: 16),
     );
   }
 
