@@ -33,6 +33,7 @@ dependencies:
   firebase_auth: ^5.6.2
   web_socket_channel: ^3.0.3
   marquee: ^2.3.0
+  diacritic: ^0.1.6
 
 #  image_gallery_saver: ^2.0.3
 #  saver_gallery: ^4.0.1

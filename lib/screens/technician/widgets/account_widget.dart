@@ -163,29 +163,21 @@ class _AccountTabState extends State<AccountTab> {
               ),
             ),
           // Button Đăng xuất
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => _showLogoutDialog(context),
-            child: const Text('Đăng xuất'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorConfig.secondary,
-              foregroundColor: Colors.white,
-            ),
-          ),
 
-          const SizedBox(height: 16),
+          // const SizedBox(height: 16),
           // _buildInfoTile('Họ tên (tài khoản)', user?['fullname']),
+          // _buildInfoTile('ID', user?['id']),
           _buildInfoTile('Số điện thoại', user?['phone']),
-          _buildInfoTile('Vai trò', user?['roles'] == 'ktv' ? 'Kỹ thuật viên' : user?['roles']),
+          // _buildInfoTile('Vai trò', user?['roles'] == 'ktv' ? 'Kỹ thuật viên' : user?['roles']),
           // _buildInfoTile('Trạng thái', user?['status'] == 'active' ? 'Đang hoạt động' : 'Bị khóa'),
 
-          const Divider(height: 32),
+          const Divider(height: 10),
           _buildInfoTile('Tên kỹ thuật viên', technician?['fullName']),
           _buildInfoTile('Khu vực làm việc',
               'Địa chỉ 1: ${technician?['address'] ?? ''}\nĐịa chỉ 2: ${technician?['province'] ?? ''}'),
           _buildInfoTile('Kinh nghiệm', technician?['experience']),
           // _buildInfoTile('Mô tả thêm kinh nghiệm', technician?['experienceDescription']),
-          _buildInfoTile('Mô tả cá nhân', technician?['bio']),
+          // _buildInfoTile('Mô tả cá nhân', technician?['bio']),
           // _buildInfoTile('Trạng thái phê duyệt', technician?['isApproved'] == true ? 'Đã duyệt' : 'Chưa duyệt'),
 
           const SizedBox(height: 16),
@@ -221,6 +213,16 @@ class _AccountTabState extends State<AccountTab> {
                 },
               ),
             ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _showLogoutDialog(context),
+              child: const Text('Đăng xuất'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ColorConfig.secondary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+
           ],
         ],
       ),

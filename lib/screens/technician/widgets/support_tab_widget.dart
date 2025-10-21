@@ -7,7 +7,7 @@ class SupportTabWidget extends StatelessWidget {
   const SupportTabWidget({super.key});
 
   final String zaloNumber = '0867807841';
-  final String facebookUrl = 'https://www.facebook.com/yourprofile';
+  final String facebookUrl = 'https://www.facebook.com';
 
   void _copyToClipboard(BuildContext context, String text, String label) {
     Clipboard.setData(ClipboardData(text: text));

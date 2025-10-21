@@ -706,26 +706,39 @@ class UserDetailWidget extends StatelessWidget {
                       ),
                     ),
                   ],
-                  const Divider(height: 32),
+                  const Divider(height: 10),
                   _buildCopyableDetailRow(context, 'Số điện thoại', user['phone']),
+                  const Divider(),
+
                   _buildCopyableDetailRow(context, 'Mật khẩu', user['password']),
 
                   if (hasTechnician) ...[
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Thông tin Kỹ thuật viên',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    // const SizedBox(height: 16),
+                    // const Text(
+                    //   'Thông tin Kỹ thuật viên',
+                    //   style: TextStyle(
+                    //     fontSize: 18,
+                    //     fontWeight: FontWeight.bold,
+                    //   ),
+                    // ),
                     const Divider(),
                     _buildDetailRow('Tên đầy đủ', technician?['fullName']),
+                    const Divider(),
+
                     _buildDetailRow('Tỉnh/Thành phố làm việc', technician?['province']),
+                    const Divider(),
+
                     _buildListDetail('Quận/Huyện làm việc', technician?['districts']),
+                    const Divider(),
+
                     _buildDetailRow('Địa chỉ', technician?['address']),
+                    const Divider(),
+
                     _buildDetailRow('Kinh nghiệm', technician?['experience']),
-                    _buildDetailRow('Phê duyệt', technician?['isActive'] == false ? 'Chưa duyệt' : 'Chưa duyệt'),
+                    const Divider(),
+
+                    _buildDetailRow('Phê duyệt', technician?['isActive'] == false ? 'Chưa duyệt' : 'Đã duyệt'),
+                    const Divider(),
 
                     if (technician?['images'] != null &&
                         (technician!['images'] as List).isNotEmpty) ...[

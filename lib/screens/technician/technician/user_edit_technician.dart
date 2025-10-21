@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -26,7 +25,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   final UserService userService = UserService();
   final fullnameController = TextEditingController();
   final addressController = TextEditingController();
-  final bioController = TextEditingController();
+  // final bioController = TextEditingController();
   final technicianService = TechnicianService();
   final tinhThanhService = TinhThanhService();
 
@@ -106,7 +105,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
 
     fullnameController.text = technicianData?['fullName'] ?? '';
     addressController.text = technicianData?['address'] ?? '';
-    bioController.text = technicianData?['bio'] ?? '';
+    // bioController.text = technicianData?['bio'] ?? '';
     experience = technicianData?['experience'] ?? '1 năm';
     yearOfBirth = technicianData?['yearOfBirth'];
     services = List<String>.from(technicianData?['services'] ?? []);
@@ -191,7 +190,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
 
     final fullname = fullnameController.text.trim();
     final address = addressController.text.trim();
-    final bio = bioController.text.trim();
+    // final bio = bioController.text.trim();
 
     if (fullname.isEmpty) {
       _showSnack('Vui lòng nhập họ tên');
@@ -230,7 +229,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
         'address': address,
         'experience': experience,
         'images': images.toList(),
-        'bio': bio,
+        // 'bio': bio,
         'services': services,
         'yearOfBirth': yearOfBirth,
       };
@@ -353,7 +352,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   void _showSnack(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: GoogleFonts.lora(color: Colors.white)),
+        content: Text(message, style: TextStyle(color: Colors.white)),
         backgroundColor: isError ? Colors.redAccent : Colors.green,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -410,7 +409,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
             Expanded(
               child: Text(
                 value,
-                style: GoogleFonts.lora(
+                style: TextStyle(
                   color: value != label ? Colors.black87 : const Color(0xFF8B5E3C),
                   fontSize: 16,
                 ),
@@ -442,7 +441,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
               padding: const EdgeInsets.all(16.0),
               child: Text(
                 "Chọn Tỉnh/Thành",
-                style: GoogleFonts.lora(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             Expanded(
@@ -490,7 +489,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
                     "Chọn Quận/Huyện",
-                    style: GoogleFonts.lora(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
@@ -523,7 +522,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B5E3C),
+                      backgroundColor: const Color(0xFFFFFFFF),
                       foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 50),
                     ),
@@ -548,7 +547,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
               padding: const EdgeInsets.all(16.0),
               child: Text(
                 "Chọn Năm Sinh",
-                style: GoogleFonts.lora(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             Expanded(
@@ -587,7 +586,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
               padding: const EdgeInsets.all(16.0),
               child: Text(
                 "Chọn Kinh Nghiệm",
-                style: GoogleFonts.lora(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             Expanded(
@@ -627,10 +626,13 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Dịch vụ cung cấp', style: GoogleFonts.lora(
-            color: const Color(0xFF8B5E3C),
-            fontSize: 16,
-          )),
+          Text(
+            'Dịch vụ cung cấp',
+            style: const TextStyle(
+              color: Color(0xFF8B5E3C),
+              fontSize: 16,
+            ),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -638,7 +640,13 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
             children: availableServices.map((service) {
               final isSelected = services.contains(service);
               return FilterChip(
-                label: Text(service, style: GoogleFonts.lora()),
+                label: Text(
+                  service,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : const Color(0xFF8B5E3C),
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
                 selected: isSelected,
                 onSelected: (selected) {
                   setState(() {
@@ -651,7 +659,10 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                 },
                 selectedColor: const Color(0xFFD4A373),
                 checkmarkColor: Colors.white,
-                backgroundColor: Colors.grey[200],
+                backgroundColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? const Color(0xFFD4A373) : Colors.grey[300]!,
+                ),
               );
             }).toList(),
           ),
@@ -659,6 +670,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       ),
     );
   }
+
 
   Widget _buildImageGrid() {
     return GridView.builder(
@@ -817,13 +829,13 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8F4E9), Color(0xFFE9D8C8)],
-          ),
-        ),
+        // decoration: const BoxDecoration(
+        //   gradient: LinearGradient(
+        //     begin: Alignment.topCenter,
+        //     end: Alignment.bottomCenter,
+        //     colors: [Color(0xFFF8F4E9), Color(0xFFE9D8C8)],
+        //   ),
+        // ),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -948,18 +960,18 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                 const SizedBox(height: 16),
 
                 // Giới thiệu bản thân
-                _buildTextField(
-                  controller: bioController,
-                  label: 'Giới thiệu bản thân (tối đa 100 ký tự)',
-                  icon: Icons.info,
-                  maxLines: 3,
-                  maxLength: 100,
-                ),
+                // _buildTextField(
+                //   controller: bioController,
+                //   label: 'Giới thiệu bản thân (tối đa 100 ký tự)',
+                //   icon: Icons.info,
+                //   maxLines: 3,
+                //   maxLength: 100,
+                // ),
                 const SizedBox(height: 16),
 
                 // Hình ảnh
                 Text('Hình ảnh (tối đa 5 ảnh, tối thiểu 3 ảnh)',
-                  style: GoogleFonts.lora(
+                  style: TextStyle(
                     fontSize: 16,
                     color: const Color(0xFF8B5E3C),
                     fontWeight: FontWeight.w600,
@@ -981,7 +993,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: Text('Hủy bỏ', style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w600)),
+                        child: Text('Hủy bỏ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -996,7 +1008,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                         ),
                         child: isLoading
                             ? const CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                            : Text('Cập nhật', style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w600)),
+                            : Text('Cập nhật', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ],
@@ -1025,7 +1037,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: const Color(0xFF8B5E3C)),
-        labelStyle: GoogleFonts.lora(color: const Color(0xFF8B5E3C), fontSize: 16),
+        labelStyle: TextStyle(color: const Color(0xFF8B5E3C), fontSize: 16),
         filled: true,
         fillColor: Colors.white.withOpacity(0.9),
         enabledBorder: OutlineInputBorder(
@@ -1038,7 +1050,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
         ),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
-      style: GoogleFonts.lora(color: Colors.black87, fontSize: 16),
+      style: TextStyle(color: Colors.black87, fontSize: 16),
     );
   }
 
@@ -1046,7 +1058,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   void dispose() {
     fullnameController.dispose();
     addressController.dispose();
-    bioController.dispose();
+    // bioController.dispose();
     super.dispose();
   }
 }

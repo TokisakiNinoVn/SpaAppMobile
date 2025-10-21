@@ -6,6 +6,7 @@ class TechnicianApiRoutes {
   static const String updateTechnician = '${AppConfig.apiUrlPrivate}/technician/update';
   static const String createTechnicianNoAccount = '${AppConfig.apiUrlPrivate}/technician/create-no-account';
   static const String detailTechnician = '${AppConfig.apiUrlPrivate}/technician';
+  static const String filterTechnician = '${AppConfig.apiUrlPrivate}/technician/filter';
 
   static const String addTechnician = '${AppConfig.apiUrlPrivate}/technician/create-no-account';
   static const String listTechnicianCreateByUser = '${AppConfig.apiUrlPrivate}/technician/list-technicians-user';

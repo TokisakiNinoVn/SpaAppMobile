@@ -71,6 +71,12 @@ class TechnicianService {
       TechnicianApiRoutes.listTechnicianCreateByUser
     );
   }
+
+  Future<Map<String, dynamic>> filterTechnicianByIdProvince(int idProvince) async {
+    return await ApiMethodsPrivate.getRequest(
+        '${TechnicianApiRoutes.filterTechnician}?idProvince=${idProvince}'
+    );
+  }
   Future<Map<String, dynamic>> deleteTechnicianCreateByUser(String? id) async {
     return await ApiMethodsPrivate.deleteRequest(
       '${TechnicianApiRoutes.deleteTechnicianCreateByUser}/$id'

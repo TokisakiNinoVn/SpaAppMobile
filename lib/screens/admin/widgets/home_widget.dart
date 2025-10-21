@@ -8,21 +8,25 @@ class HomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final cities = [
       {
+        "id": 1,
         'name': 'Hà Nội',
         'value': 'Hà Nội',
         'image': 'lib/assets/images/ha_noi.jpg',
       },
       {
+        "id": 2,
         'name': 'Hải Phòng',
         'value': 'Hải Phòng',
         'image': 'lib/assets/images/hai_phong.jpg',
       },
       {
+        "id": 3,
         'name': 'Đà Nẵng',
         'value': 'Đà Nẵng',
         'image': 'lib/assets/images/da_nang.jpg',
       },
       {
+        "id": 4,
         'name': 'Thành phố Hồ Chí Minh',
         'value': 'TP. Hồ Chí Minh',
         'image': 'lib/assets/images/tphcm.jpg',
@@ -51,7 +55,8 @@ class HomeTab extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => CityDetailScreen(
-                          cityName: city['value']!,
+                          cityName: city['value'] as String,
+                          cityId: city['id'] as int,
                         ),
                       ),
                     );
@@ -64,7 +69,7 @@ class HomeTab extends StatelessWidget {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: Image.asset(
-                            city['image']!,
+                            city['image'] as String,
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
@@ -80,7 +85,7 @@ class HomeTab extends StatelessWidget {
                           bottom: 12,
                           left: 12,
                           child: Text(
-                            city['name']!,
+                            city['name'] as String,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,

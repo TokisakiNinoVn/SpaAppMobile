@@ -80,7 +80,7 @@ class RealtimeService {
 
       _channel = IOWebSocketChannel(socket);
 
-      print('[RealtimeService] ✅ WebSocket đã sẵn sàng');
+      // print('[RealtimeService] ✅ WebSocket đã sẵn sàng');
 
       _channel.stream.listen(
         _handleEvent,
@@ -95,8 +95,6 @@ class RealtimeService {
       debugPrint('[RealtimeService] ❌ Không thể kết nối WebSocket: $e');
     }
   }
-
-
 
   Future<void> _handleEvent(dynamic event) async {
     try {

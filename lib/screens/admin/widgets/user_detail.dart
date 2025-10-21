@@ -21,6 +21,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
   @override
   void initState() {
     super.initState();
+    // debugPrint("Infor technician: ${widget.user}");
     _loadRole();
   }
 
@@ -62,7 +63,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
           Expanded(
             flex: 3,
             child: Text(
-              value?.toString() ?? 'N/A',
+              value?.toString() ?? 'Không có',
               style: const TextStyle(fontSize: 14),
             ),
           ),
@@ -95,7 +96,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  value ?? 'N/A',
+                  value ?? 'Không có',
                   style: const TextStyle(fontSize: 14),
                 ),
               ],
@@ -130,7 +131,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
           ),
           const SizedBox(height: 4),
           if (items == null || items.isEmpty)
-            const Text('N/A')
+            const Text('Không có')
           else
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,13 +146,125 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
     );
   }
 
+  // Hàm xác định trạng thái tài khoản dựa trên status và lastLogin
+  Widget _buildAccountStatus() {
+    final userInfo = widget.user['userId'] ?? {};
+    final String status = userInfo['status'] ?? 'inactive';
+    final String? lastLogin = userInfo['lastLogin'];
+
+    // Nếu đang active
+    if (status == 'active') {
+      return Row(
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: const BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'Đang hoạt động',
+            style: TextStyle(fontSize: 14),
+          ),
+        ],
+      );
+    }
+
+    // Nếu inactive và có lastLogin
+    if (lastLogin != null) {
+      // final DateTime? lastLoginTime = FormatHelper.formatDateTime(lastLogin) as DateTime?;
+      final DateTime lastLoginTime = DateTime.parse(lastLogin);
+
+      if (lastLoginTime != null) {
+        // final DateTime now = DateTime.now();
+        final Duration difference = DateTime.now().difference(lastLoginTime);
+        // final Duration difference = now.difference(lastLoginTime);
+
+        // Nếu thời gian đăng nhập cuối dưới 1 ngày
+        if (difference.inDays < 1) {
+          String timeAgo;
+          if (difference.inHours >= 1) {
+            timeAgo = 'Hoạt động ${difference.inHours} tiếng trước';
+          } else if (difference.inMinutes >= 1) {
+            timeAgo = 'Hoạt động ${difference.inMinutes} phút trước';
+          } else {
+            timeAgo = 'Hoạt động vừa xong';
+          }
+
+          return Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                timeAgo,
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+            ],
+          );
+        } else {
+          // Nếu quá 1 ngày, hiển thị thời gian cụ thể
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Lần cuối đăng nhập:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      FormatHelper.formatDateTime(lastLogin),
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+      }
+    }
+
+    // Trường hợp không có lastLogin hoặc không xác định được
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: Colors.grey[400],
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        const Text(
+          'Chưa đăng nhập lần nào',
+          style: TextStyle(fontSize: 14),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bool hasTechnician = widget.user['technician'] != null;
-    final technician = hasTechnician ? widget.user['technician'] : null;
-    final displayName = hasTechnician
-        ? (technician?['fullName'] ?? widget.user['fullname'] ?? 'Không có tên')
-        : widget.user['fullname'] ?? 'Không có tên';
+    final userInfo = widget.user['userId'] ?? {};
+    final displayName = widget.user['fullName'] ?? userInfo['fullname'] ?? 'Không có tên';
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -179,7 +292,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                   Center(
                     child: GestureDetector(
                       onTap: () {
-                        final imageUrl = technician?['avatar']?['url'];
+                        final imageUrl = widget.user['avatar']?['url'];
                         if (imageUrl != null && imageUrl.isNotEmpty) {
                           showDialog(
                             context: context,
@@ -191,9 +304,9 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                       },
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: hasTechnician && technician?['avatar']?['url'] != null
+                        child: widget.user['avatar']?['url'] != null
                             ? Image.network(
-                          technician!['avatar']['url'],
+                          widget.user['avatar']['url'],
                           width: 100,
                           height: 100,
                           fit: BoxFit.cover,
@@ -219,136 +332,103 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                     child: Text(
                       displayName,
                       style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
-
                   const Divider(height: 32),
-                  _buildCopyableDetailRow(context, 'Số điện thoại', widget.user['phone']),
-                  if (_role == 'admin')
-                    _buildCopyableDetailRow(context, 'Mật khẩu', widget.user['password']),
-                  if (_role == 'admin')
-                    _buildDetailRow(
-                      'Trạng thái tài khoản',
-                      widget.user['isActive'] == true ? 'Kích hoạt' : 'Không kích hoạt',
+                  _buildCopyableDetailRow(context, 'Số điện thoại', userInfo['phone']),
+                  const Divider(),
+
+                  if (_role == 'admin') ...[
+                    _buildCopyableDetailRow(context, 'Mật khẩu', userInfo['password']),
+                    const Divider(),
+                  ],
+
+                  // Cập nhật phần hiển thị trạng thái tài khoản
+                  if (_role == 'admin') ... [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              'Trạng thái tài khoản',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: _buildAccountStatus(),
+                          ),
+                        ],
+                      ),
                     ),
-                  if (_role == 'admin')
-                    _buildDetailRow(
-                      'Lần đăng nhập cuối',
-                      widget.user['lastLogin'] != null
-                          ? FormatHelper.formatDateTime(widget.user['lastLogin'])
-                          : 'Không có',
-                    ),
-                  if (_role == 'admin')
-                    _buildDetailRow(
-                      'Ngày tạo',
-                      widget.user['createdAt'] != null
-                          ? FormatHelper.formatDateTime(widget.user['createdAt'])
-                          : 'Không có',
-                    ),
-                  if (_role == 'admin')
-                    _buildDetailRow(
-                      'Ngày cập nhật',
-                      widget.user['updatedAt'] != null
-                          ? FormatHelper.formatDateTime(widget.user['updatedAt'])
-                          : 'Không có',
-                    ),
-                  if (hasTechnician) ...[
+                    const Divider(),
+                  ],
+
+                  if (_role == 'admin') ... [
+                    // _buildCopyableDetailRow(context, 'ID KTV', widget.user['_id']),
+                    _buildDetailRow('Tên đầy đủ', widget.user['fullName'] ?? 'Không có'),
+                    const Divider(),
+                  ],
+
+                  _buildDetailRow(
+                    'Năm sinh',
+                    widget.user['yearOfBirth']?.toString() ?? 'Không có',
+                  ),
+                  const Divider(),
+                  _buildDetailRow('Địa chỉ', widget.user['address'] ?? 'Không có'),
+                  const Divider(),
+                  _buildDetailRow('Kinh nghiệm', widget.user['experience'] ?? 'Không có'),
+                  const Divider(),
+                  _buildListDetail('Dịch vụ', widget.user['services']),
+                  if (widget.user['images'] != null &&
+                      (widget.user['images'] as List).isNotEmpty) ...[
                     const SizedBox(height: 16),
                     const Text(
-                      'Thông tin Kỹ thuật viên',
+                      'Hình ảnh',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const Divider(),
-                    // if (_role == 'admin')
-                    //   _buildCopyableDetailRow(context, 'ID KTV', technician?['_id']),
-                    _buildDetailRow('Tên đầy đủ', technician?['fullName'] ?? 'N/A'),
-                    _buildDetailRow(
-                      'Năm sinh',
-                      technician?['yearOfBirth']?.toString() ?? 'N/A',
-                    ),
-                    _buildDetailRow(
-                      'Tỉnh/Thành phố làm việc',
-                      technician?['province'] ?? 'N/A',
-                    ),
-                    _buildListDetail(
-                      'Quận/Huyện làm việc',
-                      technician?['districts'],
-                    ),
-                    _buildDetailRow('Địa chỉ', technician?['address'] ?? 'N/A'),
-                    _buildDetailRow('Kinh nghiệm', technician?['experience'] ?? 'N/A'),
-                    _buildListDetail('Dịch vụ', technician?['services']),
-                    // if (_role == 'admin')
-                    //   _buildDetailRow('Giới thiệu', technician?['bio'] ?? 'N/A'),
-                    // if (_role == 'admin')
-                    //   _buildDetailRow(
-                    //     'Trạng thái KTV',
-                    //     technician?['isActive'] == true ? 'Kích hoạt' : 'Không kích hoạt',
-                    //   ),
-                    // if (_role == 'admin')
-                    //   _buildDetailRow(
-                    //     'Ngày tạo KTV',
-                    //     technician?['createdAt'] != null
-                    //         ? FormatHelper.formatDateTime(technician['createdAt'])
-                    //         : 'Không có',
-                    //   ),
-                    // if (_role == 'admin')
-                    //   _buildDetailRow(
-                    //     'Ngày cập nhật KTV',
-                    //     technician?['updatedAt'] != null
-                    //         ? FormatHelper.formatDateTime(technician['updatedAt'])
-                    //         : 'Không có',
-                    //   ),
-                    if (technician?['images'] != null &&
-                        (technician!['images'] as List).isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Hình ảnh',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Divider(),
-                      SizedBox(
-                        height: 100,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: (technician['images'] as List).length,
-                          itemBuilder: (context, index) {
-                            final image = (technician['images'] as List)[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: GestureDetector(
-                                onTap: () => _showFullScreenImages(
-                                  context,
-                                  technician['images'],
-                                  index,
-                                ),
-                                child: Image.network(
-                                  image['url'] ?? '',
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                        width: 100,
-                                        height: 100,
-                                        color: Colors.grey[300],
-                                        child: const Icon(Icons.image_not_supported, size: 50),
-                                      ),
-                                ),
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: (widget.user['images'] as List).length,
+                        itemBuilder: (context, index) {
+                          final image = (widget.user['images'] as List)[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: GestureDetector(
+                              onTap: () => _showFullScreenImages(
+                                context,
+                                widget.user['images'],
+                                index,
                               ),
-                            );
-                          },
-                        ),
+                              child: Image.network(
+                                image['url'] ?? '',
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.image_not_supported, size: 50),
+                                    ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    ],
+                    ),
                   ],
                 ],
               ),
