@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/routes/config/admin_router_config.dart';
 
 import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
@@ -9,15 +10,15 @@ import 'package:spa_app/helper/full_screen_list_image.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/services/realtime_service.dart';
 
-import '../../../helper/snackbar_helper.dart';
+import '../../../../helper/snackbar_helper.dart';
 
-class AccountTab extends StatefulWidget {
-  const AccountTab({super.key});
+class ManagementAccountTechnician extends StatefulWidget {
+  const ManagementAccountTechnician({super.key});
   @override
-  _AccountTabState createState() => _AccountTabState();
+  _ManagementAccountTechnicianState createState() => _ManagementAccountTechnicianState();
 }
 
-class _AccountTabState extends State<AccountTab> {
+class _ManagementAccountTechnicianState extends State<ManagementAccountTechnician> {
   final UserService userService = UserService();
   final TextEditingController _searchController = TextEditingController();
   late RealtimeService _realtimeService;
@@ -278,6 +279,17 @@ class _AccountTabState extends State<AccountTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text("Quản lý tài khoản", style: TextStyle(fontWeight: FontWeight.w600)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_alt_outlined, size: 22),
+            color: Colors.black,
+            onPressed: () {},
+            tooltip: 'Làm mới',
+          ),
+        ]
+      ),
       body: Column(
         children: [
           _buildSearchSection(),
@@ -384,6 +396,7 @@ class _AccountTabState extends State<AccountTab> {
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
                   items: const [
                     DropdownMenuItem(value: 'ktv', child: Text('Kỹ thuật viên')),
+                    DropdownMenuItem(value: '', child: Text('KTV - chưa duyệt')),
                     DropdownMenuItem(value: 'empty', child: Text('Tài khoản trống')),
                     DropdownMenuItem(value: 'quanly', child: Text('Đầu bắn tour')),
                     DropdownMenuItem(value: 'admin', child: Text('Boss (Admin)')),
@@ -487,7 +500,7 @@ class _AccountTabState extends State<AccountTab> {
                 children: [
                   // Avatar + viền theo trạng thái
                   Container(
-                    padding: const EdgeInsets.all(2), // khoảng cách viền
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
@@ -559,6 +572,13 @@ class _AccountTabState extends State<AccountTab> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             IconButton(
+                              icon: const Icon(Icons.history),
+                              tooltip: 'Lịch sử hoạt động',
+                              onPressed: () {
+                                _showChangePasswordDialog(user['_id']);
+                              },
+                            ),
+                            IconButton(
                               icon: const Icon(Icons.key),
                               tooltip: 'Đổi mật khẩu',
                               onPressed: () {
@@ -571,7 +591,7 @@ class _AccountTabState extends State<AccountTab> {
                                 tooltip: 'Chỉnh sửa thông tin',
                                 onPressed: () async {
                                   final result = await context.push(
-                                    '/edit-technician',
+                                    AdminRouterConfig.editTechnician,
                                     extra: user,
                                   );
                                   if (result == true) {
