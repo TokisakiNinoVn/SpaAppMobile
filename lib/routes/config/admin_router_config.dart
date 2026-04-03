@@ -1,11 +1,32 @@
-class CustomerRouterConfig {
+class AdminRouterConfig {
   static String createOrder = "/home-customer/list-technician/create-order-technician";
-  static String updateProfile = "/home-customer/update-profile";
-  static String listLike = "/home-customer/likes";
-  static String toNotificationScreen = "/home-customer/notifications";
 
-  // order
-  static String detailOrder = "/home-customer/detail-order";
+  // Management account
+  static String technicianManagementAccount = "/home-admin/manage-account-technician";
+  static String editTechnician = "/home-admin/manage-account-technician/edit-technician";
 
-  static String home = "/home-customer";
+
+  static String customerManagementAccount = "/home-admin/manage-account-customer";
+
+
+  // Management banner
+  static String managementBanner = "/home-admin/manage-banner";
+  static String createBanner = "/home-admin/manage-banner/create";
+  static String editBanner = "/home-admin/manage-banner/edit";
+
+
+  static String managementDiscount = "/home-admin/manage-discount";
+  static String createDiscount = "/home-admin/manage-discount/create";
+  static String editDiscount = "/home-admin/manage-discount/edit";
+
+
+  static String managementService = "/home-admin/manage-service";
+  static String editService = "/home-admin/manage-service/edit";
+  static String addService = "/home-admin/manage-service/add";
+
+  static String notificationManagement = "/home-admin/manage-notification";
+
+
+  static String settingApp = "/home-admin/settings-app";
+  static String statistical = "/home-admin/statistical";
 }

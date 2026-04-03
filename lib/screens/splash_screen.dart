@@ -37,8 +37,8 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _requestPermissions() async {
     final permissions = [
       Permission.notification,
-      Permission.storage, // For Android <= Android 12
-      Permission.photos, // For iOS (if needed)
+      Permission.storage,
+      Permission.photos,
     ];
 
     for (final permission in permissions) {
@@ -56,45 +56,94 @@ class _SplashScreenState extends State<SplashScreen> {
     await _flutterLocalNotificationsPlugin.initialize(settings);
   }
 
+  // Future<void> _checkToken() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final token = prefs.getString('token');
+  //   // final isLogin = prefs.getString('isLogin');
+  //   final isTechnicianActive = prefs.getString('isTechnicianActive');
+  //   final role = prefs.getString('role')?.replaceAll('"', '').trim() ?? '';
+  //
+  //   if (token == null || token.isEmpty) {
+  //     context.go('/login');
+  //     return;
+  //   }
+  //
+  //   final response = await authService.checkTokenService();
+  //   // print("ressponse: $response");
+  //
+  //   if (response['success'] == true || response['status'] == 'success') {
+  //     if (role == 'admin') {
+  //       context.go('/home-admin');
+  //     } else if (role == 'ktv') {
+  //       final bool isTechnicianActiveResponse = response['data']['isTechnicianActive'];
+  //       // print("isTechnicianActiveResponse: $isTechnicianActiveResponse");
+  //       if ((isTechnicianActive == 'false' || isTechnicianActive == false) &&
+  //           (isTechnicianActiveResponse == 'true' ||
+  //               isTechnicianActiveResponse == true)) {
+  //         SnackbarHelper.showSuccess(context, 'Hồ sơ của bạn đã được phê duyệt, vui lòng đăng nhâp lại!');
+  //         context.go('/login');
+  //       } else {
+  //         context.go('/home-technician');
+  //       }
+  //     } else if (role == 'customer') {
+  //       context.go('/home-customer');
+  //     } else if (role == 'quanly') {
+  //       context.go('/home-quanly');
+  //     } else {
+  //       prefs.remove('token');
+  //       context.go('/login');
+  //     }
+  //   } else {
+  //     prefs.remove('token');
+  //     context.go('/login');
+  //     // ScaffoldMessenger.of(context).showSnackBar(
+  //     //   const SnackBar(content: Text("Điều kiện response sai")),
+  //     // );
+  //   }
+  // }
   Future<void> _checkToken() async {
     final prefs = await SharedPreferences.getInstance();
+
     final token = prefs.getString('token');
     // final isLogin = prefs.getString('isLogin');
-    final isTechnicianActive = prefs.getString('isTechnicianActive');
     final role = prefs.getString('role')?.replaceAll('"', '').trim() ?? '';
 
-    if (token == null || token.isEmpty) {
-      context.go('/login');
+    /// isLogin
+    final bool isLogin = token != null && token.isNotEmpty;
+
+    /// ===== FALSE → Customer Home =====
+    if (!isLogin) {
+      context.go('/home-customer');
       return;
     }
 
+    /// ===== TRUE → CHECK ROLE =====
     final response = await authService.checkTokenService();
-    // print("ressponse: $response");
 
     if (response['success'] == true || response['status'] == 'success') {
-      if (role == 'admin') {
-        context.go('/home-admin');
-      } else if (role == 'ktv') {
-        final bool isTechnicianActiveResponse = response['data']['isTechnicianActive'];
-        // print("isTechnicianActiveResponse: $isTechnicianActiveResponse");
-        if ((isTechnicianActive == 'false' || isTechnicianActive == false) &&
-            (isTechnicianActiveResponse == 'true' ||
-                isTechnicianActiveResponse == true)) {
-          SnackbarHelper.showSuccess(context, 'Hồ sơ của bạn đã được phê duyệt, vui lòng đăng nhâp lại!');
-          context.go('/login');
-        } else {
+
+      switch (role) {
+        case 'customer':
+          context.go('/home-customer');
+          break;
+
+        case 'ktv': // technician
           context.go('/home-technician');
-        }
-      } else {
-        prefs.remove('token');
-        context.go('/login');
+          break;
+
+        case 'admin':
+          context.go('/home-admin');
+          break;
+
+        default:
+          prefs.remove('token');
+          context.go('/home-customer');
       }
+
     } else {
+      /// token invalid
       prefs.remove('token');
-      context.go('/login');
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   const SnackBar(content: Text("Điều kiện response sai")),
-      // );
+      context.go('/home-customer');
     }
   }
 

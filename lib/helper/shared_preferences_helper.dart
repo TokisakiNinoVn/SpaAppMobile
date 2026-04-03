@@ -2,15 +2,33 @@
 // import '../../../config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class CheckLoginHelper {
-  static Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isLogin = prefs.getBool('isLogin') ?? false;
-    return isLogin;
+class SharedPreferencesHelper {
+  static Future<bool> listAllKeyValue() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final keys = prefs.getKeys();
+
+      if (keys.isEmpty) {
+        print("No data found in SharedPreferences.");
+        return true;
+      }
+
+      for (final key in keys) {
+        final value = prefs.get(key);
+        print("Key: $key | Value: $value | Type: ${value.runtimeType}");
+      }
+
+      return true;
+    } catch (e) {
+      print("Error while listing SharedPreferences: $e");
+      return false;
+    }
   }
 
-  static Future<bool> isLoggedInBool() async {
+  static Future<void> logOut() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('isLogin') ?? false;
+    await prefs.clear();
+    await prefs.setBool('isLogin', false);
   }
 }

@@ -8,7 +8,7 @@ class Lang {
 
 const kLanguages = [
   Lang('vi', 'Tiếng Việt', '🇻🇳'),
-  Lang('en', 'English',    '🇬🇧'),
-  Lang('zh', '中文',        '🇨🇳'),
-  Lang('ko', '한국어',       '🇰🇷'),
+  Lang('en', 'English', '🇬🇧'),
+  Lang('zh', '中文', '🇨🇳'),
+  Lang('ko', '한국어', '🇰🇷'),
 ];

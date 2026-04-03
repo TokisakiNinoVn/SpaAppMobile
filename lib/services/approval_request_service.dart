@@ -13,7 +13,7 @@ class ApprovalRequestService {
   Future<Map<String, dynamic>> approveApprovalRequestService(String id, Map<String, dynamic> data) async {
     // print('URL: ${ApprovalRequestApiRoutes.getAllApprovalRequest}/$id - ID: $id');
     return await ApiMethodsPrivate.postRequest(
-      '${ApprovalRequestApiRoutes.approveApprovalRequest}/$id', data // Data không cần có thông tin gì
+      '${ApprovalRequestApiRoutes.approveApprovalRequest}/$id', data
     );
   }
 }

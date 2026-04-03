@@ -1,9 +1,9 @@
 // user_routes.dart
 import '../config/app_config.dart';
 
-class LikeApiRoutes {
-  static const String create = '${AppConfig.apiUrlPrivate}/like/create';
-  static const String list = '${AppConfig.apiUrlPrivate}/like/list';
-  static const String listBase = '${AppConfig.apiUrlPrivate}/like/list-base';
-  static const String delete = '${AppConfig.apiUrlPrivate}/like/delete';
+class OrderApiRoutes {
+  static const String create = '${AppConfig.apiUrlPrivate}/order/create';
+  static const String list = '${AppConfig.apiUrlPrivate}/order/list';
+  static const String details = '${AppConfig.apiUrlPrivate}/order';
+  static const String updateStatus = '${AppConfig.apiUrlPrivate}/order/update-status';
 }

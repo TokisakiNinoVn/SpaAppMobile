@@ -4,213 +4,123 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/services/service_service.dart';
 import '../../../helper/snackbar_helper.dart';
 
-class ServiceTab extends StatefulWidget {
-  const ServiceTab({super.key});
+class AddService extends StatefulWidget {
+  const AddService({super.key});
 
   @override
-  State<ServiceTab> createState() => _ServiceTabState();
+  State<AddService> createState() => _AddServiceState();
 }
 
-class _ServiceTabState extends State<ServiceTab> {
+class _AddServiceState extends State<AddService> {
   final ServiceService _serviceService = ServiceService();
-  final TextEditingController _searchController = TextEditingController();
 
-  List<dynamic> _services = [];
-  List<dynamic> _filteredServices = [];
-  bool _loading = true;
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchServices();
-    _searchController.addListener(_onSearch);
-  }
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _nameController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
-  Future<void> _fetchServices() async {
-    setState(() => _loading = true);
+  Future<void> _handleAddService() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
 
     try {
-      final res = await _serviceService.listService();
+      final res = await _serviceService.createService({
+        'name': _nameController.text.trim(),
+        'description': _descriptionController.text.trim(),
+      });
+
       if (res['success'] == true) {
-        _services = res['data'];
-        _filteredServices = _services;
+        SnackbarHelper.showSuccess(context, 'Tạo dịch vụ thành công');
+        context.pop(true);
+      } else {
+        SnackbarHelper.showError(context, 'Lỗi khi tạo dịch vụ');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Không tải được danh sách dịch vụ');
+      SnackbarHelper.showError(context, 'Có điều gì không đúng');
+    } finally {
+      setState(() => _isLoading = false);
     }
-
-    setState(() => _loading = false);
-  }
-
-  void _onSearch() {
-    final keyword = _searchController.text.toLowerCase();
-
-    setState(() {
-      _filteredServices = _services.where((item) {
-        return item['name']
-            .toString()
-            .toLowerCase()
-            .contains(keyword);
-      }).toList();
-    });
-  }
-
-  void _confirmDelete(String serviceId) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Xóa dịch vụ'),
-        content: const Text('Bạn có chắc muốn xóa dịch vụ này không?'),
-        actions: [
-          TextButton(
-            child: const Text('Hủy'),
-            onPressed: () => Navigator.pop(context),
-          ),
-          TextButton(
-            child: const Text(
-              'Xóa',
-              style: TextStyle(color: Colors.red),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteService(serviceId);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _deleteService(String serviceId) async {
-    // TODO: gọi API delete nếu có
-    SnackbarHelper.showSuccess(context, 'Đã xóa (demo)');
-    _fetchServices();
-  }
-
-  Widget _buildTimePrices(List timePrices) {
-    if (timePrices.isEmpty) {
-      return const Text(
-        'Chưa có gói thời gian',
-        style: TextStyle(color: Colors.grey),
-      );
-    }
-
-    final durations = timePrices
-        .map((e) => '${e['duration']}')
-        .join(' / ');
-
-    return Text(
-      durations,
-      style: const TextStyle(
-        fontSize: 13,
-        color: Colors.black54,
-      ),
-    );
-  }
-
-  Widget _buildServiceItem(dynamic item) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.black12),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item['name'],
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                _buildTimePrices(item['timePrices'] ?? []),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit, size: 20),
-            onPressed: () {
-              context.push(
-                '/home-admin/service/edit',
-                extra: {'item': item},
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-            onPressed: () => _confirmDelete(item['_id']),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Thêm dịch vụ'),
+        backgroundColor: ColorConfig.primary,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // SEARCH
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Tìm theo tên dịch vụ...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    isDense: true,
-                  ),
+              /// NAME
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Tên dịch vụ',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Bắt buộc phải điền tên dịch vụ';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              /// DESCRIPTION
+              TextFormField(
+                controller: _descriptionController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Mô tả',
+                  border: OutlineInputBorder(),
                 ),
               ),
 
-              const SizedBox(width: 7),
+              const SizedBox(height: 24),
 
-              IconButton(
-                icon: const Icon(Icons.add, color: Colors.blue),
-                onPressed: () {
-                  context.go('/home-admin/service/add');
-                },
-                tooltip: 'Thêm dịch vụ',
+              /// BUTTON
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleAddService,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ColorConfig.primary,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Text(
+                    'Add Service',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
               ),
             ],
           ),
-
-          const SizedBox(height: 8),
-
-          // LIST
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredServices.isEmpty
-                ? const Center(child: Text('Không có dịch vụ'))
-                : ListView.builder(
-              itemCount: _filteredServices.length,
-              itemBuilder: (context, index) {
-                return _buildServiceItem(
-                    _filteredServices[index]);
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

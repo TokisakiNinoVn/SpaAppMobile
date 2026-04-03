@@ -2,65 +2,40 @@
 // import 'package:http/http.dart' as http;
 
 import 'package:spa_app/apis/helper/api_methods_private.dart';
-import 'package:spa_app/apis/user_api.dart';
+import 'package:spa_app/apis/discount_api.dart';
 
-class UserService {
-  Future<Map<String, dynamic>> getAllUserService() async {
-    return await ApiMethodsPrivate.getRequest(
-      '${UserApiRoutes.getListUser}',
-    );
-  }
-  Future<Map<String, dynamic>> getIsAcceptHaveApprovalRequestService() async {
-    return await ApiMethodsPrivate.getRequest(
-      '${UserApiRoutes.getIsAcceptHaveApprovalRequestUser}',
-    );
-  }
-
-  Future<Map<String, dynamic>> lockOrUnlockUserService(
-    String id,
+class DiscountService {
+  Future<Map<String, dynamic>> checkDiscountService(
     Map<String, dynamic> data,
   ) async {
     return await ApiMethodsPrivate.postRequest(
-      '${UserApiRoutes.lockOrUnlockUser}/$id',
+      DiscountApi.checkDiscount,
       data,
     );
   }
 
-  Future<Map<String, dynamic>> changePasswordUserService(
-    Map<String, dynamic> data,
-  ) async {
-    return await ApiMethodsPrivate.postRequest(
-      UserApiRoutes.changePasswordUser,
-      data,
-    );
-  }
-  Future<Map<String, dynamic>> changeRoleService(
-    Map<String, dynamic> data,
-  ) async {
-    return await ApiMethodsPrivate.putRequest(
-      UserApiRoutes.changeRole,
-      data,
-    );
+  Future<Map<String, dynamic>> listAdminDiscount() async {
+    return await ApiMethodsPrivate.getRequest(DiscountApi.listDiscount);
   }
 
-  Future<Map<String, dynamic>> deleteUserService(String id) async {
-    return await ApiMethodsPrivate.deleteRequest(
-      '${UserApiRoutes.deleteUser}/$id',
-    );
+  Future<Map<String, dynamic>> createDiscount(Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.postRequest('${DiscountApi.createDiscount}', data);
   }
 
-  Future<Map<String, dynamic>> loadDetailUserService() async {
-    return await ApiMethodsPrivate.getRequest(
-      '${UserApiRoutes.detailUser}',
-    );
+  Future<Map<String, dynamic>> updateDiscount(String id, Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.putRequest('${DiscountApi.updateDiscount}/$id', data);
   }
 
-  Future<Map<String, dynamic>> changeStatusUserService(
-    Map<String, dynamic> data,
-  ) async {
-    return await ApiMethodsPrivate.postRequest(
-      '${UserApiRoutes.changeStatusUser}',
-      data,
-    );
+  Future<Map<String, dynamic>> updateIsUseDiscount(String id, Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.patchRequest('${DiscountApi.updateDiscount}/$id', data);
+  }
+
+  Future<Map<String, dynamic>> changeIsActiveDiscount(String id, Map<String, dynamic> data) async {
+    print("URL PATCH: ${DiscountApi.changeIsActiveDiscount} -$id - ${data}");
+    return await ApiMethodsPrivate.patchRequest('${DiscountApi.changeIsActiveDiscount}/$id', data);
+  }
+
+  Future<Map<String, dynamic>> deleteDiscount(String id) async {
+    return await ApiMethodsPrivate.deleteRequest('${DiscountApi.deleteDiscount}/$id');
   }
 }

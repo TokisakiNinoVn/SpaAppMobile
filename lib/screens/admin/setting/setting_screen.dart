@@ -6,13 +6,13 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/services/user_service.dart';
 import '../../../../helper/snackbar_helper.dart';
 
-class BannerManagement extends StatefulWidget {
-  const BannerManagement({super.key});
+class SettingScreen extends StatefulWidget {
+  const SettingScreen({super.key});
   @override
-  _BannerManagementState createState() => _BannerManagementState();
+  _SettingScreenState createState() => _SettingScreenState();
 }
 
-class _BannerManagementState extends State<BannerManagement> {
+class _SettingScreenState extends State<SettingScreen> {
   final UserService userService = UserService();
 
   List<Map<String, dynamic>> banner = [];
@@ -27,7 +27,7 @@ class _BannerManagementState extends State<BannerManagement> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Quản lý banner"),
+        title: Text("Cài đặt chung"),
       ),
       body: Column(
         children: [],

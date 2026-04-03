@@ -5,14 +5,14 @@ import 'package:go_router/go_router.dart';
 import 'package:spa_app/services/like_service.dart';
 import 'package:spa_app/services/technician_service.dart';
 
-import '../../../routes/customer_config.dart';
+import '../../../routes/config/customer_router_config.dart';
 
-class ListNotificationScreen extends StatefulWidget {
+class ListDetailsNotificationScreen extends StatefulWidget {
   @override
-  State<ListNotificationScreen> createState() => _ListNotificationScreenState();
+  State<ListDetailsNotificationScreen> createState() => _ListDetailsNotificationScreenState();
 }
 
-class _ListNotificationScreenState extends State<ListNotificationScreen> {
+class _ListDetailsNotificationScreenState extends State<ListDetailsNotificationScreen> {
   final TechnicianService _technicianService = TechnicianService();
   final LikeService _likeService = LikeService();
 

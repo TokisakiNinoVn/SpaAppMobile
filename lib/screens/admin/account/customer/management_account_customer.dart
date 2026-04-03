@@ -11,13 +11,13 @@ import 'package:spa_app/services/realtime_service.dart';
 
 import '../../../../helper/snackbar_helper.dart';
 
-class AccountManagement extends StatefulWidget {
-  const AccountManagement({super.key});
+class ManagementAccountCustomer extends StatefulWidget {
+  const ManagementAccountCustomer({super.key});
   @override
-  _AccountTabState createState() => _AccountTabState();
+  _ManagementAccountCustomerState createState() => _ManagementAccountCustomerState();
 }
 
-class _AccountTabState extends State<AccountManagement> {
+class _ManagementAccountCustomerState extends State<ManagementAccountCustomer> {
   final UserService userService = UserService();
   final TextEditingController _searchController = TextEditingController();
   late RealtimeService _realtimeService;

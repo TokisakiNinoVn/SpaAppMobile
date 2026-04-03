@@ -1,13 +1,15 @@
 // auth_routes.dart
 import 'package:spa_app/config/app_config.dart';
 
-class ServiceApiRoutes {
-  static const String createService = '${AppConfig.apiUrlPrivate}/service/create';
-  static const String updateService = '${AppConfig.apiUrlPrivate}/service/update';
-  static const String deleteService = '${AppConfig.apiUrlPrivate}/service/delete';
-  static const String addTimePriceService = '${AppConfig.apiUrlPrivate}/service/time-price';
-  static const String technicianAddService = '${AppConfig.apiUrlPrivate}/service/add-service';
-  static const String listService = '${AppConfig.apiUrlPrivate}/service/list';
-  static const String listBaseService = '${AppConfig.apiUrlPrivate}/service/list-base';
+class BannerApiRoutes {
+  static const String createAdminBanner = '${AppConfig.apiAdminUrlPrivate}/banner';
+  static const String updateAdminBanner = '${AppConfig.apiAdminUrlPrivate}/banner';
+  static const String configNumberAdminBanner = '${AppConfig.apiAdminUrlPrivate}/banner/config-number';
+  static const String configDisplayAdminBanner = '${AppConfig.apiAdminUrlPrivate}/banner/config/display';
+  static const String listAdminBanner = '${AppConfig.apiAdminUrlPrivate}/banner/list';
+  static const String listStatusAdminBanner = '${AppConfig.apiAdminUrlPrivate}/banner/status';
+  static const String deleteAdminBanner = '${AppConfig.apiAdminUrlPrivate}/banner';
 
+
+  static const String listBanner = '${AppConfig.apiUrlPublic}/banner/status';
 }

@@ -6,13 +6,13 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/services/user_service.dart';
 import '../../../../helper/snackbar_helper.dart';
 
-class SettingScreen extends StatefulWidget {
-  const SettingScreen({super.key});
+class StatisticalScreen extends StatefulWidget {
+  const StatisticalScreen({super.key});
   @override
-  _SettingScreenState createState() => _SettingScreenState();
+  _StatisticalScreenState createState() => _StatisticalScreenState();
 }
 
-class _SettingScreenState extends State<SettingScreen> {
+class _StatisticalScreenState extends State<StatisticalScreen> {
   final UserService userService = UserService();
 
   List<Map<String, dynamic>> banner = [];
@@ -27,7 +27,7 @@ class _SettingScreenState extends State<SettingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Cài đặt chung"),
+        title: Text("Thống kê"),
       ),
       body: Column(
         children: [],

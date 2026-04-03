@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final fullnameController = TextEditingController();
   final authService = AuthService();
 
-  String? selectedRole = 'ktv';
+  // String? selectedRole = 'ktv';
   bool isLoading = false;
   bool showPassword = false;
   bool showConfirmPassword = false;
@@ -51,7 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    if (selectedRole == 'quanly' && fullname.isEmpty) {
+    if (fullname.isEmpty) {
       _showSnack('Vui lòng nhập họ và tên');
       return;
     }
@@ -62,28 +63,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final response = await authService.registerService({
         "phone": phone,
         "password": password,
-        "roles": selectedRole,
-        if (selectedRole == 'quanly') "fullname": fullname,
+        "roles": "customer",
+        "fullname": fullname,
       });
 
       if (response['status'] == 'success') {
-        if (selectedRole == 'quanly') {
-          // _showSnack('Đăng ký tài khoản quản lý thành công, chờ duyệt!');
-          SnackbarHelper.showSuccess(context, "Đăng ký tài khoản quản lý thành công, chờ duyệt!");
+        // if (selectedRole == 'quanly') {
+          SnackbarHelper.showSuccess(context, "Đăng ký tài khoản thành công");
           context.go('/login');
-        } else {
-          if(response['isHaveTechnician'] == false) {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('token', response['token']);
-            print("role: $selectedRole");
-
-            SnackbarHelper.showSuccess(context, "Đăng ký tài khoản thành công!");
-            context.go('/create-technician');
-          }
-          // else {
-          //   _showSnack('Đăng ký tài khoản thành công!');
-          // }
-        }
+        // } else {
+        //   if(response['isHaveTechnician'] == false) {
+        //     final prefs = await SharedPreferences.getInstance();
+        //     await prefs.setString('token', response['token']);
+        //
+        //     SnackbarHelper.showSuccess(context, "Đăng ký tài khoản thành công!");
+        //     context.go('/create-technician');
+        //   }
+        //   // else {
+        //   //   _showSnack('Đăng ký tài khoản thành công!');
+        //   // }
+        // }
       } else {
         // _showSnack(response['message'] ?? 'Đăng ký thất bại');
         SnackbarHelper.showError(context, response['message'] ?? 'Đăng ký thất bại');
@@ -162,47 +161,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildDropdown() {
-    return DropdownButtonFormField<String>(
-      value: selectedRole,
-      decoration: InputDecoration(
-        labelText: 'Vai trò',
-        prefixIcon: const Icon(Icons.person, color: Color(0xFF8B5E3C)),
-        labelStyle: GoogleFonts.lora(
-          color: const Color(0xFF8B5E3C),
-          fontSize: 16,
-        ),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFD4A373), width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      ),
-      items: const [
-        DropdownMenuItem(
-          value: 'quanly',
-          child: Text('Đầu bắn tour'),
-        ),
-        DropdownMenuItem(
-          value: 'ktv',
-          child: Text('Kĩ thuật viên'),
-        ),
-      ],
-      onChanged: (value) {
-        setState(() => selectedRole = value);
-      },
-      style: GoogleFonts.lora(
-        color: Colors.black87,
-        fontSize: 16,
-      ),
-    );
-  }
+  // Widget _buildDropdown() {
+  //   return DropdownButtonFormField<String>(
+  //     value: selectedRole,
+  //     decoration: InputDecoration(
+  //       labelText: 'Vai trò',
+  //       prefixIcon: const Icon(Icons.person, color: Color(0xFF8B5E3C)),
+  //       labelStyle: GoogleFonts.lora(
+  //         color: const Color(0xFF8B5E3C),
+  //         fontSize: 16,
+  //       ),
+  //       filled: true,
+  //       fillColor: Colors.white.withOpacity(0.9),
+  //       enabledBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(16),
+  //         borderSide: BorderSide(color: Colors.grey[300]!),
+  //       ),
+  //       focusedBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(16),
+  //         borderSide: const BorderSide(color: Color(0xFFD4A373), width: 2),
+  //       ),
+  //       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+  //     ),
+  //     items: const [
+  //       DropdownMenuItem(
+  //         value: 'quanly',
+  //         child: Text('Đầu bắn tour'),
+  //       ),
+  //       DropdownMenuItem(
+  //         value: 'ktv',
+  //         child: Text('Kĩ thuật viên'),
+  //       ),
+  //     ],
+  //     onChanged: (value) {
+  //       setState(() => selectedRole = value);
+  //     },
+  //     style: GoogleFonts.lora(
+  //       color: Colors.black87,
+  //       fontSize: 16,
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -237,9 +236,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     color: const Color(0xFF8B5E3C),
                   ),
                 ),
-                const SizedBox(height: 40),
-                _buildDropdown(),
-                if (selectedRole == 'quanly') ...[
+                // const SizedBox(height: 40),
+                // _buildDropdown(),
+                // if (selectedRole == 'quanly') ...[
                   const SizedBox(height: 20),
                   _buildTextField(
                     controller: fullnameController,
@@ -247,7 +246,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     icon: Icons.person_outline,
                     inputAction: TextInputAction.done,
                   ),
-                ],
+                // ],
                 const SizedBox(height: 24),
                 _buildTextField(
                   controller: phoneController,
@@ -318,9 +317,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () => context.go(GlobalRouterConfig.loginOTP),
                   child: Text(
                     'Đã có tài khoản? Đăng nhập',
+                    style: GoogleFonts.lora(
+                      color: const Color(0xFF8B5E3C),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => context.go('/register-partner'),
+                  child: Text(
+                    'Đăng ký đối tác với Serene Spa',
                     style: GoogleFonts.lora(
                       color: const Color(0xFF8B5E3C),
                       fontSize: 14,

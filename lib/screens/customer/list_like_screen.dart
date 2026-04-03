@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class HistoryOrderScreen extends StatelessWidget {
-  const HistoryOrderScreen({super.key});
+class ListLikeScreen extends StatefulWidget {
 
+  const ListLikeScreen({
+    super.key,
+  });
+
+  @override
+  State<ListLikeScreen> createState() =>  _ListLikeScreenState();
+}
+
+class _ListLikeScreenState extends State<ListLikeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,7 +34,7 @@ class HistoryOrderScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            const Text("Lịch sử hóa đơn"),
+            const Text("Yêu thích"),
           ],
         ),
       ),
@@ -34,10 +42,7 @@ class HistoryOrderScreen extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ElevatedButton(onPressed: () {
-            context.go('/home-customer/list-technician/detail-technician/create-order-technician');
-
-          }, child: Text("Tạo hóa đơn"))
+          Text("Danh sách Kỹ thuật viên yêu thích!")
         ],
       ),
     );

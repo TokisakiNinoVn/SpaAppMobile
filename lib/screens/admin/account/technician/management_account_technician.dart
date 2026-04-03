@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/routes/config/admin_router_config.dart';
 
 import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
@@ -11,13 +12,13 @@ import 'package:spa_app/services/realtime_service.dart';
 
 import '../../../../helper/snackbar_helper.dart';
 
-class AccountManagement extends StatefulWidget {
-  const AccountManagement({super.key});
+class ManagementAccountTechnician extends StatefulWidget {
+  const ManagementAccountTechnician({super.key});
   @override
-  _AccountTabState createState() => _AccountTabState();
+  _ManagementAccountTechnicianState createState() => _ManagementAccountTechnicianState();
 }
 
-class _AccountTabState extends State<AccountManagement> {
+class _ManagementAccountTechnicianState extends State<ManagementAccountTechnician> {
   final UserService userService = UserService();
   final TextEditingController _searchController = TextEditingController();
   late RealtimeService _realtimeService;
@@ -81,10 +82,28 @@ class _AccountTabState extends State<AccountManagement> {
           (user['fullname']?.toString() ?? '').toLowerCase().contains(searchQuery.toLowerCase());
 
       bool matchesRole = false;
-      if (roleFilter == 'empty') {
+
+      // Xử lý các loại role filter
+      if (roleFilter == 'ktv') {
+        // KTV đã được duyệt (có technician và status == true)
+        matchesRole = user['roles'] == 'ktv'
+            && user['technician'] != null
+            && user['technician'].isNotEmpty
+            && user['isAcceptHaveApprovalRequest'] == true;
+
+      } else if (roleFilter == 'ktv_pending') {
+        // KTV chưa duyệt (có technician và status == false)
+        matchesRole = user['roles'] == 'ktv' &&
+            user['technician'] != null &&
+            user['technician'].isNotEmpty &&
+            user['isAcceptHaveApprovalRequest'] == false;
+      } else if (roleFilter == 'empty') {
+        // Tài khoản trống (chưa tạo hồ sơ technician)
         matchesRole = user['roles'] == 'ktv' && (user['technician'] == null || user['technician'].isEmpty);
-      } else if (roleFilter == 'ktv') {
-        matchesRole = user['roles'] == 'ktv' && user['technician'] != null && user['technician'].isNotEmpty;
+      } else if (roleFilter == 'quanly') {
+        matchesRole = user['roles'] == 'quanly';
+      } else if (roleFilter == 'admin') {
+        matchesRole = user['roles'] == 'admin';
       } else {
         matchesRole = user['roles'] == roleFilter;
       }
@@ -275,16 +294,182 @@ class _AccountTabState extends State<AccountManagement> {
     }
   }
 
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Bộ lọc',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Icon(Icons.tune),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Vai trò filter
+                  const Text(
+                    'Vai trò',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: roleFilter,
+                        isExpanded: true,
+                        items: const [
+                          DropdownMenuItem(value: 'ktv', child: Text('Kỹ thuật viên (đã duyệt)')),
+                          DropdownMenuItem(value: 'ktv_pending', child: Text('KTV - chưa duyệt')),
+                          DropdownMenuItem(value: 'empty', child: Text('Tài khoản trống')),
+                          DropdownMenuItem(value: 'quanly', child: Text('Đầu bắn tour')),
+                          DropdownMenuItem(value: 'admin', child: Text('Boss (Admin)')),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            roleFilter = value!;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Trạng thái filter
+                  const Text(
+                    'Trạng thái',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: statusFilter,
+                        isExpanded: true,
+                        items: const [
+                          DropdownMenuItem(value: 'all', child: Text('Tất cả')),
+                          DropdownMenuItem(value: 'active', child: Text('Hoạt động')),
+                          DropdownMenuItem(value: 'inactive', child: Text('Không hoạt động')),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            statusFilter = value!;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Nút áp dụng và reset
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              roleFilter = 'ktv';
+                              statusFilter = 'all';
+                            });
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Đặt lại'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _applyFilters();
+                            });
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Áp dụng'),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      // Khi đóng bottomsheet, cập nhật lại filter
+      setState(() {
+        _applyFilters();
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Quản lý tài khoản"),
+          title: const Text("Quản lý tài khoản", style: TextStyle(fontWeight: FontWeight.w600)),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.filter_alt_outlined, size: 22),
+              color: Colors.black,
+              onPressed: _showFilterBottomSheet,
+              tooltip: 'Lọc',
+            ),
+          ]
       ),
       body: Column(
         children: [
           _buildSearchSection(),
-          if (showFilters) _buildFilterSection(),
+          _buildActiveFiltersChips(),
           _buildUserListSection(),
         ],
       ),
@@ -294,159 +479,119 @@ class _AccountTabState extends State<AccountManagement> {
   Widget _buildSearchSection() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Tìm kiếm theo số điện thoại hoặc tên',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {
-                      searchQuery = '';
-                      _applyFilters();
-                    });
-                  },
-                )
-                    : null,
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: Theme.of(context).primaryColor),
-                ),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                  _applyFilters();
-                });
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: Icon(
-              showFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
-              color: Colors.blue,
-            ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Tìm kiếm theo số điện thoại hoặc tên',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+            icon: const Icon(Icons.clear),
             onPressed: () {
+              _searchController.clear();
               setState(() {
-                showFilters = !showFilters;
+                searchQuery = '';
+                _applyFilters();
               });
             },
-            tooltip: showFilters ? 'Ẩn bộ lọc' : 'Hiện bộ lọc',
+          )
+              : null,
+          filled: true,
+          fillColor: Colors.grey.shade100,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide.none,
           ),
-        ],
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide(color: Theme.of(context).primaryColor),
+          ),
+        ),
+        onChanged: (value) {
+          setState(() {
+            searchQuery = value;
+            _applyFilters();
+          });
+        },
       ),
     );
   }
 
-  Widget _buildFilterSection() {
+  Widget _buildActiveFiltersChips() {
+    // Chỉ hiển thị chips khi có filter khác mặc định
+    bool hasActiveFilters = roleFilter != 'ktv' || statusFilter != 'all';
+
+    if (!hasActiveFilters) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: roleFilter,
-                  decoration: InputDecoration(
-                    labelText: 'Vai trò',
-                    labelStyle: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: ColorConfig.secondary, width: 1.2),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.amber.shade700, width: 1.5),
-                    ),
-                  ),
-                  dropdownColor: Colors.white,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
-                  items: const [
-                    DropdownMenuItem(value: 'ktv', child: Text('Kỹ thuật viên')),
-                    DropdownMenuItem(value: 'empty', child: Text('Tài khoản trống')),
-                    DropdownMenuItem(value: 'quanly', child: Text('Đầu bắn tour')),
-                    DropdownMenuItem(value: 'admin', child: Text('Boss (Admin)')),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      roleFilter = value!;
-                      _applyFilters();
-                    });
-                  },
-                ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            if (roleFilter != 'ktv')
+              Chip(
+                label: Text(_getRoleFilterLabel(roleFilter)),
+                onDeleted: () {
+                  setState(() {
+                    roleFilter = 'ktv';
+                    _applyFilters();
+                  });
+                },
+                deleteIcon: const Icon(Icons.close, size: 16),
+                backgroundColor: Colors.blue.shade50,
               ),
-
-              const SizedBox(width: 16),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: statusFilter,
-                  decoration: InputDecoration(
-                    labelText: 'Trạng thái',
-                    labelStyle: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: ColorConfig.secondary, width: 1.2),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.amber.shade700, width: 1.5),
-                    ),
-                  ),
-                  dropdownColor: Colors.white,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('Tất cả')),
-                    DropdownMenuItem(value: 'active', child: Text('Hoạt động')),
-                    DropdownMenuItem(value: 'inactive', child: Text('Không hoạt động')),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      statusFilter = value!;
-                      _applyFilters();
-                    });
-                  },
-                ),
+            if (statusFilter != 'all')
+              Chip(
+                label: Text(_getStatusFilterLabel(statusFilter)),
+                onDeleted: () {
+                  setState(() {
+                    statusFilter = 'all';
+                    _applyFilters();
+                  });
+                },
+                deleteIcon: const Icon(Icons.close, size: 16),
+                backgroundColor: Colors.green.shade50,
               ),
-
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  String _getRoleFilterLabel(String role) {
+    switch (role) {
+      case 'ktv':
+        return 'Kỹ thuật viên (đã duyệt)';
+      case 'ktv_pending':
+        return 'KTV - chưa duyệt';
+      case 'empty':
+        return 'Tài khoản trống';
+      case 'quanly':
+        return 'Đầu bắn tour';
+      case 'admin':
+        return 'Boss (Admin)';
+      default:
+        return role;
+    }
+  }
+
+  String _getStatusFilterLabel(String status) {
+    switch (status) {
+      case 'active':
+        return 'Hoạt động';
+      case 'inactive':
+        return 'Không hoạt động';
+      default:
+        return status;
+    }
   }
 
   Widget _buildUserListSection() {
@@ -462,6 +607,10 @@ class _AccountTabState extends State<AccountManagement> {
           final user = filteredUsers[index];
           final hasTechnician = user['technician'] != null && (user['technician']).isNotEmpty;
           final technician = hasTechnician ? (user['technician']) : null;
+
+          // Kiểm tra trạng thái duyệt của KTV
+          final bool isTechnicianApproved = hasTechnician && technician?['isActive'] == true;
+          final bool isTechnicianPending = hasTechnician && technician?['isAcceptHaveApprovalRequest'] == true;
 
           final avatarUrl = hasTechnician &&
               technician?['avatar']?['url'] != null
@@ -490,7 +639,7 @@ class _AccountTabState extends State<AccountManagement> {
                 children: [
                   // Avatar + viền theo trạng thái
                   Container(
-                    padding: const EdgeInsets.all(2), // khoảng cách viền
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
@@ -522,12 +671,34 @@ class _AccountTabState extends State<AccountManagement> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (user['roles'] == 'ktv')
-                                    Text(
-                                      technician?['fullName'] ?? '',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            technician?['fullName'] ?? '',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isTechnicianPending)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.orange.shade100,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              'Chờ duyệt',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.orange.shade800,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   const SizedBox(height: 4),
                                   Text(
@@ -552,7 +723,6 @@ class _AccountTabState extends State<AccountManagement> {
                                 ],
                               ),
                             ),
-                            // 👉 Đã bỏ Container trạng thái ở đây
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -561,6 +731,13 @@ class _AccountTabState extends State<AccountManagement> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
+                            IconButton(
+                              icon: const Icon(Icons.history),
+                              tooltip: 'Lịch sử hoạt động',
+                              onPressed: () {
+                                _showChangePasswordDialog(user['_id']);
+                              },
+                            ),
                             IconButton(
                               icon: const Icon(Icons.key),
                               tooltip: 'Đổi mật khẩu',
@@ -574,7 +751,7 @@ class _AccountTabState extends State<AccountManagement> {
                                 tooltip: 'Chỉnh sửa thông tin',
                                 onPressed: () async {
                                   final result = await context.push(
-                                    '/edit-technician',
+                                    AdminRouterConfig.editTechnician,
                                     extra: user,
                                   );
                                   if (result == true) {
@@ -641,6 +818,7 @@ class UserDetailWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool hasTechnician = user['technician'] != null && user['technician'].isNotEmpty;
     final technician = hasTechnician ? user['technician'] : null;
+    final bool isTechnicianPending = hasTechnician && technician?['isActive'] == false;
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -716,14 +894,6 @@ class UserDetailWidget extends StatelessWidget {
                   _buildCopyableDetailRow(context, 'Mật khẩu', user['password']),
 
                   if (hasTechnician) ...[
-                    // const SizedBox(height: 16),
-                    // const Text(
-                    //   'Thông tin Kỹ thuật viên',
-                    //   style: TextStyle(
-                    //     fontSize: 18,
-                    //     fontWeight: FontWeight.bold,
-                    //   ),
-                    // ),
                     const Divider(),
                     _buildDetailRow('Tên đầy đủ', technician?['fullName']),
                     const Divider(),
@@ -740,7 +910,10 @@ class UserDetailWidget extends StatelessWidget {
                     _buildDetailRow('Kinh nghiệm', technician?['experience']),
                     const Divider(),
 
-                    _buildDetailRow('Phê duyệt', technician?['isActive'] == false ? 'Chưa duyệt' : 'Đã duyệt'),
+                    _buildDetailRow(
+                      'Phê duyệt',
+                      isTechnicianPending ? 'Chưa duyệt' : 'Đã duyệt',
+                    ),
                     const Divider(),
 
                     if (technician?['images'] != null &&

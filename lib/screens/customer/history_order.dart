@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class DetailsTechnicianScreen extends StatelessWidget {
-  const DetailsTechnicianScreen({super.key});
+class HistoryOrderScreen extends StatelessWidget {
+  const HistoryOrderScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false, // tự làm nút back
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
         title: Row(
@@ -26,24 +26,7 @@ class DetailsTechnicianScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            const Text("Chi tiết Kỹ thuật viên"),
-            // Expanded(
-            //   child: Container(
-            //     height: 42,
-            //     padding: const EdgeInsets.symmetric(horizontal: 12),
-            //     decoration: BoxDecoration(
-            //       color: Colors.grey.shade100,
-            //       borderRadius: BorderRadius.circular(20),
-            //     ),
-            //     child: const TextField(
-            //       decoration: InputDecoration(
-            //         hintText: "Tìm kiếm kỹ thuật viên...",
-            //         border: InputBorder.none,
-            //         icon: Icon(Icons.search),
-            //       ),
-            //     ),
-            //   ),
-            // ),
+            const Text("Lịch sử hóa đơn"),
           ],
         ),
       ),

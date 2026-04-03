@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'admin/widgets/account_widget.dart';
+import 'admin/account/technician/management_account_technician.dart';
 import 'admin/widgets/home_widget.dart';
 import 'admin/widgets/account_admin_widget.dart';
 import 'admin/widgets/list_technician_widget.dart';
@@ -85,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0:
         return HomeTab();
       case 1:
-        return const AccountTab();
+        return const ManagementAccountTechnician();
       case 2:
         return const ListTechnicianTab();
       case 3:

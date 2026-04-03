@@ -5,14 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/auth_service.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class RegisterPartnerScreen extends StatefulWidget {
+  const RegisterPartnerScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<RegisterPartnerScreen> createState() => _RegisterPartnerScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
@@ -231,7 +231,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 Text(
-                  'Đăng ký tài khoản',
+                  'Đăng ký tài khoản đối tác',
                   style: GoogleFonts.lora(
                     fontSize: 18,
                     color: const Color(0xFF8B5E3C),

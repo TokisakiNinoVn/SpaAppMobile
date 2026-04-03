@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/routes/config/admin_router_config.dart';
 import 'package:spa_app/services/service_service.dart';
 import '../../../helper/snackbar_helper.dart';
 import 'package:spa_app/services/service_service.dart';
 
-class ServiceTab extends StatefulWidget {
-  const ServiceTab({super.key});
+class ServiceManagement extends StatefulWidget {
+  const ServiceManagement({super.key});
 
   @override
-  State<ServiceTab> createState() => _ServiceTabState();
+  State<ServiceManagement> createState() => _ServiceManagementState();
 }
 
-class _ServiceTabState extends State<ServiceTab> {
+class _ServiceManagementState extends State<ServiceManagement> {
   
   final ServiceService _serviceService = ServiceService();
   final TextEditingController _searchController = TextEditingController();
@@ -160,7 +161,7 @@ class _ServiceTabState extends State<ServiceTab> {
             icon: const Icon(Icons.edit, size: 20),
             onPressed: () {
               context.push(
-                '/home-admin/service/edit',
+                AdminRouterConfig.editService,
                 extra: {'item': item},
               );
             },
@@ -176,67 +177,71 @@ class _ServiceTabState extends State<ServiceTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // SEARCH
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Tìm theo tên dịch vụ...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Quản lý dịch vụ", style: TextStyle(fontWeight: FontWeight.w600),),
+        actions: [
+          //RELOAD
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.green),
+            tooltip: 'Tải lại danh sách',
+            onPressed: _loading ? null : _reloadServices,
+          ),
+
+          const SizedBox(width: 2),
+
+          // ADD
+          IconButton(
+              icon: const Icon(Icons.add, color: Colors.blue),
+              tooltip: 'Thêm dịch vụ',
+              onPressed: () {
+                context.go(AdminRouterConfig.addService);
+              })
+        ]
+      ),
+      body:  Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                // SEARCH
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Tìm theo tên dịch vụ...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      isDense: true,
                     ),
-                    isDense: true,
                   ),
                 ),
-              ),
+              ],
+            ),
 
-              const SizedBox(width: 6),
+            const SizedBox(height: 8),
 
-              // RELOAD
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.green),
-                tooltip: 'Tải lại danh sách',
-                onPressed: _loading ? null : _reloadServices,
-              ),
-
-              const SizedBox(width: 2),
-
-              // ADD
-              IconButton(
-                icon: const Icon(Icons.add, color: Colors.blue),
-                tooltip: 'Thêm dịch vụ',
-                onPressed: () {
-                  context.go('/home-admin/service/add');
+            // LIST
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredServices.isEmpty
+                  ? const Center(child: Text('Không có dịch vụ'))
+                  : ListView.builder(
+                itemCount: _filteredServices.length,
+                itemBuilder: (context, index) {
+                  return _buildServiceItem(
+                      _filteredServices[index]);
                 },
               ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // LIST
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredServices.isEmpty
-                ? const Center(child: Text('Không có dịch vụ'))
-                : ListView.builder(
-              itemCount: _filteredServices.length,
-              itemBuilder: (context, index) {
-                return _buildServiceItem(
-                    _filteredServices[index]);
-              },
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      )
     );
+
   }
 }

@@ -1,15 +1,13 @@
 // auth_routes.dart
 import 'package:spa_app/config/app_config.dart';
 
-class TechnicianApiRoutes {
-  static const String createTechnician = '${AppConfig.apiUrlPrivate}/technician/create';
-  static const String updateTechnician = '${AppConfig.apiUrlPrivate}/technician/update';
-  static const String createTechnicianNoAccount = '${AppConfig.apiUrlPrivate}/technician/create-no-account';
-  static const String detailTechnician = '${AppConfig.apiUrlPrivate}/technician';
-  static const String filterTechnician = '${AppConfig.apiUrlPrivate}/technician/filter';
-
-  static const String addTechnician = '${AppConfig.apiUrlPrivate}/technician/create-no-account';
-  static const String listTechnicianCreateByUser = '${AppConfig.apiUrlPrivate}/technician/list-technicians-user';
-  static const String deleteTechnicianCreateByUser = '${AppConfig.apiUrlPrivate}/technician/delete';
+class ServiceApiRoutes {
+  static const String createService = '${AppConfig.apiUrlPrivate}/service/create';
+  static const String updateService = '${AppConfig.apiUrlPrivate}/service/update';
+  static const String deleteService = '${AppConfig.apiUrlPrivate}/service/delete';
+  static const String addTimePriceService = '${AppConfig.apiUrlPrivate}/service/time-price';
+  static const String technicianAddService = '${AppConfig.apiUrlPrivate}/service/add-service';
+  static const String listService = '${AppConfig.apiUrlPrivate}/service/list';
+  static const String listBaseService = '${AppConfig.apiUrlPublic}/service/list-base';
 
 }

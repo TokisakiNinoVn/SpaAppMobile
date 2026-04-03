@@ -2,6 +2,8 @@ import 'package:spa_app/apis/helper/api_methods_public.dart';
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/auth_api.dart';
 
+import '../helper/logger_utils.dart';
+
 class AuthService {
   Future<Map<String, dynamic>> loginService(data) async {
     return await ApiMethodsPublic.postRequest(AuthApiRoutes.login, body: data);
@@ -13,6 +15,9 @@ class AuthService {
 
   Future<Map<String, dynamic>> verifyOTPService(data) async {
     return await ApiMethodsPublic.postRequest(AuthApiRoutes.verifyOTP, body: data);
+  }
+  Future<Map<String, dynamic>> verifyOTPLoginService(data) async {
+    return await ApiMethodsPublic.postRequest(AuthApiRoutes.verifyOTPLogin, body: data);
   }
 
   Future<Map<String, dynamic>> changePasswordService(data) async {

@@ -10,16 +10,16 @@ import '../../../helper/snackbar_helper.dart';
 import '../../../services/banner_service.dart';
 import 'package:spa_app/helper/format_helper.dart';
 
-class CreateBannerScreen extends StatefulWidget {
+class EditBannerScreen extends StatefulWidget {
   final Map<String, dynamic>? data;
 
-  const CreateBannerScreen({super.key, this.data});
+  const EditBannerScreen({super.key, this.data});
 
   @override
-  State<CreateBannerScreen> createState() => _CreateBannerScreenState();
+  State<EditBannerScreen> createState() => _EditBannerScreenState();
 }
 
-class _CreateBannerScreenState extends State<CreateBannerScreen>
+class _EditBannerScreenState extends State<EditBannerScreen>
     with SingleTickerProviderStateMixin {
   final FileService fileService = FileService();
   final BannerService bannerService = BannerService();
@@ -34,7 +34,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
   String? _uploadedImageUrl;
   bool _isLoading = false;
   bool _isUploading = false;
-  bool _display = false; // Mặc định ẩn banner
+  bool _display = false;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -48,6 +48,8 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
   static const _textSecondary = Color(0xFF64748B);
   static const _success = Color(0xFF16A34A);
   static const _successLight = Color(0xFFF0FDF4);
+  static const _error = Color(0xFFDC2626);
+  static const _errorLight = Color(0xFFFEF2F2);
 
   @override
   void initState() {
@@ -58,7 +60,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
     );
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
-
+    print("Data banner: ${widget.data}");
     if (widget.data != null) {
       _loadExistingData();
     }
@@ -115,7 +117,62 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
     }
   }
 
-  Future<void> _createBanner() async {
+  Future<void> _deleteCurrentImage() async {
+    if (_uploadedFileId == null) {
+      SnackbarHelper.showError(context, 'Không có ảnh để xóa');
+      return;
+    }
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Xóa ảnh banner'),
+        content: const Text('Bạn có chắc chắn muốn xóa ảnh banner này?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy', style: TextStyle(color: _textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final response = await fileService.deleteFileService(_uploadedFileId!);
+      if (response['status'] == 'success') {
+        setState(() {
+          _uploadedFileId = null;
+          _uploadedImageUrl = null;
+          _selectedImage = null;
+          _isLoading = false;
+        });
+        SnackbarHelper.showSuccess(context, 'Đã xóa ảnh banner');
+      } else {
+        setState(() => _isLoading = false);
+        SnackbarHelper.showError(context, 'Không thể xóa ảnh banner');
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      SnackbarHelper.showError(context, 'Lỗi xóa ảnh: $e');
+    }
+  }
+
+  Future<void> _updateBanner() async {
     if (_titleController.text.trim().isEmpty) {
       SnackbarHelper.showError(context, 'Vui lòng nhập tiêu đề banner');
       return;
@@ -138,16 +195,12 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
         'content': _contentController.text.trim(),
         'display': _display,
       };
-      final response = await bannerService.addBanner(bannerData);
+      final response = await bannerService.updateBanner(widget.data?["_id"], bannerData);
       if (response['success'] == true || response['message'] != null) {
-        SnackbarHelper.showSuccess(
-            context,
-            widget.data != null
-                ? 'Cập nhật banner thành công'
-                : 'Tạo banner thành công');
+        SnackbarHelper.showSuccess(context, 'Cập nhật banner thành công');
         context.pop(true);
       } else {
-        throw Exception(response['message'] ?? 'Không thể tạo banner');
+        throw Exception(response['message'] ?? 'Không thể cập nhật banner');
       }
     } catch (e) {
       SnackbarHelper.showError(context, 'Lỗi: $e');
@@ -182,7 +235,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  'Chọn nguồn ảnh',
+                  'Chọn ảnh banner',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -221,11 +274,9 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.data != null;
-
     return Scaffold(
       backgroundColor: _surface,
-      appBar: _buildAppBar(isEdit),
+      appBar: _buildAppBar(),
       body: FadeTransition(
         opacity: _fadeAnim,
         child: SingleChildScrollView(
@@ -239,7 +290,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
               const SizedBox(height: 16),
               _buildDisplaySection(),
               const SizedBox(height: 28),
-              _buildActionButtons(isEdit),
+              _buildActionButtons(),
             ],
           ),
         ),
@@ -247,7 +298,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
     );
   }
 
-  PreferredSizeWidget _buildAppBar(bool isEdit) {
+  PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
@@ -262,9 +313,9 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
         icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
         color: _textPrimary,
       ),
-      title: Text(
-        isEdit ? 'Chỉnh sửa banner' : 'Tạo banner mới',
-        style: const TextStyle(
+      title: const Text(
+        'Chỉnh sửa banner',
+        style: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w700,
           color: _textPrimary,
@@ -336,8 +387,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
           Row(
             children: [
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: _successLight,
                   borderRadius: BorderRadius.circular(20),
@@ -345,30 +395,36 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle_rounded,
-                        size: 14, color: _success),
+                    Icon(Icons.check_circle_rounded, size: 14, color: _success),
                     SizedBox(width: 5),
                     Text(
                       'Đã tải lên thành công',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: _success,
-                          fontWeight: FontWeight.w500),
+                      style: TextStyle(fontSize: 12, color: _success, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
               ),
               const Spacer(),
+              // TextButton.icon(
+              //   onPressed: _showImagePickerDialog,
+              //   icon: const Icon(Icons.edit_rounded, size: 14),
+              //   label: const Text('Thay ảnh'),
+              //   style: TextButton.styleFrom(
+              //     foregroundColor: _primary,
+              //     textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+              //     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              //   ),
+              // ),
+              const SizedBox(width: 4),
+              // Nút xóa ảnh
               TextButton.icon(
-                onPressed: _showImagePickerDialog,
-                icon: const Icon(Icons.edit_rounded, size: 14),
-                label: const Text('Thay ảnh'),
+                onPressed: _deleteCurrentImage,
+                icon: const Icon(Icons.delete_outline_rounded, size: 14),
+                label: const Text('Xóa ảnh'),
                 style: TextButton.styleFrom(
-                  foregroundColor: _primary,
-                  textStyle: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w500),
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  foregroundColor: _error,
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 ),
               ),
             ],
@@ -390,10 +446,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
               SizedBox(height: 14),
               Text(
                 'Đang tải lên...',
-                style: TextStyle(
-                    color: _primary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500),
+                style: TextStyle(color: _primary, fontSize: 13, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -411,8 +464,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
     }
 
     if (_selectedImage != null) {
-      return Image.file(_selectedImage!, fit: BoxFit.cover,
-          width: double.infinity);
+      return Image.file(_selectedImage!, fit: BoxFit.cover, width: double.infinity);
     }
 
     return _emptyImagePlaceholder();
@@ -430,17 +482,12 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
               color: _primaryLight,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.add_photo_alternate_rounded,
-                size: 32, color: _primary),
+            child: const Icon(Icons.add_photo_alternate_rounded, size: 32, color: _primary),
           ),
           const SizedBox(height: 12),
           const Text(
             'Chạm để chọn hình ảnh',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: _textPrimary,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _textPrimary),
           ),
           const SizedBox(height: 4),
           const Text(
@@ -525,12 +572,10 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
             controller: controller,
             maxLines: maxLines,
             maxLength: maxLength,
-            style:
-            const TextStyle(fontSize: 14, color: _textPrimary, height: 1.5),
+            style: const TextStyle(fontSize: 14, color: _textPrimary, height: 1.5),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle:
-              const TextStyle(color: _textSecondary, fontSize: 14),
+              hintStyle: const TextStyle(color: _textSecondary, fontSize: 14),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: _border),
@@ -545,8 +590,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
               ),
               filled: true,
               fillColor: _surface,
-              contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
           ),
         ],
@@ -575,15 +619,11 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _display
-                    ? _primaryLight
-                    : Colors.grey.shade100,
+                color: _display ? _primaryLight : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                _display
-                    ? Icons.visibility_rounded
-                    : Icons.visibility_off_rounded,
+                _display ? Icons.visibility_rounded : Icons.visibility_off_rounded,
                 size: 20,
                 color: _display ? _primary : _textSecondary,
               ),
@@ -595,21 +635,14 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
                 children: [
                   const Text(
                     'Hiển thị banner',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: _textPrimary,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _textPrimary),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     _display
                         ? 'Banner đang được hiển thị cho người dùng'
                         : 'Banner đang bị ẩn, không hiển thị với người dùng',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: _textSecondary,
-                    ),
+                    style: const TextStyle(fontSize: 12, color: _textSecondary),
                   ),
                 ],
               ),
@@ -632,7 +665,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
     );
   }
 
-  Widget _buildActionButtons(bool isEdit) {
+  Widget _buildActionButtons() {
     return Row(
       children: [
         Expanded(
@@ -641,8 +674,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 15),
               side: const BorderSide(color: _border, width: 1.5),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               foregroundColor: _textSecondary,
             ),
             child: const Text(
@@ -655,37 +687,29 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
         Expanded(
           flex: 2,
           child: ElevatedButton(
-            onPressed: _isLoading ? null : _createBanner,
+            onPressed: _isLoading ? null : _updateBanner,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 15),
               backgroundColor: _primary,
               foregroundColor: Colors.white,
               disabledBackgroundColor: _primary.withOpacity(0.5),
               elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: _isLoading
                 ? const SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
             )
                 : Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  isEdit
-                      ? Icons.save_rounded
-                      : Icons.add_circle_outline_rounded,
-                  size: 18,
-                ),
+                const Icon(Icons.save_rounded, size: 18),
                 const SizedBox(width: 8),
-                Text(
-                  isEdit ? 'Cập nhật' : 'Tạo banner',
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700),
+                const Text(
+                  'Cập nhật',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -726,19 +750,14 @@ class _BottomSheetOption extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Container(
         padding: const EdgeInsets.all(10),
-        decoration:
-        BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(12)),
         child: Icon(icon, color: iconColor, size: 22),
       ),
       title: Text(
         label,
-        style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF0F172A)),
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Color(0xFF0F172A)),
       ),
-      trailing: const Icon(Icons.chevron_right_rounded,
-          color: Color(0xFF94A3B8), size: 20),
+      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 20),
       onTap: onTap,
     );
   }

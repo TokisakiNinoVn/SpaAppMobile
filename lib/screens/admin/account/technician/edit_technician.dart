@@ -175,10 +175,10 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
       _showSnack('Vui lòng chọn ít nhất một quận/huyện');
       return;
     }
-    if (services.isEmpty) {
-      _showSnack('Vui lòng chọn ít nhất một dịch vụ');
-      return;
-    }
+    // if (services.isEmpty) {
+    //   _showSnack('Vui lòng chọn ít nhất một dịch vụ');
+    //   return;
+    // }
 
     setState(() => isLoading = true);
 
@@ -729,47 +729,47 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
     );
   }
 
-  Widget _buildServicesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Dịch vụ cung cấp',
-          style: ThemeConfig.appTextStyle(
-            color: ColorConfig.textPrimary,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 5,
-          runSpacing: 5,
-          children:
-              availableServices.map((service) {
-                final isSelected = services.contains(service);
-                return FilterChip(
-                  label: Text(service),
-                  selected: isSelected,
-                  onSelected: (bool value) {
-                    setState(() {
-                      if (value) {
-                        services.add(service);
-                      } else {
-                        services.remove(service);
-                      }
-                    });
-                  },
-                  selectedColor: const Color(0xFFD4A373),
-                  checkmarkColor: Colors.white,
-                  labelStyle: ThemeConfig.appTextStyle(
-                    color: isSelected ? Colors.white : ColorConfig.textPrimary,
-                  ),
-                );
-              }).toList(),
-        ),
-      ],
-    );
-  }
+  // Widget _buildServicesSection() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(
+  //         'Dịch vụ cung cấp',
+  //         style: ThemeConfig.appTextStyle(
+  //           color: ColorConfig.textPrimary,
+  //           fontSize: 16,
+  //         ),
+  //       ),
+  //       const SizedBox(height: 8),
+  //       Wrap(
+  //         spacing: 5,
+  //         runSpacing: 5,
+  //         children:
+  //             availableServices.map((service) {
+  //               final isSelected = services.contains(service);
+  //               return FilterChip(
+  //                 label: Text(service),
+  //                 selected: isSelected,
+  //                 onSelected: (bool value) {
+  //                   setState(() {
+  //                     if (value) {
+  //                       services.add(service);
+  //                     } else {
+  //                       services.remove(service);
+  //                     }
+  //                   });
+  //                 },
+  //                 selectedColor: const Color(0xFFD4A373),
+  //                 checkmarkColor: Colors.white,
+  //                 labelStyle: ThemeConfig.appTextStyle(
+  //                   color: isSelected ? Colors.white : ColorConfig.textPrimary,
+  //                 ),
+  //               );
+  //             }).toList(),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildImageGrid() {
     return GridView.builder(
@@ -943,6 +943,9 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text("Cập nhật KTV"),
+      ),
       resizeToAvoidBottomInset: true,
       body: Container(
         width: double.infinity,
@@ -1073,9 +1076,9 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
                   label: 'Địa chỉ cụ thể',
                   hint: 'Số nhà, đường,...'
                 ),
-                const SizedBox(height: 8),
-                _buildServicesSection(),
-                const SizedBox(height: 14),
+                // const SizedBox(height: 8),
+                // _buildServicesSection(),
+                // const SizedBox(height: 14),
                 // _buildBioTextField(
                 //   controller: bioController,
                 //   label: 'Giới thiệu bản thân (tối đa 100 ký tự)',

@@ -1,0 +1,2 @@
+C:/Data/Works/Code/spa_app/fe_android/android/app/.cxx/Debug/2w2lvu4b/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Data/Works/Code/spa_app/fe_android/android/app/.cxx/Debug/2w2lvu4b/armeabi-v7a/CMakeFiles/rebuild_cache.dir

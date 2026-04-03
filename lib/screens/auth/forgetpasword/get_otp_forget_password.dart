@@ -1,9 +1,13 @@
+import 'package:firebase_app_installations/firebase_app_installations.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/services/auth_service.dart';
 
 import '../../../helper/snackbar_helper.dart';
@@ -18,6 +22,7 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
   bool _isButtonDisabled = false;
   int _countdown = 0;
   Timer? _timer;
+  String? _fcmToken;
 
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
@@ -25,6 +30,7 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
   void initState() {
     super.initState();
     _initializeNotifications();
+    _getFCMToken();
   }
 
   Future<void> _initializeNotifications() async {
@@ -35,6 +41,59 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
     InitializationSettings(android: androidSettings);
 
     await _localNotifications.initialize(settings);
+  }
+
+  Future<void> _getFCMToken() async {
+    final isSupport = FirebaseMessaging.instance.isSupported();
+    final idHii = await FirebaseInstallations.instance.getId();
+    // appLog("isSupport: $isSupport");
+    // appLog("idHii: $idHii");
+    try {
+      // Xóa token FCM hiện tại
+      // await FirebaseMessaging.instance.deleteToken();
+      //
+      // // Xóa Installation ID → ép Firebase tạo FID mới
+      // await FirebaseInstallations.instance.delete();
+
+      // Xin quyền (Android 13+ yêu cầu)
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      final token = await FirebaseMessaging.instance.getToken();
+
+      if (token != null) {
+        setState(() {
+          _fcmToken = token;
+        });
+        // debugPrint('FCM Token: $token');
+      }
+
+      // Lắng nghe khi token được refresh
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+        _fcmToken = newToken;
+        debugPrint('FCM Token refreshed: $newToken');
+        // Có thể gọi API cập nhật token mới ở đây nếu user đã đăng nhập
+        _updateFCMTokenIfLoggedIn(newToken);
+      });
+    } catch (e) {
+      appLog("Lỗi lấy FCM token: $e");
+    }
+  }
+
+  // Nếu user đã đăng nhập trước đó, cập nhật lại token mới
+  Future<void> _updateFCMTokenIfLoggedIn(String newToken) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token != null) {
+      try {
+        // await authService.updateFCMToken(newToken);
+      } catch (e) {
+        debugPrint('Lỗi cập nhật FCM token khi refresh: $e');
+      }
+    }
   }
 
   Future<void> _showNotification(String message) async {
@@ -89,7 +148,7 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
 
     try {
       final authService = AuthService();
-      final response = await authService.getOTPService({'phone': phone});
+      final response = await authService.getOTPService({'phone': phone, "type": "otp_forgot_password", 'fcm_token': _fcmToken});
       print(response);
       if (response['success'] == true || response['status'] == 'success') {
         final message = response['message'] ?? 'Mã OTP đã được gửi.';

@@ -11,14 +11,15 @@ import '../../../helper/snackbar_helper.dart';
 import '../../../services/discount_service.dart';
 import 'package:spa_app/helper/format_helper.dart';
 
-class CreateDiscountScreen extends StatefulWidget {
-  const CreateDiscountScreen({super.key});
+class EditDiscountScreen extends StatefulWidget {
+  final Map<String, dynamic>? data;
+  const EditDiscountScreen({super.key, this.data});
 
   @override
-  State<CreateDiscountScreen> createState() => _CreateDiscountScreenState();
+  State<EditDiscountScreen> createState() => _EditDiscountScreenState();
 }
 
-class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
+class _EditDiscountScreenState extends State<EditDiscountScreen> {
   final DiscountService discountService = DiscountService();
 
   // Form controllers
@@ -29,11 +30,13 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
   final TextEditingController _maxUsesController = TextEditingController();
 
   // Form state
-  String? _selectedTypeDiscount = 'fixed'; // 'percentage' or 'fixed'
+  String? _selectedTypeDiscount = 'fixed';
   DateTime? _startDate;
   DateTime? _expiresAt;
   bool _isActive = false;
   bool _isLoading = false;
+  int _usedCount = 0;
+  String? _discountId;
 
   // Form validation
   final _formKey = GlobalKey<FormState>();
@@ -52,9 +55,37 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
   @override
   void initState() {
     super.initState();
+    _loadDiscountData();
   }
 
-  Future<void> _createDiscount() async {
+  void _loadDiscountData() {
+    if (widget.data != null) {
+      print("Data discount Edit: ${widget.data}");
+
+      // Store discount ID and used count
+      _discountId = widget.data!['_id'];
+      _usedCount = widget.data!['usedCount'] ?? 0;
+
+      // Load data into controllers
+      _codeController.text = widget.data!['code'] ?? '';
+      _descriptionController.text = widget.data!['description'] ?? '';
+      _selectedTypeDiscount = widget.data!['typeDiscount'] ?? 'fixed';
+      _valueController.text = widget.data!['value'].toString();
+      _minOrderValueController.text = widget.data!['minOrderValue'].toString();
+      _maxUsesController.text = widget.data!['maxUses'].toString();
+      _startDate = widget.data!['startAt'] != null
+          ? DateTime.parse(widget.data!['startAt'])
+          : null;
+      _expiresAt = widget.data!['expiresAt'] != null
+          ? DateTime.parse(widget.data!['expiresAt'])
+          : null;
+      _isActive = widget.data!['isActive'] ?? false;
+    }
+  }
+
+  bool get _isEditable => _usedCount == 0;
+
+  Future<void> _updateDiscount() async {
     // Validate form
     if (!_formKey.currentState!.validate()) {
       return;
@@ -78,26 +109,38 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final discountData = {
-        'code': _codeController.text.trim().toUpperCase(),
-        'description': _descriptionController.text.trim(),
-        'typeDiscount': _selectedTypeDiscount,
-        'value': _selectedTypeDiscount == 'percentage'
-            ? int.parse(_valueController.text)
-            : int.parse(_valueController.text),
-        'minOrderValue': int.parse(_minOrderValueController.text),
-        'maxUses': int.parse(_maxUsesController.text),
-        'startAt': _startDate!.toUtc().toIso8601String(),
-        'expiresAt': _expiresAt!.toUtc().toIso8601String(),
-        'isActive': _isActive,
-      };
+      final discountData = <String, dynamic>{};
 
-      final response = await discountService.createDiscount(discountData);
+      // Always editable fields
+      discountData['description'] = _descriptionController.text.trim();
+      discountData['startAt'] = _startDate!.toUtc().toIso8601String();
+      discountData['expiresAt'] = _expiresAt!.toUtc().toIso8601String();
+      discountData['maxUses'] = int.parse(_maxUsesController.text);
+
+      // Only include these fields if discount hasn't been used
+      if (_isEditable) {
+        discountData['code'] = _codeController.text.trim().toUpperCase();
+        discountData['typeDiscount'] = _selectedTypeDiscount;
+        discountData['value'] = _selectedTypeDiscount == 'percentage'
+            ? int.parse(_valueController.text)
+            : int.parse(_valueController.text);
+        discountData['minOrderValue'] = int.parse(_minOrderValueController.text);
+        discountData['isActive'] = _isActive;
+      } else {
+        discountData['isActive'] = _isActive;
+      }
+      var response;
+      if (!_isEditable) {
+        response = await discountService.updateIsUseDiscount(_discountId!, discountData);
+      } else {
+        response = await discountService.updateDiscount(_discountId!, discountData);
+      }
+
       if (response['success'] == true) {
-        SnackbarHelper.showSuccess(context, 'Tạo mã giảm giá thành công');
+        SnackbarHelper.showSuccess(context, 'Cập nhật mã giảm giá thành công');
         context.pop(true);
       } else {
-        throw Exception(response['message'] ?? 'Không thể tạo mã giảm giá');
+        throw Exception(response['message'] ?? 'Không thể cập nhật mã giảm giá');
       }
     } catch (e) {
       SnackbarHelper.showError(context, 'Lỗi: $e');
@@ -139,9 +182,9 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
     return Scaffold(
       backgroundColor: _surface,
       appBar: AppBar(
-        title: const Text(
-          'Tạo mã giảm giá',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          _isEditable ? 'Chỉnh sửa mã giảm giá' : 'Xem chi tiết mã giảm giá',
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -168,12 +211,41 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Show warning if discount has been used
+              if (!_isEditable)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: _error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _error.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: _error, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Mã giảm giá này đã được sử dụng $_usedCount lần. Chỉ có thể chỉnh sửa mô tả, ngày hiệu lực, số lượt sử dụng tối đa và trạng thái.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // Code field
               _buildTextField(
                 controller: _codeController,
                 label: 'Mã giảm giá *',
                 hint: 'VD: SALE2026',
+                enabled: _isEditable,
                 validator: (value) {
+                  if (!_isEditable) return null;
                   if (value == null || value.trim().isEmpty) {
                     return 'Vui lòng nhập mã giảm giá';
                   }
@@ -186,12 +258,13 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Description field
+              // Description field (always editable)
               _buildTextField(
                 controller: _descriptionController,
                 label: 'Mô tả *',
                 hint: 'Mô tả về chương trình giảm giá',
                 maxLines: 3,
+                enabled: true,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Vui lòng nhập mô tả';
@@ -201,12 +274,12 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Discount type
+              // Discount type - only editable if not used
               _buildSectionTitle('Loại giảm giá *'),
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: _isEditable ? Colors.white : _surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: _border),
                 ),
@@ -217,12 +290,12 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                         title: const Text('Cố định (VNĐ)'),
                         value: 'fixed',
                         groupValue: _selectedTypeDiscount,
-                        onChanged: (value) {
+                        onChanged: _isEditable ? (value) {
                           setState(() {
                             _selectedTypeDiscount = value;
                             _valueController.clear();
                           });
-                        },
+                        } : null,
                         activeColor: _primary,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
@@ -232,12 +305,12 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                         title: const Text('Phần trăm (%)'),
                         value: 'percentage',
                         groupValue: _selectedTypeDiscount,
-                        onChanged: (value) {
+                        onChanged: _isEditable ? (value) {
                           setState(() {
                             _selectedTypeDiscount = value;
                             _valueController.clear();
                           });
-                        },
+                        } : null,
                         activeColor: _primary,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
@@ -247,13 +320,15 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Value field
+              // Value field - only editable if not used
               _buildTextField(
                 controller: _valueController,
                 label: _selectedTypeDiscount == 'percentage' ? 'Giá trị giảm (%) *' : 'Giá trị giảm (VNĐ) *',
                 hint: _selectedTypeDiscount == 'percentage' ? 'VD: 50' : 'VD: 50000',
                 keyboardType: TextInputType.number,
+                enabled: _isEditable,
                 validator: (value) {
+                  if (!_isEditable) return null;
                   if (value == null || value.trim().isEmpty) {
                     return 'Vui lòng nhập giá trị giảm';
                   }
@@ -275,13 +350,15 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Min order value
+              // Min order value - only editable if not used
               _buildTextField(
                 controller: _minOrderValueController,
                 label: 'Giá trị đơn hàng tối thiểu *',
                 hint: 'VD: 400000',
                 keyboardType: TextInputType.number,
+                enabled: _isEditable,
                 validator: (value) {
+                  if (!_isEditable) return null;
                   if (value == null || value.trim().isEmpty) {
                     return 'Vui lòng nhập giá trị đơn hàng tối thiểu';
                   }
@@ -294,12 +371,13 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Max uses
+              // Max uses (always editable)
               _buildTextField(
                 controller: _maxUsesController,
                 label: 'Số lượt sử dụng tối đa *',
                 hint: 'VD: 100',
                 keyboardType: TextInputType.number,
+                enabled: true,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Vui lòng nhập số lượt sử dụng tối đa';
@@ -308,30 +386,35 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                   if (val == null || val <= 0) {
                     return 'Số lượt sử dụng phải lớn hơn 0';
                   }
+                  if (val < _usedCount) {
+                    return 'Số lượt sử dụng tối đa không thể nhỏ hơn số lượt đã dùng ($_usedCount)';
+                  }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              // Start date
+              // Start date (always editable)
               _buildDatePicker(
                 label: 'Ngày bắt đầu *',
                 selectedDate: _startDate,
                 onTap: _selectStartDate,
                 hint: 'Chọn ngày bắt đầu',
+                enabled: true,
               ),
               const SizedBox(height: 16),
 
-              // Expiry date
+              // Expiry date (always editable)
               _buildDatePicker(
                 label: 'Ngày kết thúc *',
                 selectedDate: _expiresAt,
                 onTap: _selectExpiryDate,
                 hint: 'Chọn ngày kết thúc',
+                enabled: true,
               ),
               const SizedBox(height: 16),
 
-              // Active status
+              // Active status (always editable)
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -346,14 +429,16 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Kích hoạt ngay',
+                          'Kích hoạt',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             color: _textPrimary,
                           ),
                         ),
                         Text(
-                          'Mã giảm giá sẽ có hiệu lực ngay sau khi tạo',
+                          _isEditable
+                              ? 'Bật/tắt trạng thái hoạt động của mã giảm giá'
+                              : 'Trạng thái hoạt động của mã giảm giá',
                           style: TextStyle(
                             fontSize: 12,
                             color: _textSecondary,
@@ -375,12 +460,12 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Create button
+              // Update button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _createDiscount,
+                  onPressed: _isLoading ? null : _updateDiscount,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primary,
                     foregroundColor: Colors.white,
@@ -398,9 +483,9 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                       color: Colors.white,
                     ),
                   )
-                      : const Text(
-                    'Tạo mã giảm giá',
-                    style: TextStyle(
+                      : Text(
+                    _isEditable ? 'Cập nhật mã giảm giá' : 'Lưu thay đổi',
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -421,6 +506,7 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
     required String hint,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
+    bool enabled = true,
     String? Function(String?)? validator,
     TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
@@ -431,14 +517,14 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
           label,
           style: TextStyle(
             fontWeight: FontWeight.w500,
-            color: _textPrimary,
+            color: enabled ? _textPrimary : _textSecondary,
             fontSize: 14,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: enabled ? Colors.white : _surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: _border),
           ),
@@ -446,6 +532,7 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
             controller: controller,
             keyboardType: keyboardType,
             maxLines: maxLines,
+            enabled: enabled,
             textCapitalization: textCapitalization,
             decoration: InputDecoration(
               hintText: hint,
@@ -465,6 +552,7 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
     required DateTime? selectedDate,
     required VoidCallback onTap,
     required String hint,
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,17 +561,17 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
           label,
           style: TextStyle(
             fontWeight: FontWeight.w500,
-            color: _textPrimary,
+            color: enabled ? _textPrimary : _textSecondary,
             fontSize: 14,
           ),
         ),
         const SizedBox(height: 8),
         InkWell(
-          onTap: onTap,
+          onTap: enabled ? onTap : null,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: enabled ? Colors.white : _surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _border),
             ),
@@ -498,7 +586,11 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                     color: selectedDate != null ? _textPrimary : _textSecondary,
                   ),
                 ),
-                Icon(Icons.calendar_today, color: _textSecondary, size: 20),
+                Icon(
+                  Icons.calendar_today,
+                  color: enabled ? _textSecondary : _textSecondary.withOpacity(0.5),
+                  size: 20,
+                ),
               ],
             ),
           ),

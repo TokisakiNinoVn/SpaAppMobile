@@ -1,36 +1,39 @@
 import 'package:spa_app/apis/helper/api_methods_public.dart';
 import 'package:spa_app/apis/helper/api_methods_private.dart';
-import 'package:spa_app/apis/service_api.dart';
 
-import '../helper/logger_utils.dart';
+import '../apis/banner_api.dart';
 
-class ServiceService {
-  Future<Map<String, dynamic>> technicianAddService(Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.postRequest(ServiceApiRoutes.technicianAddService, data);
+class BannerService {
+  Future<Map<String, dynamic>> addBanner(Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.postRequest(BannerApiRoutes.createAdminBanner, data);
   }
 
-  Future<Map<String, dynamic>> listService() async {
-    return await ApiMethodsPrivate.getRequest(ServiceApiRoutes.listService);
+  Future<Map<String, dynamic>> listAdminBanner() async {
+    return await ApiMethodsPrivate.getRequest(BannerApiRoutes.listAdminBanner);
   }
 
-  Future<Map<String, dynamic>> listBaseService() async {
-    return await ApiMethodsPrivate.getRequest(ServiceApiRoutes.listBaseService);
+  Future<Map<String, dynamic>> listStatusAdminBanner() async {
+    return await ApiMethodsPrivate.getRequest(BannerApiRoutes.listStatusAdminBanner);
   }
 
-  Future<Map<String, dynamic>> addTimePriceService(String serviceId, Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.postRequest(
-        '${ServiceApiRoutes.addTimePriceService}/$serviceId', data);
+  Future<Map<String, dynamic>> updateBanner(String id, Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.putRequest('${BannerApiRoutes.updateAdminBanner}/$id', data);
   }
 
-  Future<Map<String, dynamic>> createService(Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.postRequest(ServiceApiRoutes.createService, data);
+  Future<Map<String, dynamic>> configNumberBanner(Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.putRequest('${BannerApiRoutes.configNumberAdminBanner}', data);
   }
 
-  Future<Map<String, dynamic>> updateService(String serviceId, Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.putRequest('${ServiceApiRoutes.updateService}/$serviceId', data);
+  Future<Map<String, dynamic>> configDisplayBanner(Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.putRequest('${BannerApiRoutes.configDisplayAdminBanner}', data);
   }
 
-  Future<Map<String, dynamic>> deleteService(String serviceId) async {
-    return await ApiMethodsPrivate.deleteRequest('${ServiceApiRoutes.deleteService}/$serviceId');
+  Future<Map<String, dynamic>> deleteBanner(String id) async {
+    return await ApiMethodsPrivate.deleteRequest('${BannerApiRoutes.deleteAdminBanner}/$id');
+  }
+
+
+  Future<Map<String, dynamic>> listPublicBanner() async {
+    return await ApiMethodsPublic.getRequest(BannerApiRoutes.listBanner);
   }
 }

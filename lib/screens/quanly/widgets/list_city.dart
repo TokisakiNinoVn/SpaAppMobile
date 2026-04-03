@@ -41,7 +41,7 @@ class ListCity extends StatelessWidget {
         children: [
           const SizedBox(height: 20),
           const Text(
-            'Chọn KTV các khu vực',
+            'Chọn KTV các khu vực chính',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),

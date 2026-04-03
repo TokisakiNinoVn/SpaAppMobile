@@ -13,7 +13,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:spa_app/config/app_config.dart';
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+FlutterLocalNotificationsPlugin();
 
 class RealtimeService {
   late WebSocketChannel _channel;
@@ -21,8 +22,14 @@ class RealtimeService {
   final void Function(Map<String, dynamic>)? onUserStatusUpdate;
 
   // RealtimeService(this.context, {this.onUserStatusUpdate});
-  RealtimeService({this.context, this.onUserStatusUpdate});
+  RealtimeService({this.context, this.onUserStatusUpdate}) {
+    // ⚡ Đây là vị trí đúng cho đoạn kiểm tra môi trường
+    if (AppConfig.isProduction) {
+      // Cậu có thể thêm logic đặc biệt cho production ở đây
+    }
+  }
 
+  // Dùng cái này khi AppConfig.isProduction == false
   // Future<void> connect() async {
   //   final prefs = await SharedPreferences.getInstance();
   //   final token = prefs.getString('token');
@@ -60,13 +67,26 @@ class RealtimeService {
   //   }
   // }
 
-
+  // Dùng cái này khi AppConfig.isProduction == true
   Future<void> connect() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    final uri = Uri.parse(AppConfig.apiWebsocket);
-    // print("URL websocket: $uri");
-    // print("Token: $token");
+
+    // 🚧 Tránh kết nối khi chưa có token — tránh crash WebSocket
+    if (token == null || token.isEmpty) {
+      debugPrint("[RealtimeService] ❌ Không tìm thấy token để kết nối WebSocket");
+      return;
+    }
+
+    // ⚙️ Tự động chọn link websocket dựa vào environment
+    final uri = AppConfig.isProduction
+        ? Uri.parse(AppConfig.apiWebsocket) // production
+        : Uri(
+      scheme: 'ws',                      // dev/test
+      host: AppConfig.ip,
+      port: 5001,
+      path: '/api/private/ws/account-status',
+    );
 
     try {
       final socket = await WebSocket.connect(
@@ -79,8 +99,6 @@ class RealtimeService {
       print("infor socket: ${socket.toString()}");
 
       _channel = IOWebSocketChannel(socket);
-
-      // print('[RealtimeService] ✅ WebSocket đã sẵn sàng');
 
       _channel.stream.listen(
         _handleEvent,
@@ -99,16 +117,15 @@ class RealtimeService {
   Future<void> _handleEvent(dynamic event) async {
     try {
       final data = jsonDecode(event);
-      // print("Data websocket: $data");
-      if (data is Map<String, dynamic> && data['type'] == 'user_status_updated') {
+
+      if (data is Map<String, dynamic> &&
+          data['type'] == 'user_status_updated') {
         // final userId = data['userId'];
         final technicianName = data['technicianName'];
         final status = data['status'] == true;
         final prefs = await SharedPreferences.getInstance();
-        final String role = prefs.getString('role')?.replaceAll('"', '') ?? 'admin';
-
-        // print('Phân Quyền: $role - Type: ${role.runtimeType}'); // Phân Quyền: admin - Type: String
-        // print('[DEBUG] status raw: $status');
+        final String role =
+            prefs.getString('role')?.replaceAll('"', '') ?? 'admin';
 
         if (status && role == 'admin') {
           _showNotification(
@@ -116,13 +133,14 @@ class RealtimeService {
             body: 'Nhân viên $technicianName đang hoạt động.',
           );
         }
-        // else {
-        //   debugPrint('[RealtimeService] 👤 Nhân viên $technicianName không hoạt động. Không gửi thông báo.');
-        // }
+
         onUserStatusUpdate?.call(data);
-      } else if (data is Map<String, dynamic> && data['type'] == 'notification_from_admin') {
+
+      } else if (data is Map<String, dynamic> &&
+          data['type'] == 'notification_from_admin') {
         final prefs = await SharedPreferences.getInstance();
-        final String role = prefs.getString('role')?.replaceAll('"', '') ?? 'admin';
+        final String role =
+            prefs.getString('role')?.replaceAll('"', '') ?? 'admin';
 
         // Nếu role là kỹ thuật viên thì nhận thông báo từ admin
         if (role == 'ktv') {
@@ -132,7 +150,6 @@ class RealtimeService {
           );
         }
       }
-
     } catch (e) {
       debugPrint('[RealtimeService] ❌ Lỗi khi decode dữ liệu: $e');
     }
@@ -150,7 +167,6 @@ class RealtimeService {
         // Kiểm tra quyền
         var status = await Permission.notification.status;
         if (!status.isGranted) {
-          // Yêu cầu quyền nếu chưa có
           final result = await Permission.notification.request();
           hasPermission = result.isGranted;
         } else {

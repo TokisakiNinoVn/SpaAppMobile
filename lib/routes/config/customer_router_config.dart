@@ -1,4 +1,5 @@
 class CustomerRouterConfig {
+  static String homeCustomer = "/home-customer";
   static String createOrder = "/home-customer/list-technician/create-order-technician";
   static String updateProfile = "/home-customer/update-profile";
   static String listLike = "/home-customer/likes";
@@ -7,5 +8,5 @@ class CustomerRouterConfig {
   // order
   static String detailOrder = "/home-customer/detail-order";
 
-  static String home = "/home-customer";
+  // static String home = "/home-customer";
 }
