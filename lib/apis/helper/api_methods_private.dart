@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helper/snackbar_helper.dart';
 import '../../routes/app_router.dart';
+import '../../routes/config/global_router_config.dart';
 
 class ApiMethodsPrivate {
   // Hàm lấy token từ SharedPreferences
@@ -26,8 +27,8 @@ class ApiMethodsPrivate {
 
 
     if (context != null) {
-      SnackbarHelper.showError(context, "Phiên đăng nhập của bạn hết hạn, vui lòng đăng nhập lại!");
-      context.go('/login');
+      // SnackbarHelper.showError(context, "Phiên đăng nhập của bạn hết hạn, vui lòng đăng nhập lại!");
+      context.go(GlobalRouterConfig.loginOTP);
       //
       // Navigator.push(
       //   context,
@@ -148,6 +149,42 @@ class ApiMethodsPrivate {
     } catch (e) {
       if (kDebugMode) {
         print('API PUT Error: $e');
+      }
+      return {'error': e.toString()};
+    }
+  }
+
+  // Các phương thức PATCH
+  static Future<Map<String, dynamic>> patchRequest(
+      String url, Map<String, dynamic> body) async {
+    try {
+      String? token = await getToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      print("response: $response");
+
+      if (response.statusCode == 401) {
+        _handle401();
+        return {'status': 'error', 'message': 'Unauthorized'};
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Request failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('API PATCH Error: $e');
       }
       return {'error': e.toString()};
     }

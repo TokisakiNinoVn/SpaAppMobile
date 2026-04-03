@@ -825,6 +825,47 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     }
 
     return Scaffold(
+        // appBar: AppBar(
+        //   backgroundColor: Colors.white,
+        //   elevation: 0,
+        //   leading: IconButton(
+        //     icon: const Icon(Icons.arrow_back, color: Colors.black),
+        //     onPressed: () => context.pop(),
+        //   ),
+        //   title: const Text(
+        //     "Cập nhật hồ sơ",
+        //     style: TextStyle(),
+        //   ),
+        // ),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Row(
+          children: [
+            InkWell(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ColorConfig.secondary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.arrow_back, color: Colors.white),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "Cập nhật hồ sơ",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
+          ],
+        ),
+      ),
       resizeToAvoidBottomInset: true,
       body: Container(
         width: double.infinity,
@@ -953,11 +994,11 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                // const SizedBox(height: 16),
 
                 // Dịch vụ
-                _buildServicesMultiSelect(),
-                const SizedBox(height: 16),
+                // _buildServicesMultiSelect(),
+                // const SizedBox(height: 16),
 
                 // Giới thiệu bản thân
                 // _buildTextField(

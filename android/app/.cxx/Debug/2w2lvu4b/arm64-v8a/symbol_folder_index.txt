@@ -1,0 +1,1 @@
+C:\Data\Works\Code\spa_app\fe_android\build\app\intermediates\cxx\Debug\2w2lvu4b\obj\arm64-v8a

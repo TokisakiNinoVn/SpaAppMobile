@@ -472,7 +472,7 @@ class _QuanLyListTechnicianTabState extends State<QuanLyListTechnicianTab> {
               final technician = hasTechnician ? user['technician'] : null;
               final avatarUrl =
                   hasTechnician && technician?['avatar']?['url'] != null
-                      ? FormatHelper.formatImageUrl(
+                      ? FormatHelper.formatNetworkImageUrl(
                         technician!['avatar']['url'] ?? '',
                       )
                       : null;
@@ -626,7 +626,7 @@ class UserDetailWidget extends StatelessWidget {
                             context: context,
                             builder:
                                 (_) => FullScreenSingleImageViewer(
-                                  imageUrl: FormatHelper.formatImageUrl(
+                                  imageUrl: FormatHelper.formatNetworkImageUrl(
                                     imageUrl,
                                   ),
                                 ),
@@ -638,7 +638,7 @@ class UserDetailWidget extends StatelessWidget {
                         child:
                             hasTechnician && technician?['avatar'] != null
                                 ? Image.network(
-                                  FormatHelper.formatImageUrl(
+                                  FormatHelper.formatNetworkImageUrl(
                                     technician!['avatar']['url'] ?? '',
                                   ),
                                   width: 100,
@@ -743,7 +743,7 @@ class UserDetailWidget extends StatelessWidget {
                                       index,
                                     ),
                                 child: Image.network(
-                                  FormatHelper.formatImageUrl(
+                                  FormatHelper.formatNetworkImageUrl(
                                     image['url'] ?? '',
                                   ),
                                   width: 100,
@@ -777,7 +777,7 @@ class UserDetailWidget extends StatelessWidget {
           (context) => FullScreenImageViewer(
             images: images,
             initialIndex: initialIndex,
-            formatImageUrl: FormatHelper.formatImageUrl,
+            formatImageUrl: FormatHelper.formatNetworkImageUrl,
           ),
     );
   }

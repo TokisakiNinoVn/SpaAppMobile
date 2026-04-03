@@ -1,0 +1,1 @@
+C:\Code\spa_app\fe_android\build\app\intermediates\cxx\RelWithDebInfo\1r1v1u2b\obj\x86_64

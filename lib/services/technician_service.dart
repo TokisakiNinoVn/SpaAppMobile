@@ -3,12 +3,18 @@
 // import 'package:http/http.dart' as http;
 
 import 'package:spa_app/apis/helper/api_methods_private.dart';
+import 'package:spa_app/apis/helper/api_methods_public.dart';
 import 'package:spa_app/apis/technician_api.dart';
 
 class TechnicianService {
   Future<Map<String, dynamic>> getDetailsTechnicianService(String id) async {
     return await ApiMethodsPrivate.getRequest(
       '${TechnicianApiRoutes.detailTechnician}/$id',
+    );
+  }
+  Future<Map<String, dynamic>> getDetailsTechnicianForCustomerService(String id) async {
+    return await ApiMethodsPrivate.getRequest(
+      '${TechnicianApiRoutes.detailTechnicianForCustomer}/$id',
     );
   }
 
@@ -46,6 +52,15 @@ class TechnicianService {
     );
   }
 
+  Future<Map<String, dynamic>> updateLocationTechnicianService(
+    Map<String, dynamic> data,
+  ) async {
+    return await ApiMethodsPrivate.putRequest(
+      '${TechnicianApiRoutes.updateLocationTechnician}',
+      data, // data = { "lat": 21.051424667390705, "lng": 105.8258728666784 }
+    );
+  }
+
   // update
   // Future<Map<String, dynamic>> updateTechnicianService(
   //   String id,
@@ -69,6 +84,13 @@ class TechnicianService {
   Future<Map<String, dynamic>> getListTechnicianCreateByUser() async {
     return await ApiMethodsPrivate.getRequest(
       TechnicianApiRoutes.listTechnicianCreateByUser
+    );
+  }
+
+  Future<Map<String, dynamic>> getListTechnicianForCustomer(double? lat, double? lng) async {
+    print("✅ $lat - $lng");
+    return await ApiMethodsPublic.getRequest(
+      "${TechnicianApiRoutes.listTechnicianForCustomer}?lat=${lat}&lng=${lng}"
     );
   }
 

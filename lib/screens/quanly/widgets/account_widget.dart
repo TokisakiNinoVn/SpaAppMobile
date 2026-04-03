@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../helper/shared_preferences_helper.dart';
+
 class AccountQuanLyTab extends StatefulWidget {
   const AccountQuanLyTab({super.key});
 
@@ -10,11 +12,6 @@ class AccountQuanLyTab extends StatefulWidget {
 }
 
 class _AccountQuanLyTabState extends State<AccountQuanLyTab> {
-  Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-  }
-
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -29,7 +26,7 @@ class _AccountQuanLyTabState extends State<AccountQuanLyTab> {
           ElevatedButton(
             child: const Text("Đăng xuất"),
             onPressed: () async {
-              await _logout();
+              await SharedPreferencesHelper.logOut();
               if (!mounted) return;
               Navigator.of(context).pop();
               context.go('/login');

@@ -188,7 +188,7 @@ class _ApproveTabState extends State<ApproveTab> {
                           showDialog(
                             context: context,
                             builder: (_) => FullScreenSingleImageViewer(
-                              imageUrl: FormatHelper.formatImageUrl(imageUrl),
+                              imageUrl: FormatHelper.formatNetworkImageUrl(imageUrl),
                             ),
                           );
                         }
@@ -199,7 +199,7 @@ class _ApproveTabState extends State<ApproveTab> {
                           backgroundColor: Colors.grey[200],
                           backgroundImage: request['technician']['avatar']?['url'] != null
                               ? CachedNetworkImageProvider(
-                            FormatHelper.formatImageUrl(request['technician']['avatar']['url']),
+                            FormatHelper.formatNetworkImageUrl(request['technician']['avatar']['url']),
                           )
                               : null,
                           child: request['technician']['avatar']?['url'] == null
@@ -258,7 +258,7 @@ class _ApproveTabState extends State<ApproveTab> {
                       itemCount: (request['technician']['images'] as List<dynamic>?)?.length ?? 0,
                       itemBuilder: (context, index) {
                         final image = request['technician']['images'][index];
-                        final imageUrl = FormatHelper.formatImageUrl(image['url']);
+                        final imageUrl = FormatHelper.formatNetworkImageUrl(image['url']);
                         return GestureDetector(
                           onTap: () => _showFullScreenImages(context, request['technician']['images'], index),
                           child: Card(
@@ -322,7 +322,7 @@ class _ApproveTabState extends State<ApproveTab> {
       builder: (context) => FullScreenImageViewer(
         images: images,
         initialIndex: initialIndex,
-        formatImageUrl: FormatHelper.formatImageUrl,
+        formatImageUrl: FormatHelper.formatNetworkImageUrl,
       ),
     );
   }
@@ -433,7 +433,7 @@ class _ApproveTabState extends State<ApproveTab> {
                     radius: 30,
                     backgroundImage: isTechnicianRequest && request['technician']['avatar']?['url'] != null
                         ? CachedNetworkImageProvider(
-                      FormatHelper.formatImageUrl(request['technician']['avatar']['url']),
+                      FormatHelper.formatNetworkImageUrl(request['technician']['avatar']['url']),
                     )
                         : null,
                     backgroundColor: Colors.grey[200],

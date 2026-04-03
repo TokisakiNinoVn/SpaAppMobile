@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/screens/quanly/widgets/list_city.dart';
 
-// import '../admin/widgets/account_widget.dart';
+// import '../admin/widgets/management_account_technician.dart';
 // import '../admin/widgets/approve_widget.dart';
 // import '../admin/widgets/account_admin_widget.dart';
 // import 'package:spa_app/screens/quanly/widgets/list_technician_quanly_widget.dart';

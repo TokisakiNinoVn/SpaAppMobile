@@ -3,6 +3,7 @@ import '../config/app_config.dart';
 
 class UserApiRoutes {
   static const String getListUser = '${AppConfig.apiUrlPrivate}/user/list';
+  static const String changeRole = '${AppConfig.apiUrlPrivate}/user/change-role';
 
   static const String lockOrUnlockUser = '${AppConfig.apiUrlPrivate}/user/toggle-lock';
 

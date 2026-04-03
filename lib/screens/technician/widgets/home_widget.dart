@@ -8,27 +8,36 @@ import 'package:flutter/services.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/user_service.dart';
+import 'package:spa_app/services/technician_service.dart';
 import 'package:spa_app/helper/format_helper.dart';
 
-class HomeTab extends StatefulWidget {
-  const HomeTab({super.key});
+import '../../../helper/location_helper.dart';
+
+class HomeTechnicianTab extends StatefulWidget {
+  const HomeTechnicianTab({super.key});
 
   @override
-  State<HomeTab> createState() => _HomeTabState();
+  State<HomeTechnicianTab> createState() => _HomeTechnicianTabState();
 }
 
-class _HomeTabState extends State<HomeTab> {
+class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   final UserService userService = UserService();
+  final TechnicianService technicianService = TechnicianService();
 
   Map<String, dynamic>? technicianData;
+  List<dynamic>? inforService;
   Map<String, dynamic>? inforLogin;
   bool isLoading = true;
   bool isUpdating = false;
+  bool isUpdatingLocation = false;
+  bool checkPermission = false;
   bool isTechnicianActive = false;
   bool isProfileActive = false;
   String role = '';
   String statusAccount = '';
   Map<String, dynamic>? userData;
+  double? currentLat;
+  double? currentLng;
 
   Timer? _timer;
   int _remainingSeconds = 0;
@@ -37,12 +46,56 @@ class _HomeTabState extends State<HomeTab> {
   void initState() {
     super.initState();
     _loadUserDetail();
+    loadServiceInfor();
+    _getCurrentLocation();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    final location = await LocationHelper.getCurrentLocation();
+    if (location != null) {
+      setState(() {
+        currentLat = location.latitude;
+        currentLng = location.longitude;
+      });
+    }
+  }
+
+  Future<void> _updateLocation() async {
+    if (currentLat == null || currentLng == null) {
+      SnackbarHelper.showError(context, "Không thể lấy vị trí hiện tại");
+      return;
+    }
+
+    setState(() {
+      isUpdatingLocation = true;
+    });
+
+    try {
+      final data = {
+        "lat": currentLat,
+        "lng": currentLng,
+      };
+
+      final response = await technicianService.updateLocationTechnicianService(data);
+
+      if (response['success'] == true) {
+        SnackbarHelper.showSuccess(context, "Cập nhật vị trí thành công");
+      } else {
+        SnackbarHelper.showError(context, response['message'] ?? "Cập nhật vị trí thất bại");
+      }
+    } catch (e) {
+      SnackbarHelper.showError(context, "Lỗi cập nhật vị trí: $e");
+    } finally {
+      setState(() {
+        isUpdatingLocation = false;
+      });
+    }
   }
 
   Future<void> _checkApprovalStatus() async {
@@ -123,6 +176,21 @@ class _HomeTabState extends State<HomeTab> {
     }
   }
 
+  Future<void> loadServiceInfor() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('inforService');
+
+    if (jsonString != null) {
+      inforService = jsonDecode(jsonString);
+    } else {
+      inforService = null;
+    }
+  }
+
+  Future<void> loadPermissionLocation() async {
+    checkPermission = await LocationHelper.isLocationReady();
+  }
+
   Future<void> toggleUserStatus() async {
     if (technicianData == null || !isTechnicianActive) return;
 
@@ -182,285 +250,364 @@ class _HomeTabState extends State<HomeTab> {
         : RefreshIndicator(
       onRefresh: _loadUserDetail,
       child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile Card
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: ColorConfig.secondary.withOpacity(0.3),
-                          width: 2,
-                        ),
-                      ),
-                      child: ClipOval(
-                        child: technicianData?['avatar']['url'] != null
-                            ? Image.network(
-                          FormatHelper.formatImageUrl(technicianData!['avatar']['url']),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Image.asset('lib/assets/images/avatar_placeholder.png'),
-                        )
-                            : Image.asset('lib/assets/images/avatar_placeholder.png'),
-                      ),
+            Row(
+              children: [
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: ColorConfig.secondary.withOpacity(0.4),
+                      width: 3,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            technicianData?['fullName'] ?? 'Không có tên',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            inforLogin?['phone'] ?? 'Không rõ',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor().withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: _getStatusColor(),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              _getStatusText(),
-                              style: TextStyle(
-                                color: _getStatusColor(),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Status Toggle Card
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Trạng thái hoạt động',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (isTechnicianActive)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Chế độ ${statusAccount == 'active' ? 'Online' : 'Offline'}',
-                            style: const TextStyle(fontSize: 15),
-                          ),
-                          isUpdating
-                              ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                              : Switch.adaptive(
-                            value: statusAccount == 'active',
-                            activeColor: ColorConfig.secondary,
-                            onChanged: isProfileActive ? (_) => toggleUserStatus() : null,
-                          ),
-                        ],
-                      )
-                    else
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Hồ sơ chưa được duyệt',
-                            style: TextStyle(fontSize: 15),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Vui lòng chờ quản trị viên phê duyệt hồ sơ của bạn',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            if (technicianData != null) ...[
-              if (isTechnicianActive) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final result = await context.push('/user-edit-technician');
-                      if (result == true) {
-                        _loadUserDetail();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ColorConfig.secondary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.edit, size: 20),
-                        SizedBox(width: 8),
-                        Text('Chỉnh sửa hồ sơ'),
-                      ],
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: technicianData?['avatar']['url'] != null
+                        ? Image.network(
+                      FormatHelper.formatNetworkImageUrl(
+                          technicianData!['avatar']['url']),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          Image.asset(
+                              'lib/assets/images/avatar_placeholder.png'),
+                    )
+                        : Image.asset(
+                      'lib/assets/images/avatar_placeholder.png',
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => context.push('/home-technician/add-technician'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ColorConfig.secondary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(color: ColorConfig.secondary),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        technicianData?['fullName'] ?? 'Không có tên',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        inforLogin?['phone'] ?? 'Không rõ',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor().withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _getStatusColor().withOpacity(0.5),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              statusAccount == 'active'
+                                  ? Icons.circle
+                                  : Icons.circle_outlined,
+                              size: 12,
+                              color: _getStatusColor(),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _getStatusText(),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: _getStatusColor(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // ==================== TRẠNG THÁI HOẠT ĐỘNG ====================
+            const Text(
+              'Trạng thái hoạt động',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: isTechnicianActive
+                  ? Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Chế độ ${statusAccount == 'active' ? 'Online' : 'Offline'}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        statusAccount == 'active'
+                            ? 'Bạn đang sẵn sàng nhận việc'
+                            : 'Bạn đang không nhận việc mới',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  isUpdating
+                      ? const SizedBox(
+                    height: 28,
+                    width: 28,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 3),
+                  )
+                      : Switch.adaptive(
+                    value: statusAccount == 'active',
+                    activeColor: ColorConfig.secondary,
+                    activeTrackColor:
+                    ColorConfig.secondary.withOpacity(0.3),
+                    inactiveThumbColor: Colors.grey.shade400,
+                    inactiveTrackColor: Colors.grey.shade300,
+                    onChanged: isProfileActive
+                        ? (_) => toggleUserStatus()
+                        : null,
+                  ),
+                ],
+              )
+                  : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Hồ sơ chưa được duyệt',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Vui lòng chờ quản trị viên phê duyệt hồ sơ của bạn.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // ==================== CÁC NÚT HÀNH ĐỘNG ====================
+            if (technicianData != null) ...[
+              if (isTechnicianActive) ...[
+                // Row cho 2 nút Sửa hồ sơ và Sửa dịch vụ
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final result =
+                          await context.push('/user-edit-technician');
+                          if (result == true) {
+                            _loadUserDetail();
+                          }
+                        },
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        label: const Text(
+                          'Sửa hồ sơ',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ColorConfig.secondary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 2,
+                        ),
                       ),
                     ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add, size: 20),
-                        SizedBox(width: 8),
-                        Text('Thêm hồ sơ người quen'),
-                      ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          context.go("/home-technician/technician-update-service");
+                        },
+                        icon: const Icon(Icons.handyman_outlined, size: 20),
+                        label: const Text(
+                          'Sửa dịch vụ',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ColorConfig.secondary,
+                          side: BorderSide(color: ColorConfig.secondary),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Nút cập nhật vị trí
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: isUpdatingLocation ? null : () async {
+                      await _getCurrentLocation();
+                      await _updateLocation();
+                    },
+                    icon: isUpdatingLocation
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : const Icon(Icons.location_on_outlined, size: 20),
+                    label: Text(
+                      isUpdatingLocation ? 'Đang cập nhật...' : 'Cập nhật vị trí',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.blue,
+                      side: const BorderSide(color: Colors.blue),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                   ),
                 ),
               ],
 
-              // Approval Section
+              // ==================== PHẦN CHƯA ĐƯỢC DUYỆT ====================
               if (!isTechnicianActive) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.orange.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.orange.withOpacity(0.3),
+                      color: Colors.orange.withOpacity(0.4),
                     ),
                   ),
                   child: Column(
                     children: [
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.info, color: Colors.orange.shade700),
-                          const SizedBox(width: 8),
+                          Icon(Icons.info_outline,
+                              color: Colors.orange.shade700, size: 28),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Tài khoản của bạn chưa được phê duyệt. Vui lòng liên hệ số điện thoại 0988788123 để được hỗ trợ.',
+                              'Tài khoản của bạn chưa được phê duyệt.\nVui lòng liên hệ hỗ trợ để được xét duyệt nhanh hơn.',
                               style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.orange.shade700,
+                                fontSize: 15,
+                                color: Colors.orange.shade800,
+                                height: 1.5,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
-                            child: ElevatedButton(
+                            child: ElevatedButton.icon(
                               onPressed: _checkApprovalStatus,
+                              icon: const Icon(
+                                  Icons.published_with_changes_outlined,
+                                  size: 18),
+                              label: const Text('Kiểm tra tình trạng'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange.shade50,
-                                foregroundColor: Colors.orange.shade700,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                backgroundColor: Colors.orange.shade600,
+                                foregroundColor: Colors.white,
+                                padding:
+                                const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.published_with_changes, size: 18),
-                                  SizedBox(width: 8),
-                                  Text("Kiểm tra tình trạng"),
-                                ],
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           IconButton(
                             onPressed: () {
                               const phoneNumber = "0988788123";
-                              Clipboard.setData(const ClipboardData(text: phoneNumber));
-                              SnackbarHelper.showSuccess(context, 'Đã copy số điện thoại');
+                              Clipboard.setData(
+                                  const ClipboardData(text: phoneNumber));
+                              SnackbarHelper.showSuccess(
+                                  context, 'Đã copy số điện thoại');
                             },
-                            icon: Icon(Icons.copy, color: Colors.orange.shade700),
+                            icon: Icon(Icons.copy_rounded,
+                                color: Colors.orange.shade700),
                             tooltip: 'Copy số điện thoại',
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.orange.shade50,
+                            ),
                           ),
                         ],
                       ),
                       if (_remainingSeconds > 0)
                         Padding(
-                          padding: const EdgeInsets.only(top: 12),
+                          padding: const EdgeInsets.only(top: 16),
                           child: Text(
-                            "Bạn có thể kiểm tra lại sau: ${(_remainingSeconds ~/ 60).toString().padLeft(2, '0')}:${(_remainingSeconds % 60).toString().padLeft(2, '0')}",
+                            "Kiểm tra lại sau: ${(_remainingSeconds ~/ 60).toString().padLeft(2, '0')}:${(_remainingSeconds % 60).toString().padLeft(2, '0')}",
                             style: TextStyle(
                               color: Colors.orange.shade700,
-                              fontSize: 13,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -469,41 +616,11 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ],
             ],
+
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
-
-  // Widget _buildInfoRow(IconData icon, String label, String value) {
-  //   return Row(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Icon(icon, size: 20, color: Colors.grey.shade600),
-  //       const SizedBox(width: 12),
-  //       Expanded(
-  //         child: Column(
-  //           crossAxisAlignment: CrossAxisAlignment.start,
-  //           children: [
-  //             Text(
-  //               label,
-  //               style: TextStyle(
-  //                 fontSize: 13,
-  //                 color: Colors.grey.shade600,
-  //               ),
-  //             ),
-  //             const SizedBox(height: 4),
-  //             Text(
-  //               value,
-  //               style: const TextStyle(
-  //                 fontSize: 15,
-  //                 color: Colors.black87,
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 }

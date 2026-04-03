@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:marquee/marquee.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/format_helper.dart';
 
 import 'package:spa_app/screens/admin/widgets/user_detail.dart';
 import 'package:spa_app/services/user_service.dart';
@@ -267,7 +268,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Tìm kiếm theo số điện thoại hoặc tên',
+                hintText: 'Tìm kiếm theo số điện thoại hoặc tên.',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -590,7 +591,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
                     child: avatarUrl != null
                         ? Image.network(
-                      avatarUrl,
+                      FormatHelper.formatNetworkImageUrl(avatarUrl),
                       height: 100,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>

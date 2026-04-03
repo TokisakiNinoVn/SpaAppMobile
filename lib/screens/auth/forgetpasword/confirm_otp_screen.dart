@@ -42,7 +42,7 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen> {
         'otp': otp,
       });
 
-      print("Response confirm otp: $response");
+      // print("Response confirm otp: $response");
 
       if (response['success'] == true || response['status'] == 'success') {
         context.go('/reset-password/${widget.phone}');

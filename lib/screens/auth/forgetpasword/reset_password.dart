@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
+import 'package:spa_app/routes/config/global_router_config.dart';
 import '../../../helper/snackbar_helper.dart';
 import 'package:spa_app/services/auth_service.dart';
 
@@ -167,7 +168,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             ),
             const SizedBox(height: 15),
             TextButton(
-              onPressed: () => context.go('/login'),
+              onPressed: () => context.go(GlobalRouterConfig.loginOTP),
               child: Text(
                 'Quay lại đăng nhập',
                 style: ThemeConfig.appTextStyle(color: ColorConfig.primary),

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 // import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/screens/admin/service/service_management.dart';
+import 'package:spa_app/screens/admin/widgets/general_management_widget.dart';
 import 'package:spa_app/screens/widgets/exit_confirm_dialog.dart';
 
-import '../admin/widgets/account_widget.dart';
+import 'account/technician/management_account_technician.dart';
 import '../admin/widgets/approve_widget.dart';
 import '../admin/widgets/home_widget.dart';
 import '../admin/widgets/account_admin_widget.dart';
@@ -24,18 +26,12 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
 
   final List<Widget> _pages = [
     const HomeTab(),
-    const AccountTab(),
+    // const ServiceTab(),
+    // const AccountTab(),
     const ApproveTab(),
+    const GeneralManagementTab(),
     const AccountAdminTab(),
-    // const ListTechnicianTab(),
   ];
-
-  // final List<String> _titles = [
-  //   'Quản lý tài khoản',
-  //   'Phê duyệt hồ sơ',
-  //   'Kĩ thuật viên',
-  //   'Chính sách & quyền',
-  // ];
 
   @override
   void initState() {
@@ -57,40 +53,6 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
     });
   }
 
-  // Future<void> _logout() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   await prefs.clear();
-  // }
-
-  // void _showLogoutDialog(BuildContext context) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (_) => AlertDialog(
-  //       title: const Text("Đăng xuất"),
-  //       content: const Text("Bạn có chắc chắn muốn đăng xuất không?"),
-  //       actions: [
-  //         TextButton(
-  //           child: const Text("Hủy"),
-  //           onPressed: () => Navigator.of(context).pop(),
-  //         ),
-  //         ElevatedButton(
-  //           child: const Text("Đăng xuất"),
-  //           onPressed: () async {
-  //             await _logout();
-  //             if (mounted) {
-  //               Navigator.of(context).pop();
-  //               context.go('/login');
-  //               ScaffoldMessenger.of(context).showSnackBar(
-  //                 const SnackBar(content: Text("Đăng xuất thành công")),
-  //               );
-  //             }
-  //           },
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -100,24 +62,6 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
     }
     return ExitAppWrapper (
       child: Scaffold(
-          // appBar: AppBar(
-          //   title: Text(_titles[_selectedIndex]),
-          //   centerTitle: true,
-          //   backgroundColor: Colors.white,
-          //   foregroundColor: Colors.black,
-          //   actions: [
-          //     IconButton(
-          //       icon: const Icon(Icons.settings),
-          //       tooltip: 'Cài đặt',
-          //       onPressed: () => context.go('/settings'),
-          //     ),
-          //     IconButton(
-          //       icon: const Icon(Icons.logout),
-          //       tooltip: 'Đăng xuất',
-          //       onPressed: () => _showLogoutDialog(context),
-          //     ),
-          //   ],
-          // ),
           body: SafeArea(child: _pages[_selectedIndex]),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _selectedIndex,
@@ -130,21 +74,30 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                 icon: Icon(Icons.home),
                 label: 'Home',
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.account_circle),
-                label: 'Tài khoản',
-              ),
+
+              // BottomNavigationBarItem(
+              //   icon: Icon(Icons.calendar_today),
+              //   label: 'Dịch vụ',
+              // ),
+              //
+              // BottomNavigationBarItem(
+              //   icon: Icon(Icons.manage_accounts_sharp),
+              //   label: 'Tài khoản',
+              // ),
+
               BottomNavigationBarItem(
                 icon: Icon(Icons.assignment_turned_in),
                 label: 'Phê duyệt',
               ),
-              // BottomNavigationBarItem(
-              //   icon: Icon(Icons.person_outline),
-              //   label: 'Hồ sơ',
-              // ),
+
               BottomNavigationBarItem(
-                icon: Icon(Icons.logout),
-                label: 'Đăng xuất',
+                icon: Icon(Icons.settings),
+                label: 'QL Chung',
+              ),
+
+              BottomNavigationBarItem(
+                icon: Icon(Icons.account_circle_rounded),
+                label: 'Admin',
               ),
             ],
           ),

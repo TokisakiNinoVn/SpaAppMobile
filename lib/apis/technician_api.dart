@@ -12,4 +12,9 @@ class TechnicianApiRoutes {
   static const String listTechnicianCreateByUser = '${AppConfig.apiUrlPrivate}/technician/list-technicians-user';
   static const String deleteTechnicianCreateByUser = '${AppConfig.apiUrlPrivate}/technician/delete';
 
+  static const String listTechnicianForCustomer = '${AppConfig.apiUrlPublic}/technician-app/all-technicians';
+  static const String detailTechnicianForCustomer = '${AppConfig.apiUrlPublic}/technician-customer';
+
+  static const String updateLocationTechnician = '${AppConfig.apiUrlPrivate}/technician-app/update-location';
+
 }

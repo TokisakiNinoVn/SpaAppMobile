@@ -4,6 +4,7 @@ import 'package:spa_app/config/color_config.dart';
 
 import 'package:spa_app/screens/technician/widgets/account_widget.dart';
 import 'package:spa_app/screens/technician/widgets/home_widget.dart';
+import 'package:spa_app/screens/technician/widgets/job_tab_widget.dart';
 import 'package:spa_app/screens/technician/widgets/management_technician_widget_tab.dart';
 import 'package:spa_app/screens/technician/widgets/policy_tab_widget.dart';
 import 'package:spa_app/screens/technician/widgets/support_tab_widget.dart';
@@ -55,22 +56,35 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    switch (_selectedIndex) {
-      case 0:
-        return const HomeTab();
-      case 1:
-        return const PolicyTabWidget();
-      case 2:
-        return const SupportTabWidget();
-      case 4:
-        return const AccountTab();
-      case 3:
-        if (!isTechnicianActive) {
-          return const Center(child: Text("Hồ sơ chưa được duyệt"));
-        }
-        return const ManagementTechnicianTab();
-      default:
-        return const Center(child: Text("Không tìm thấy tab."));
+    if (isTechnicianActive) {
+      switch (_selectedIndex) {
+        case 0:
+          return const HomeTechnicianTab();
+        case 1:
+          return const JobApplicationTab();
+        case 2:
+          return const AccountTab();
+        default:
+          return const Center(child: Text("Không tìm thấy tab."));
+      }
+    } else {
+      switch (_selectedIndex) {
+        case 0:
+          return const HomeTechnicianTab();
+        case 1:
+          return const PolicyTabWidget();
+        case 2:
+          return const SupportTabWidget();
+        case 3:
+          return const AccountTab();
+      // case 3:
+      //   if (!isTechnicianActive) {
+      //     return const Center(child: Text("Hồ sơ chưa được duyệt"));
+      //   }
+      //   return const ManagementTechnicianTab();
+        default:
+          return const Center(child: Text("Không tìm thấy tab."));
+      }
     }
   }
 
@@ -90,13 +104,15 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
         items: isTechnicianActive
             ? const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Chính sách'),
-          BottomNavigationBarItem(icon: Icon(Icons.phone), label: 'Hỗ trợ'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Hồ sơ'),
+          BottomNavigationBarItem(icon: Icon(Icons.bookmark_added), label: 'Nhận việc'),
+          // BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Chính sách'),
+          // BottomNavigationBarItem(icon: Icon(Icons.phone), label: 'Hỗ trợ'),
+          // BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Hồ sơ'),
           BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Tài khoản'),
         ]
             : const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          // BottomNavigationBarItem(icon: Icon(Icons.bookmark_added), label: 'Nhận việc'),
           BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Chính sách'),
           BottomNavigationBarItem(icon: Icon(Icons.phone), label: 'Hỗ trợ'),
           BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Tài khoản'),

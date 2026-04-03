@@ -34,6 +34,14 @@ class UserService {
       data,
     );
   }
+  Future<Map<String, dynamic>> changeRoleService(
+    Map<String, dynamic> data,
+  ) async {
+    return await ApiMethodsPrivate.putRequest(
+      UserApiRoutes.changeRole,
+      data,
+    );
+  }
 
   Future<Map<String, dynamic>> deleteUserService(String id) async {
     return await ApiMethodsPrivate.deleteRequest(

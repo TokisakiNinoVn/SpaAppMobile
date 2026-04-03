@@ -1,14 +1,20 @@
 // file: lib/helper/format_helper.dart
-// import '../../../config/app_config.dart';
+import 'package:intl/intl.dart';
+
+import '../config/app_config.dart';
 
 class FormatHelper {
-  // static String formatImageUrl(String url) {
-  //   // print("URL origin image: $url");
-  //   return '${AppConfig.apiUrlImage}$url';
-  // }
+  static String formatNetworkImageUrl(String url) {
+    // print("URL origin image: $url - ${AppConfig.apiUrlImage}$url");
+    return '${AppConfig.apiUrlImage}$url';
+  }
   static String formatImageUrl(String url) {
     // print("URL origin image: $url");
     return '$url';
+  }
+
+  static String formatNameTechnician(String name) {
+    return name.split('-').first.trim();
   }
 
   static String formatDateTime(String dateString) {
@@ -24,6 +30,17 @@ class FormatHelper {
   static DateTime parseDateTime(String dateString) {
     return DateTime.parse(dateString);
   }
+  static String formatGender(String? gender) {
+    if (gender == null) return "Không xác định";
+    return gender.toLowerCase() == "male" ? "Nam" : "Nữ";
+  }
 
+  static String formatPrice(int? price) {
+    if (price == null) return '0';
+    return NumberFormat('#,###', 'vi_VN').format(price);
+  }
 
+  static String formatDateTimeTypeDateTime(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
 }

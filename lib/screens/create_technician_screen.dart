@@ -6,6 +6,8 @@ import 'package:image_cropper/image_cropper.dart';
 
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
+import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -188,10 +190,10 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         'address': address,
         'yearOfBirth': int.tryParse(selectedYear.toString()),
         'experience': experience,
-        'services': services.entries
-            .where((entry) => entry.value)
-            .map((entry) => entry.key)
-            .toList(),
+        // 'services': services.entries
+        //     .where((entry) => entry.value)
+        //     .map((entry) => entry.key)
+        //     .toList(),
         'images': images,
         'bio': bio,
       };
@@ -301,7 +303,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
           children: [
             Center(
               child: Image.network(
-                imageUrl,
+                FormatHelper.formatNetworkImageUrl(imageUrl),
                 fit: BoxFit.contain,
               ),
             ),
@@ -634,7 +636,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
               onTap: () => FullScreenSingleImageViewer(imageUrl: image['url']),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(image['url'], fit: BoxFit.cover),
+                child: Image.network(FormatHelper.formatNetworkImageUrl(image['url']), fit: BoxFit.cover),
               ),
             ),
             Positioned(
@@ -680,7 +682,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                 child: ClipOval(
                   child: avatarImage != null
                       ? Image.network(
-                    avatarImage!['url'],
+                    FormatHelper.formatNetworkImageUrl(avatarImage!['url']),
                     fit: BoxFit.cover,
                     width: 110,
                     height: 110,
@@ -732,31 +734,31 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Dịch vụ cung cấp', style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary)),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 3,
-          runSpacing: 3,
-          children: services.entries.map((service) {
-            return FilterChip(
-              // label: Text(service.key, style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary)),
-              label: Text(service.key),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              selected: service.value,
-              onSelected: (bool value) {
-                setState(() {
-                  services[service.key] = value;
-                });
-              },
-              selectedColor: ColorConfig.secondary,
-              checkmarkColor: ColorConfig.white,
-              labelStyle: ThemeConfig.appTextStyle(
-                color: service.value ? ColorConfig.textWhite : ColorConfig.textPrimary,
-              ),
-            );
-          }).toList(),
-        ),
+        // Text('Dịch vụ cung cấp', style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary)),
+        // const SizedBox(height: 4),
+        // Wrap(
+        //   spacing: 3,
+        //   runSpacing: 3,
+        //   children: services.entries.map((service) {
+        //     return FilterChip(
+        //       // label: Text(service.key, style: ThemeConfig.appTextStyle(color: ColorConfig.textPrimary)),
+        //       label: Text(service.key),
+        //       labelPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+        //       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        //       selected: service.value,
+        //       onSelected: (bool value) {
+        //         setState(() {
+        //           services[service.key] = value;
+        //         });
+        //       },
+        //       selectedColor: ColorConfig.secondary,
+        //       checkmarkColor: ColorConfig.white,
+        //       labelStyle: ThemeConfig.appTextStyle(
+        //         color: service.value ? ColorConfig.textWhite : ColorConfig.textPrimary,
+        //       ),
+        //     );
+        //   }).toList(),
+        // ),
       ],
     );
   }
@@ -878,7 +880,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              _buildServicesSection(),
+              // _buildServicesSection(),
               const SizedBox(height: 12),
               Row(
                 children: [
