@@ -4,21 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:spa_app/routes/app_router.dart';
 import 'package:spa_app/services/realtime_service.dart';
-import 'package:go_router/go_router.dart';
 
-/// ------------------------------------------------------------
-/// Background handler (bắt buộc phải nằm ngoài main)
-/// ------------------------------------------------------------
+/// Background handler
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint("📩 Background message: ${message.messageId}");
 }
 
-/// ------------------------------------------------------------
 /// Local Notification setup
-/// ------------------------------------------------------------
 final FlutterLocalNotificationsPlugin localNoti =
-FlutterLocalNotificationsPlugin();
+    FlutterLocalNotificationsPlugin();
 
 const AndroidNotificationChannel defaultChannel = AndroidNotificationChannel(
   'default_channel',
@@ -28,47 +23,59 @@ const AndroidNotificationChannel defaultChannel = AndroidNotificationChannel(
 );
 
 Future<void> _setupLocalNotifications() async {
+  /// ANDROID
   const AndroidInitializationSettings androidSettings =
-  AndroidInitializationSettings('@mipmap/ic_launcher');
+      AndroidInitializationSettings('@mipmap/ic_launcher');
 
-  const InitializationSettings initSettings =
-  InitializationSettings(android: androidSettings);
+  /// 🔥 FIX IOS (QUAN TRỌNG)
+  const DarwinInitializationSettings iosSettings =
+      DarwinInitializationSettings();
+
+  const InitializationSettings initSettings = InitializationSettings(
+    android: androidSettings,
+    iOS: iosSettings,
+  );
 
   await localNoti.initialize(initSettings);
 
+  /// Create Android channel
   await localNoti
       .resolvePlatformSpecificImplementation<
-      AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(defaultChannel);
+
+  /// Request iOS permission
+  await localNoti
+      .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>()
+      ?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 }
 
-/// ------------------------------------------------------------
-/// Main
-/// ------------------------------------------------------------
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  /// 🔥 FIX: dùng init đơn giản (không firebase_options.dart)
   await Firebase.initializeApp();
 
-  // Realtime service
+  /// Background message
+  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+
+  /// Local notifications
+  await _setupLocalNotifications();
+
+  /// Request FCM permission (iOS)
+  await FirebaseMessaging.instance.requestPermission();
+
+  /// Realtime service (có thể fail nếu chưa login, nhưng không crash)
   final realtimeService = RealtimeService();
   realtimeService.connect();
 
-  // Background message listener
-  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
-
-  // Local notification setup
-  await _setupLocalNotifications();
-
-  /// ----------------------------------------------------------
-  /// Foreground FCM listener
-  /// ----------------------------------------------------------
+  /// Foreground message
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-    debugPrint("🔥 RAW MESSAGE:");
-    debugPrint(message.toMap().toString());
-
-    debugPrint("📦 DATA: ${message.data}");
-    debugPrint("🔔 NOTIFICATION: ${message.notification?.toMap()}");
-
     final noti = message.notification;
     final android = noti?.android;
 
@@ -90,27 +97,20 @@ Future<void> main() async {
     }
   });
 
-  /// ----------------------------------------------------------
-  /// Khi user bấm vào notification (app background)
-  /// ----------------------------------------------------------
+  /// Click notification (background)
   FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
     final data = message.data;
-    debugPrint("🚪 Notification click DATA: $data");
-
     final type = data['type'];
     final orderId = data['orderId'];
 
     if (type == 'order' && orderId != null) {
       appRouter.go('/home-technician/orders/$orderId');
-    } else {
-      print("🥲 Lỗi gì đó chăng không?");
     }
   });
 
-  /// ----------------------------------------------------------
-  /// Khi app bị kill hoàn toàn và mở từ notification
-  /// ----------------------------------------------------------
-  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  /// App killed -> open from notification
+  final initialMessage =
+      await FirebaseMessaging.instance.getInitialMessage();
 
   if (initialMessage != null) {
     final data = initialMessage.data;
