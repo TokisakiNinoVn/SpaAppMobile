@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.zenhome.spa</string>
+	<string>com.example.widgetHomeDemo</string>
 	<key>PROJECT_ID</key>
 	<string>zen-home-24d21</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:479516932795:ios:6144f294c0059ba870079e</string>
+	<string>1:479516932795:ios:71e6be80901de60270079e</string>
 </dict>
 </plist>
