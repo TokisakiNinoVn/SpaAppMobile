@@ -3,12 +3,20 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
 import '../../helper/snackbar_helper.dart';
 import '../../routes/app_router.dart';
 import '../../routes/config/global_router_config.dart';
 
 class ApiMethodsPrivate {
+
+  static String getPlatform() {
+    if (Platform.isAndroid) return "android";
+    if (Platform.isIOS) return "ios";
+    return "unknown";
+  }
+
   // Hàm lấy token từ SharedPreferences
   static Future<String?> getToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -49,6 +57,7 @@ class ApiMethodsPrivate {
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        'platform': getPlatform(),
       };
 
       final response = await http.post(
@@ -93,6 +102,7 @@ class ApiMethodsPrivate {
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        'platform': getPlatform(),
       };
 
       // Gửi request

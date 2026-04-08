@@ -1,11 +1,20 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ApiMethodsPublic {
+  static String getPlatform() {
+    if (Platform.isAndroid) return "android";
+    if (Platform.isIOS) return "ios";
+    return "unknown";
+  }
+
   // Base headers for all requests
-  static const Map<String, String> _defaultHeaders = {
+  static Map<String, String> get defaultHeaders => {
     'Content-Type': 'application/json',
+    'platform': getPlatform(),
   };
+
 
   // Helper method to parse JSON response
   // static Map<String, dynamic> _parseResponse(http.Response response) {
@@ -95,7 +104,7 @@ class ApiMethodsPublic {
     try {
       final response = await http.post(
         Uri.parse(url),
-        headers: {..._defaultHeaders, ...?headers},
+        headers: {...defaultHeaders, ...?headers},
         body: body != null ? jsonEncode(body) : null,
       );
       return _handleResponse(response);
@@ -119,7 +128,7 @@ class ApiMethodsPublic {
 
       final response = await http.get(
         uri,
-        headers: {..._defaultHeaders, ...?headers},
+        headers: {...defaultHeaders, ...?headers},
       );
       return _handleResponse(response);
     } catch (e) {
@@ -136,7 +145,7 @@ class ApiMethodsPublic {
     try {
       final response = await http.put(
         Uri.parse(url),
-        headers: {..._defaultHeaders, ...?headers},
+        headers: {...defaultHeaders, ...?headers},
         body: body != null ? jsonEncode(body) : null,
       );
       return _handleResponse(response);
@@ -154,7 +163,7 @@ class ApiMethodsPublic {
     try {
       final response = await http.delete(
         Uri.parse(url),
-        headers: {..._defaultHeaders, ...?headers},
+        headers: {...defaultHeaders, ...?headers},
         body: body != null ? jsonEncode(body) : null,
       );
       return _handleResponse(response);
@@ -172,7 +181,7 @@ class ApiMethodsPublic {
     try {
       final response = await http.patch(
         Uri.parse(url),
-        headers: {..._defaultHeaders, ...?headers},
+        headers: {...defaultHeaders, ...?headers},
         body: body != null ? jsonEncode(body) : null,
       );
       return _handleResponse(response);

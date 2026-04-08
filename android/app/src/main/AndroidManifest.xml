@@ -35,7 +35,7 @@
     <application
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:label="Serene Spa"
+        android:label="Zen Home Spa"
         android:requestLegacyExternalStorage="true"
         android:usesCleartextTraffic="true">
         >
