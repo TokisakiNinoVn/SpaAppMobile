@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "498626591797",
-    "project_id": "serene-spa-b324d",
-    "storage_bucket": "serene-spa-b324d.firebasestorage.app"
+    "project_number": "479516932795",
+    "project_id": "zen-home-24d21",
+    "storage_bucket": "zen-home-24d21.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:498626591797:android:2f21c0f7dc430007a7857c",
+        "mobilesdk_app_id": "1:479516932795:android:7d42c601930da82a70079e",
         "android_client_info": {
           "package_name": "com.spa_app.fe_android"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB51pNyGPQ2WsMR51zVSyOm8nHhFSy47Y8"
+          "current_key": "AIzaSyCUCfVGTHvxY8zL91pF6BqaNevfeZYl-ts"
         }
       ],
       "services": {
