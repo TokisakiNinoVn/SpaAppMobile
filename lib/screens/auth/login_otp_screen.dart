@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
@@ -120,8 +121,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
   }
 
   /// Called on iOS when notification arrives while app is in foreground (iOS < 10)
-  static void _onDidReceiveLocalNotification(
-      int id, String? title, String? body, String? payload) {
+  static void _onDidReceiveLocalNotification(int id, String? title, String? body, String? payload) {
     appLog('iOS foreground notification: $title | $body | payload: $payload');
   }
 
@@ -183,23 +183,67 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
   // FCM TOKEN
   // ──────────────────────────────────────────────────────────────
 
+  // Future<void> _getFCMToken() async {
+  //   try {
+  //     await FirebaseMessaging.instance.requestPermission(
+  //       alert: true,
+  //       badge: true,
+  //       sound: true,
+  //     );
+  //     final token = await FirebaseMessaging.instance.getToken();
+  //     if (token != null) {
+  //       setState(() => _fcmToken = token);
+  //     }
+  //     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+  //       _fcmToken = newToken;
+  //       _updateFCMTokenIfLoggedIn(newToken);
+  //     });
+  //   } catch (e) {
+  //     appLog("Lỗi lấy FCM token: $e");
+  //   }
+  // }
   Future<void> _getFCMToken() async {
     try {
-      await FirebaseMessaging.instance.requestPermission(
+      // iOS: phải request permission và chờ APNs token trước
+      final settings = await FirebaseMessaging.instance.requestPermission(
         alert: true,
         badge: true,
         sound: true,
       );
+
+      if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        appLog('User từ chối permission notification');
+        SnackbarHelper.showError(context, 'Bạn cần cho phép thông báo để nhận mã OTP. Vui lòng bật quyền thông báo trong cài đặt.');
+        return;
+      }
+
+      // iOS simulator không hỗ trợ FCM token — chỉ test trên real device
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        // Đợi APNs token sẵn sàng (quan trọng!)
+        final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+        if (apnsToken == null) {
+          appLog('APNs token null — chạy trên simulator hoặc chưa config APNs');
+          SnackbarHelper.showError(context, 'Không thể lấy APNs token. Vui lòng chạy trên thiết bị thật và đảm bảo đã cấu hình APNs đúng cách.');
+          return;
+        }
+        appLog('APNs token: $apnsToken');
+      }
+
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
         setState(() => _fcmToken = token);
+        appLog('FCM token: $token');
+      } else {
+        SnackbarHelper.showError(context, 'Không thể lấy FCM token. Vui lòng thử lại hoặc kiểm tra cấu hình Firebase.');
+        appLog('FCM token null sau khi đã có APNs token');
       }
+
       FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
         _fcmToken = newToken;
         _updateFCMTokenIfLoggedIn(newToken);
       });
     } catch (e) {
-      appLog("Lỗi lấy FCM token: $e");
+      appLog('Lỗi lấy FCM token: $e');
     }
   }
 
