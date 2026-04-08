@@ -38,6 +38,8 @@
 	<!-- Location (chỉ dùng khi mở app) -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Vị trí của bạn được sử dụng để hiển thị các dịch vụ gần nhất và giúp hệ thống kết nối bạn với cộng tác viên phù hợp trong khu vực.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Vị trí của bạn được sử dụng để hiển thị các dịch vụ gần nhất và hỗ trợ kết nối với cộng tác viên phù hợp, ngay cả khi ứng dụng đang chạy nền.</string>
 
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
