@@ -288,7 +288,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Vui lòng nhập số điện thoại.'),
+            content: const Text('Vui lòng nhập số điện thoại của bạn.'),
             backgroundColor: const Color(0xFF8B6F61),
             behavior: SnackBarBehavior.floating,
             shape:
