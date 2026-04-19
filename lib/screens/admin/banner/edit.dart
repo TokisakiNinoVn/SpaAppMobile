@@ -89,7 +89,7 @@ class _EditBannerScreenState extends State<EditBannerScreen>
         await _uploadImage();
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi khi chọn ảnh: $e');
+      SnackBarHelper.showError(context, 'Lỗi khi chọn ảnh: $e');
     }
   }
 
@@ -106,20 +106,20 @@ class _EditBannerScreenState extends State<EditBannerScreen>
           _uploadedImageUrl = imageData['url'];
           _isUploading = false;
         });
-        SnackbarHelper.showSuccess(context, 'Tải lên hình ảnh thành công');
+        SnackBarHelper.showSuccess(context, 'Tải lên hình ảnh thành công');
       } else {
         setState(() => _isUploading = false);
-        SnackbarHelper.showError(context, 'Không thể tải lên hình ảnh');
+        SnackBarHelper.showError(context, 'Không thể tải lên hình ảnh');
       }
     } catch (e) {
       setState(() => _isUploading = false);
-      SnackbarHelper.showError(context, 'Lỗi tải lên hình ảnh: $e');
+      SnackBarHelper.showError(context, 'Lỗi tải lên hình ảnh: $e');
     }
   }
 
   Future<void> _deleteCurrentImage() async {
     if (_uploadedFileId == null) {
-      SnackbarHelper.showError(context, 'Không có ảnh để xóa');
+      SnackBarHelper.showError(context, 'Không có ảnh để xóa');
       return;
     }
 
@@ -161,28 +161,28 @@ class _EditBannerScreenState extends State<EditBannerScreen>
           _selectedImage = null;
           _isLoading = false;
         });
-        SnackbarHelper.showSuccess(context, 'Đã xóa ảnh banner');
+        SnackBarHelper.showSuccess(context, 'Đã xóa ảnh banner');
       } else {
         setState(() => _isLoading = false);
-        SnackbarHelper.showError(context, 'Không thể xóa ảnh banner');
+        SnackBarHelper.showError(context, 'Không thể xóa ảnh banner');
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      SnackbarHelper.showError(context, 'Lỗi xóa ảnh: $e');
+      SnackBarHelper.showError(context, 'Lỗi xóa ảnh: $e');
     }
   }
 
   Future<void> _updateBanner() async {
     if (_titleController.text.trim().isEmpty) {
-      SnackbarHelper.showError(context, 'Vui lòng nhập tiêu đề banner');
+      SnackBarHelper.showError(context, 'Vui lòng nhập tiêu đề banner');
       return;
     }
     if (_contentController.text.trim().isEmpty) {
-      SnackbarHelper.showError(context, 'Vui lòng nhập nội dung banner');
+      SnackBarHelper.showError(context, 'Vui lòng nhập nội dung banner');
       return;
     }
     if (_uploadedFileId == null) {
-      SnackbarHelper.showError(context, 'Vui lòng chọn hình ảnh cho banner');
+      SnackBarHelper.showError(context, 'Vui lòng chọn hình ảnh cho banner');
       return;
     }
 
@@ -197,13 +197,13 @@ class _EditBannerScreenState extends State<EditBannerScreen>
       };
       final response = await bannerService.updateBanner(widget.data?["_id"], bannerData);
       if (response['success'] == true || response['message'] != null) {
-        SnackbarHelper.showSuccess(context, 'Cập nhật banner thành công');
+        SnackBarHelper.showSuccess(context, 'Cập nhật banner thành công');
         context.pop(true);
       } else {
         throw Exception(response['message'] ?? 'Không thể cập nhật banner');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi: $e');
+      SnackBarHelper.showError(context, 'Lỗi: $e');
     } finally {
       setState(() => _isLoading = false);
     }

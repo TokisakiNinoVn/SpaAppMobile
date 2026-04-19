@@ -188,7 +188,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
         _bannerError = 'Không thể tải banner: $e';
         _isBannerLoading = false;
       });
-      SnackbarHelper.showError(context, 'Lỗi khi tải banner');
+      SnackBarHelper.showError(context, 'Lỗi khi tải banner');
     }
   }
 

@@ -5,9 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
 
-import '../../helper/logger_utils.dart';
+import '../../../helper/logger_utils.dart';
 import 'package:spa_app/services/customer_service.dart';
-import '../../routes/config/customer_router_config.dart';
+import '../../../routes/config/customer_router_config.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
   const UpdateProfileScreen({super.key});
@@ -20,18 +20,11 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final CustomerService _customerService = CustomerService();
 
   final TextEditingController _fullnameController = TextEditingController();
-  // final TextEditingController _addressController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
 
   String _gender = 'female';
   bool _loading = true;
   bool _isUpdating = false;
-
-  // Màu sắc chủ đạo
-  final Color _primaryColor = const Color(0xFFE8A419);
-  final Color _secondaryColor = const Color(0xFF42A5F5);
-  final Color _backgroundColor = const Color(0xFFF8F9FA);
-  final Color _surfaceColor = Colors.white;
 
   @override
   void initState() {
@@ -131,7 +124,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   @override
   void dispose() {
     _fullnameController.dispose();
-    // _addressController.dispose();
     _bioController.dispose();
     super.dispose();
   }
@@ -140,13 +132,13 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
-        backgroundColor: _backgroundColor,
+        backgroundColor: Colors.white,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(_primaryColor),
+                valueColor: AlwaysStoppedAnimation<Color>(ColorConfig.primary),
               ),
               const SizedBox(height: 16),
               Text(
@@ -160,7 +152,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: Colors.white,
       appBar: _buildAppBar(),
       body: SafeArea(
         child: Stack(
@@ -215,7 +207,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       automaticallyImplyLeading: false,
-      backgroundColor: _surfaceColor,
+      backgroundColor: ColorConfig.white,
       elevation: 0.5,
       shadowColor: Colors.black12,
       title: Row(
@@ -227,7 +219,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _backgroundColor,
+                color: ColorConfig.white,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.grey.shade200),
               ),
@@ -312,14 +304,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           ],
         ),
         const SizedBox(height: 24),
-        // _buildInputField(
-        //   label: "Địa chỉ",
-        //   hint: "Nhập địa chỉ của bạn",
-        //   controller: _addressController,
-        //   icon: Icons.location_on_outlined,
-        //   maxLines: 2,
-        // ),
-        const SizedBox(height: 24),
         _buildInputField(
           label: "Giới thiệu bản thân",
           hint: "Viết đôi điều về bản thân...",
@@ -343,7 +327,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: _primaryColor),
+            Icon(icon, size: 18, color: ColorConfig.primary),
             const SizedBox(width: 8),
             Text(
               label,
@@ -359,8 +343,8 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: _surfaceColor,
-            borderRadius: BorderRadius.circular(12),
+            color: ColorConfig.white,
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.grey.shade200),
             boxShadow: [
               BoxShadow(
@@ -399,16 +383,16 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
           decoration: BoxDecoration(
-            color: isSelected ? _primaryColor : _surfaceColor,
+            color: isSelected ? ColorConfig.primary : ColorConfig.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? _primaryColor : Colors.grey.shade300,
+              color: isSelected ? ColorConfig.primary : Colors.grey.shade300,
               width: isSelected ? 1.5 : 1,
             ),
             boxShadow: isSelected
                 ? [
               BoxShadow(
-                color: _primaryColor.withOpacity(0.2),
+                color: ColorConfig.primary.withOpacity(0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -427,7 +411,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
               Icon(
                 icon,
                 size: 22,
-                color: isSelected ? Colors.white : _primaryColor,
+                color: isSelected ? Colors.white : ColorConfig.primary,
               ),
               const SizedBox(height: 6),
               Text(

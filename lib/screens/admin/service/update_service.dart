@@ -91,7 +91,7 @@ class _UpdateServiceState extends State<UpdateService> {
 
   Future<void> _updateInfo() async {
     if (_nameController.text.isEmpty) {
-      SnackbarHelper.showError(context, 'Vui lòng nhập tên dịch vụ');
+      SnackBarHelper.showError(context, 'Vui lòng nhập tên dịch vụ');
       return;
     }
 
@@ -104,9 +104,9 @@ class _UpdateServiceState extends State<UpdateService> {
           'description': _descriptionController.text,
         },
       );
-      SnackbarHelper.showSuccess(context, 'Đã cập nhật thông tin dịch vụ');
+      SnackBarHelper.showSuccess(context, 'Đã cập nhật thông tin dịch vụ');
     } catch (e) {
-      SnackbarHelper.showError(context, 'Cập nhật thất bại: ${e.toString()}');
+      SnackBarHelper.showError(context, 'Cập nhật thất bại: ${e.toString()}');
     } finally {
       setState(() => _loadingInfo = false);
     }
@@ -115,13 +115,13 @@ class _UpdateServiceState extends State<UpdateService> {
   Future<void> _updatePrice(int duration) async {
     final priceText = _priceControllers[duration]!.text;
     if (priceText.isEmpty) {
-      SnackbarHelper.showError(context, 'Vui lòng nhập giá');
+      SnackBarHelper.showError(context, 'Vui lòng nhập giá');
       return;
     }
 
     final price = int.tryParse(priceText);
     if (price == null || price <= 0) {
-      SnackbarHelper.showError(context, 'Giá không hợp lệ');
+      SnackBarHelper.showError(context, 'Giá không hợp lệ');
       return;
     }
 
@@ -144,10 +144,10 @@ class _UpdateServiceState extends State<UpdateService> {
         _timePriceIds[duration] = response['_id'].toString();
       }
 
-      SnackbarHelper.showSuccess(context, 'Đã cập nhật giá $duration phút');
+      SnackBarHelper.showSuccess(context, 'Đã cập nhật giá $duration phút');
     } catch (e) {
       print('Update price error: $e');
-      SnackbarHelper.showError(context, 'Cập nhật giá thất bại');
+      SnackBarHelper.showError(context, 'Cập nhật giá thất bại');
     } finally {
       setState(() => _loadingPrice[duration] = false);
     }

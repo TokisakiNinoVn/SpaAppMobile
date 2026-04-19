@@ -68,7 +68,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
 
   Future<void> _updateLocation() async {
     if (currentLat == null || currentLng == null) {
-      SnackbarHelper.showError(context, "Không thể lấy vị trí hiện tại");
+      SnackBarHelper.showError(context, "Không thể lấy vị trí hiện tại");
       return;
     }
 
@@ -85,12 +85,12 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
       final response = await technicianService.updateLocationTechnicianService(data);
 
       if (response['success'] == true) {
-        SnackbarHelper.showSuccess(context, "Cập nhật vị trí thành công");
+        SnackBarHelper.showSuccess(context, "Cập nhật vị trí thành công");
       } else {
-        SnackbarHelper.showError(context, response['message'] ?? "Cập nhật vị trí thất bại");
+        SnackBarHelper.showError(context, response['message'] ?? "Cập nhật vị trí thất bại");
       }
     } catch (e) {
-      SnackbarHelper.showError(context, "Lỗi cập nhật vị trí: $e");
+      SnackBarHelper.showError(context, "Lỗi cập nhật vị trí: $e");
     } finally {
       setState(() {
         isUpdatingLocation = false;
@@ -108,7 +108,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
       setState(() {
         _remainingSeconds = (remaining / 1000).ceil();
       });
-      SnackbarHelper.showError(context, "Bạn cần chờ hết thời gian đếm ngược để kiểm tra lại.");
+      SnackBarHelper.showError(context, "Bạn cần chờ hết thời gian đếm ngược để kiểm tra lại.");
       return;
     }
 
@@ -119,12 +119,12 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
         final isAccept = data['isAcceptHaveApprovalRequest'] == true;
 
         if (isAccept) {
-          SnackbarHelper.showSuccess(context, "Tài khoản của bạn đã được phê duyệt, vui lòng đăng nhập lại");
+          SnackBarHelper.showSuccess(context, "Tài khoản của bạn đã được phê duyệt, vui lòng đăng nhập lại");
           Future.delayed(const Duration(seconds: 2), () {
             context.go('/login');
           });
         } else {
-          SnackbarHelper.showError(context, "Tài khoản của bạn chưa được phê duyệt, vui lòng liên hệ quản trị viên");
+          SnackBarHelper.showError(context, "Tài khoản của bạn chưa được phê duyệt, vui lòng liên hệ quản trị viên");
         }
 
         await prefs.setInt('lastCheckApproval', now);
@@ -134,7 +134,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
         _startCountdown();
       }
     } catch (e) {
-      SnackbarHelper.showError(context, "Lỗi kiểm tra tình trạng: $e");
+      SnackBarHelper.showError(context, "Lỗi kiểm tra tình trạng: $e");
     }
   }
 
@@ -587,7 +587,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                               const phoneNumber = "0988788123";
                               Clipboard.setData(
                                   const ClipboardData(text: phoneNumber));
-                              SnackbarHelper.showSuccess(
+                              SnackBarHelper.showSuccess(
                                   context, 'Đã copy số điện thoại');
                             },
                             icon: Icon(Icons.copy_rounded,

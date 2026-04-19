@@ -1,6 +1,10 @@
 // TODO Implement this library.
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/screens/admin/account/technician/management_account_technician.dart';
+import 'package:spa_app/screens/admin/bank/add.dart';
+import 'package:spa_app/screens/admin/bank/edit.dart';
+import 'package:spa_app/screens/admin/bank/management.dart';
+import 'package:spa_app/screens/admin/notification/create_notification_screen.dart';
 
 import '../screens/admin/account/customer/management_account_customer.dart';
 import '../screens/admin/banner/banner_management.dart';
@@ -39,6 +43,23 @@ final List<GoRoute> adminRoutes = [
       GoRoute(
         path: 'manage-account-customer',
         builder: (context, state) => const ManagementAccountCustomer(),
+      ),
+      GoRoute(
+        path: 'manage-bank',
+        builder: (context, state) => const ListBankScreen(),
+        routes: [
+          GoRoute(
+            path: 'add',
+            builder: (context, state) => const AddBankScreen(),
+          ),
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) {
+              final data = state.extra as Map<String, dynamic>;
+              return EditBankScreen(bankData: data);
+            },
+          ),
+        ]
       ),
       GoRoute(
         path: 'manage-banner',
@@ -103,6 +124,12 @@ final List<GoRoute> adminRoutes = [
       GoRoute(
         path: 'manage-notification',
         builder: (context, state) => const NotificationManagementScreen(),
+        routes: [
+          GoRoute(
+            path: 'create',
+            builder: (context, state) => const CreateNotificationScreen(),
+          ),
+        ]
       ),
     ],
   ),

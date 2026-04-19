@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:spa_app/config/color_config.dart';
 
 import '../../../../storages/language_storage.dart';
 import '../../../../models/Lang.dart';
@@ -28,12 +29,12 @@ class LanguageSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Chọn ngôn ngữ',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF3D2C1E),
+              color: ColorConfig.textBlack,
             ),
           ),
           const SizedBox(height: 20),
@@ -42,7 +43,7 @@ class LanguageSheet extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: InkWell(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(40),
                 onTap: () async {
                   await LanguageStorage.saveLanguage(lang.code);
                   onSelect(lang.code);
@@ -51,14 +52,14 @@ class LanguageSheet extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 18, vertical: 14),
+                      horizontal: 18, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? Color(0xFF8B7355).withOpacity(0.08)
+                        ? Color(0xFFBAB5AD).withOpacity(0.08)
                         : const Color(0xFFF9F5F0),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(40),
                     border: Border.all(
-                      color: isSelected ? Color(0xFF8B7355) : Colors.transparent,
+                      color: isSelected ? ColorConfig.primary : Colors.transparent,
                       width: 1.5,
                     ),
                   ),
@@ -83,8 +84,8 @@ class LanguageSheet extends StatelessWidget {
                       if (isSelected)
                         Container(
                           padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF8B7355),
+                          decoration: BoxDecoration(
+                            color: ColorConfig.primary,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(

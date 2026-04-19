@@ -107,7 +107,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
       final listTinhThanh = await tinhThanhService.getTinhThanh();
       print("List tỉnh thành: ${listTinhThanh}");
       if (listTinhThanh.isEmpty) {
-        SnackbarHelper.showError(context, 'Không thể tải danh sách tỉnh thành');
+        SnackBarHelper.showError(context, 'Không thể tải danh sách tỉnh thành');
       } else {
         setState(() {
           provinces = listTinhThanh;
@@ -123,7 +123,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
         });
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi tải tỉnh thành: $e');
+      SnackBarHelper.showError(context, 'Lỗi tải tỉnh thành: $e');
       print("Lỗi tải tỉnh thành: $e");
     } finally {
       setState(() => isProvincesLoading = false);
@@ -136,7 +136,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
       final listQuanHuyen = await tinhThanhService.getHuyenByTinh(idProvince);
       print("List quận huyện: ${listQuanHuyen}");
       if (listQuanHuyen.isEmpty) {
-        SnackbarHelper.showError(context, 'Không thể tải danh sách huyện');
+        SnackBarHelper.showError(context, 'Không thể tải danh sách huyện');
       } else {
         setState(() {
           districts = listQuanHuyen;
@@ -150,7 +150,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
         });
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi tải huyện: $e');
+      SnackBarHelper.showError(context, 'Lỗi tải huyện: $e');
     } finally {
       setState(() => isDistrictsLoading = false);
     }

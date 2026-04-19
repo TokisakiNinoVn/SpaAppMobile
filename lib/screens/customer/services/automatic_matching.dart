@@ -8,12 +8,12 @@ import 'package:spa_app/services/notification_service.dart';
 import '../../../helper/format_helper.dart';
 import '../../../routes/config/customer_router_config.dart';
 
-class BookScreen extends StatefulWidget {
+class AutomaticMatchingScreen extends StatefulWidget {
   @override
-  State<BookScreen> createState() => _BookScreenState();
+  State<AutomaticMatchingScreen> createState() => _AutomaticMatchingScreenState();
 }
 
-class _BookScreenState extends State<BookScreen> {
+class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
   final TechnicianService _technicianService = TechnicianService();
   final NotificationService _notificationService = NotificationService();
 
@@ -39,7 +39,7 @@ class _BookScreenState extends State<BookScreen> {
   @override
   void initState() {
     super.initState();
-    _loadListNotification();
+    // _loadListNotification();
   }
 
   Future<void> _loadListNotification() async {
@@ -68,51 +68,6 @@ class _BookScreenState extends State<BookScreen> {
     }
   }
 
-  Future<void> _deleteNotification(String notificationId, int index) async {
-    try {
-      final response = await _notificationService.deleteNotificationService(notificationId);
-
-      if (response['success'] == true) {
-        setState(() {
-          _notificationList.removeAt(index);
-        });
-      } else {
-        throw Exception(response['message'] ?? 'Không thể xóa thông báo');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Xóa thông báo thất bại')),
-      );
-    }
-  }
-
-  void _showDeleteConfirmDialog(String notificationId, int index) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Xóa thông báo'),
-        content: const Text('Bạn có chắc muốn xóa thông báo này không?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteNotification(notificationId, index);
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('Xóa'),
-          ),
-        ],
-      ),
-    );
-  }
-
-
   @override
   Widget build(BuildContext context) {
       return Scaffold(
@@ -136,7 +91,7 @@ class _BookScreenState extends State<BookScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                "Thông báo",
+                "Ghép tự động",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -146,124 +101,12 @@ class _BookScreenState extends State<BookScreen> {
             ],
           ),
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage.isNotEmpty
-            ? Center(
-          child: Text(
-            _errorMessage,
-            style: TextStyle(color: Colors.red),
+        body: Center(
+          child: Column(
+            children: [
+              Text("Chức năng đang được phát triển!")
+            ],
           ),
-        )
-            : _notificationList.isEmpty
-            ? Center(
-          child: Text(
-            "Chưa có thông báo nào",
-            style: TextStyle(color: _textColor),
-          ),
-        )
-            : ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: _notificationList.length,
-          separatorBuilder: (_, __) => Divider(
-            height: 1,
-            color: _secondaryColor.withOpacity(0.4),
-          ),
-          itemBuilder: (context, index) {
-            final noti = _notificationList[index];
-            final bool isRead = noti['isRead'] == true;
-
-            return InkWell(
-              onTap: () {
-                // context.push(
-                //   CustomerRoutes.notificationDetail,
-                //   extra: noti,
-                // );
-              },
-              child: Container(
-                color: isRead
-                    ? Colors.white
-                    : _secondaryColor.withOpacity(0.25),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(width: 10),
-                    Icon(
-                      FontAwesomeIcons.bullhorn,
-                      size: 24,
-                      color: isRead ? _accentColor : _primaryColor,
-                    ),
-                    const SizedBox(width: 18),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            noti['title'] ?? '',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight:
-                              isRead ? FontWeight.w500 : FontWeight.w700,
-                              color: _textColor,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            noti['content'] ?? '',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: _textColor.withOpacity(0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            FormatHelper.formatDateTime(noti['createdAt']),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _textColor.withOpacity(0.5),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      children: [
-                        PopupMenuButton<String>(
-                          icon: Icon(
-                            Icons.more_vert,
-                            size: 20,
-                            color: _textColor.withOpacity(0.6),
-                          ),
-                          onSelected: (value) {
-                            if (value == 'delete') {
-                              _showDeleteConfirmDialog(noti['_id'], index);
-                            }
-                          },
-                          itemBuilder: (context) => const [
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.delete_outline,
-                                      color: Colors.red, size: 18),
-                                  SizedBox(width: 8),
-                                  Text('Xóa thông báo'),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
         ),
       );
   }

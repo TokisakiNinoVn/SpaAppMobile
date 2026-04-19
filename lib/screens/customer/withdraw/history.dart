@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:spa_app/services/deposit_service.dart';
+import 'package:spa_app/services/withdraw_service.dart';
 
 import 'package:spa_app/services/like_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -9,13 +9,13 @@ import 'package:spa_app/services/notification_service.dart';
 import '../../../helper/format_helper.dart';
 import '../../../routes/config/customer_router_config.dart';
 
-class HistoryDepositScreen extends StatefulWidget {
+class HistoryWithdrawScreen extends StatefulWidget {
   @override
-  State<HistoryDepositScreen> createState() => _HistoryDepositScreenState();
+  State<HistoryWithdrawScreen> createState() => _HistoryWithdrawScreenState();
 }
 
-class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
-  final DepositService _depositService = DepositService();
+class _HistoryWithdrawScreenState extends State<HistoryWithdrawScreen> {
+  final WithdrawService _withdrawService = WithdrawService();
 
   List<dynamic> _historyDepositList = [];
   bool _isLoading = false;
@@ -34,11 +34,11 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
         _errorMessage = '';
       });
 
-      final response = await _depositService.historyDeposit();
+      final response = await _withdrawService.historyWithdraw();
 
       if (response['status'] == 'success') {
         setState(() {
-          _historyDepositList = response['data']['deposits'] ?? [];
+          _historyDepositList = response['data']['withdraws'] ?? [];
           _isLoading = false;
         });
       } else {
@@ -49,12 +49,12 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
         _errorMessage = e.toString();
         _isLoading = false;
       });
-      print('Error loading deposit history: $e');
+      print('Error loading withdraw history: $e');
     }
   }
 
-  void _showTransactionDetailBottomSheet(Map<String, dynamic> deposit) {
-    final transaction = deposit['transaction'] as Map<String, dynamic>;
+  void _showTransactionDetailBottomSheet(Map<String, dynamic> withdraw) {
+    final transaction = withdraw['transaction'] as Map<String, dynamic>;
 
     showModalBottomSheet(
       context: context,
@@ -108,7 +108,7 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailRow('Mã giao dịch', deposit['code'] ?? transaction['code']),
+                  _buildDetailRow('Mã giao dịch', withdraw['code'] ?? transaction['code']),
                   const SizedBox(height: 12),
                   _buildDetailRow('Số tiền', FormatHelper.formatPrice(transaction['amount'])),
                   const SizedBox(height: 12),
@@ -189,7 +189,7 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
 
   String _getTransactionTypeText(String type) {
     switch (type) {
-      case 'deposit':
+      case 'withdraw':
         return 'Nạp tiền';
       case 'withdraw':
         return 'Rút tiền';
@@ -211,19 +211,25 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
         title: Row(
           children: [
             InkWell(
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
+              borderRadius: BorderRadius.circular(40),
               child: Container(
-                padding: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  shape: BoxShape.circle,
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(40),
                 ),
-                child: Icon(Icons.arrow_back, color: Colors.black87),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Color(0xFF1A1A1A),
+                ),
               ),
             ),
             const SizedBox(width: 12),
             Text(
-              "Lịch sử nạp tiền",
+              "Lịch sử rút tiền",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -297,8 +303,8 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
       padding: const EdgeInsets.all(16),
       itemCount: _historyDepositList.length,
       itemBuilder: (context, index) {
-        final deposit = _historyDepositList[index];
-        final transaction = deposit['transaction'] as Map<String, dynamic>;
+        final withdraw = _historyDepositList[index];
+        final transaction = withdraw['transaction'] as Map<String, dynamic>;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -307,7 +313,7 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: InkWell(
-            onTap: () => _showTransactionDetailBottomSheet(deposit),
+            onTap: () => _showTransactionDetailBottomSheet(withdraw),
             borderRadius: BorderRadius.circular(12),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -319,7 +325,7 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          deposit['code'] ?? transaction['code'],
+                          withdraw['code'] ?? transaction['code'],
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -379,7 +385,7 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
                         ),
                       ),
                       Text(
-                        FormatHelper.formatDateTime(deposit['createdAt']),
+                        FormatHelper.formatDateTime(withdraw['createdAt']),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],

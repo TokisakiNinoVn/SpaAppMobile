@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class ListLikeScreen extends StatefulWidget {
+class EditNotificationScreen extends StatefulWidget {
 
-  const ListLikeScreen({
+  const EditNotificationScreen({
     super.key,
   });
 
   @override
-  State<ListLikeScreen> createState() =>  _ListLikeScreenState();
+  State<EditNotificationScreen> createState() =>  _EditNotificationScreenState();
 }
 
-class _ListLikeScreenState extends State<ListLikeScreen> {
+class _EditNotificationScreenState extends State<EditNotificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(

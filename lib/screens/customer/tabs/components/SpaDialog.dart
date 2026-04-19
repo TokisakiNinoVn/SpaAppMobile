@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class SpaDialog extends StatelessWidget {
-  final IconData icon;
+  // final IconData icon;
   final Color iconColor;
   final String title;
   final String body;
@@ -11,7 +11,7 @@ class SpaDialog extends StatelessWidget {
   final VoidCallback onConfirm;
 
   const SpaDialog({
-    required this.icon,
+    // required this.icon,
     this.iconColor = const Color(0xFF8B7355),
     required this.title,
     required this.body,
@@ -42,15 +42,15 @@ class SpaDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Icon badge
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: iconColor, size: 32),
-            ),
-            const SizedBox(height: 16),
+            // Container(
+            //   padding: const EdgeInsets.all(16),
+            //   decoration: BoxDecoration(
+            //     color: iconColor.withOpacity(0.1),
+            //     shape: BoxShape.circle,
+            //   ),
+            //   child: Icon(icon, color: iconColor, size: 32),
+            // ),
+            // const SizedBox(height: 16),
             Text(
               title,
               style: const TextStyle(
@@ -80,7 +80,7 @@ class SpaDialog extends StatelessWidget {
                       side: const BorderSide(color: Color(0xFFE0D8CF)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(40),
                       ),
                     ),
                     child: Text(cancelLabel),
@@ -99,7 +99,7 @@ class SpaDialog extends StatelessWidget {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(40),
                       ),
                     ),
                     child: Text(confirmLabel,

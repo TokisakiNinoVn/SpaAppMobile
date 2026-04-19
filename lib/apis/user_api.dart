@@ -12,4 +12,12 @@ class UserApiRoutes {
   static const String deleteUser = '${AppConfig.apiUrlPrivate}/user';
   static const String changeStatusUser = '${AppConfig.apiUrlPrivate}/user/change-status';
   static const String getIsAcceptHaveApprovalRequestUser = '${AppConfig.apiUrlPrivate}/user/is-accept-have-approval-request';
+
+  static const String mee = '${AppConfig.apiUrlPrivate}/user-app/me';
+
+  static const String addAddress = '${AppConfig.apiUrlPrivate}/user-app/add-address';
+  static const String updateAddress = '${AppConfig.apiUrlPrivate}/user-app/update-address';
+  static const String deleteAddress = '${AppConfig.apiUrlPrivate}/user-app/delete-address';
+  static const String listAddress = '${AppConfig.apiUrlPrivate}/user-app/addresses';
+  static const String setDefaultAddress = '${AppConfig.apiUrlPrivate}/user-app/set-default-address';
 }

@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
 
-class SnackbarHelper {
+class SnackBarHelper {
   static void showSuccess(BuildContext context, String message) {
     _showSnackbar(
       context,
       message,
-      backgroundColor: ColorConfig.textSuccess,
+      backgroundColor: ColorConfig.primary,
     );
   }
 
@@ -38,6 +38,9 @@ class SnackbarHelper {
         backgroundColor: backgroundColor,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(40),
+        ),
       ),
     );
   }

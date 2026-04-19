@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/services/auth_service.dart';
 
 class RegisterPartnerScreen extends StatefulWidget {
@@ -85,10 +86,10 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
           }
         }
       } else {
-        SnackbarHelper.showError(context, response['message'] ?? 'Đăng ký thất bại');
+        SnackBarHelper.showError(context, response['message'] ?? 'Đăng ký thất bại');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi hệ thống: $e');
+      SnackBarHelper.showError(context, 'Lỗi hệ thống: $e');
       print("Lỗi đăng ký: $e");
     } finally {
       setState(() => isLoading = false);
@@ -342,31 +343,29 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
 
               const SizedBox(height: 20),
 
-              // Login link
-              TextButton(
-                onPressed: () => context.go('/login'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-                child: RichText(
-                  text: const TextSpan(
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Đã có tài khoản?',
                     style: TextStyle(
                       color: Color(0xFF666666),
                       fontSize: 14,
-                      fontWeight: FontWeight.w400,
                     ),
-                    children: [
-                      TextSpan(text: 'Đã có tài khoản? '),
-                      TextSpan(
-                        text: 'Đăng nhập',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
-                    ],
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => context.go(GlobalRouterConfig.loginOTP),
+                    child: Text(
+                      'Đăng nhập',
+                      style: TextStyle(
+                        color: ColorConfig.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 48),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 
 import 'package:spa_app/services/order_service.dart';
 import 'package:spa_app/helper/format_helper.dart';
@@ -89,7 +91,7 @@ class _DetailsOrderScreenState extends State<DetailsOrderScreen> {
             child: Text(
               label,
               style: TextStyle(
-                color: _textColor.withOpacity(0.6),
+                color: ColorConfig.textBlack.withOpacity(.8),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -98,7 +100,7 @@ class _DetailsOrderScreenState extends State<DetailsOrderScreen> {
             child: Text(
               value.isEmpty ? '—' : value,
               style: TextStyle(
-                color: _textColor,
+                color: ColorConfig.black,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -122,7 +124,7 @@ class _DetailsOrderScreenState extends State<DetailsOrderScreen> {
           Text(
             title,
             style: TextStyle(
-              color: _primaryColor,
+              color: ColorConfig.textBlack,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -150,7 +152,7 @@ class _DetailsOrderScreenState extends State<DetailsOrderScreen> {
     final technician = order['technician'];
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: ColorConfig.white,
       appBar: _buildAppBar(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -282,22 +284,39 @@ class _DetailsOrderScreenState extends State<DetailsOrderScreen> {
     );
   }
 
-  // ================= STATES =================
-
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: _textColor),
-        onPressed: () => context.pop(),
-      ),
-      title: Text(
-        'Chi tiết đơn',
-        style: TextStyle(
-          color: _textColor,
-          fontWeight: FontWeight.w600,
-        ),
+      automaticallyImplyLeading: false,
+      title: Row(
+        children: [
+          InkWell(
+            onTap: () => context.pop(),
+            borderRadius: BorderRadius.circular(40),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(40),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            'Chi tiết đơn',
+            style: TextStyle(
+              color: _textColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ]
       ),
     );
   }

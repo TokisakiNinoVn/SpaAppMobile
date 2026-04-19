@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/config/color_config.dart';
 
-class ListDiscountScreen extends StatefulWidget {
+class DetailDiscountScreen extends StatefulWidget {
 
-  const ListDiscountScreen({
+  const DetailDiscountScreen({
     super.key,
   });
 
   @override
-  State<ListDiscountScreen> createState() =>  _ListDiscountScreenState();
+  State<DetailDiscountScreen> createState() =>  _DetailDiscountScreenState();
 }
 
-class _ListDiscountScreenState extends State<ListDiscountScreen> {
+class _DetailDiscountScreenState extends State<DetailDiscountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,16 +22,22 @@ class _ListDiscountScreenState extends State<ListDiscountScreen> {
         elevation: 0,
         title: Row(
           children: [
-            // Nút back custom
             InkWell(
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
+              borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  shape: BoxShape.circle,
+                  color: ColorConfig.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
-                child: const Icon(Icons.arrow_back, color: Colors.black87),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Colors.black54,
+                ),
               ),
             ),
             const SizedBox(width: 12),

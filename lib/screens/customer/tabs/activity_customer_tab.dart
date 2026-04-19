@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/services/order_service.dart';
 
 import '../../../helper/check_login_helper.dart';
@@ -15,30 +17,16 @@ class ActivityCustomerTab extends StatefulWidget {
 }
 
 class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
-  // Màu sắc chủ đề Spa
-  final Color _spaPrimaryColor = const Color(0xFFD4A574);
-  final Color _spaSecondaryColor = const Color(0xFFB08D57);
-  final Color _spaBackgroundColor = const Color(0xFFF9F5F0);
-  final Color _spaTextColor = const Color(0xFF5D4037);
-  final Color _spaLightColor = const Color(0xFFE8D8C3);
-  final Color _spaSuccessColor = const Color(0xFF8BC34A);
-  final Color _spaWarningColor = const Color(0xFFFF9800);
-  final Color _spaCancelColor = const Color(0xFFF44336);
-  final Color _spaPendingColor = const Color(0xFF2196F3);
-
   final OrderService _orderService = OrderService();
 
   bool _isLoading = true;
   String _errorMessage = '';
 
-  // Biến lọc
   String _selectedFilter = 'Tất cả';
   final List<String> _filters = ['Tất cả', 'Đang chờ', 'Đã xác nhận', 'Đã hoàn thành', 'Đã hủy'];
 
-  // Dữ liệu đơn hàng từ API
   List<dynamic> _orders = [];
 
-  // Lấy danh sách đã lọc
   List<dynamic> get _filteredOrders {
     if (_selectedFilter == 'Tất cả') return _orders;
 
@@ -71,6 +59,22 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
     'completed': const Color(0xFF8BC34A),
     'rejected': const Color(0xFFF44336),
   };
+
+  // Format ngày làm việc
+  String _formatWorkingHours(String dateString) {
+    try {
+      // Chuyển từ định dạng "08/01/2026 18:30" sang định dạng đẹp hơn
+      final parts = dateString.split(' ');
+      if (parts.length == 2) {
+        final datePart = parts[0];
+        final timePart = parts[1];
+        return '$datePart • $timePart';
+      }
+      return dateString;
+    } catch (e) {
+      return dateString;
+    }
+  }
 
   // Format tiền VND
   final NumberFormat _currencyFormat = NumberFormat.currency(
@@ -129,26 +133,10 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
     }
   }
 
-  // Format ngày làm việc
-  String _formatWorkingHours(String dateString) {
-    try {
-      // Chuyển từ định dạng "08/01/2026 18:30" sang định dạng đẹp hơn
-      final parts = dateString.split(' ');
-      if (parts.length == 2) {
-        final datePart = parts[0];
-        final timePart = parts[1];
-        return '$datePart • $timePart';
-      }
-      return dateString;
-    } catch (e) {
-      return dateString;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _spaBackgroundColor,
+      backgroundColor: ColorConfig.white,
       body: RefreshIndicator(
         onRefresh: _loadOrders,
         child: SingleChildScrollView(
@@ -158,9 +146,8 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header với thông tin người dùng
-                // _buildHeader(),
-                // const SizedBox(height: 24),
+                _buildHeader(),
+                const SizedBox(height: 24),
 
                 if (_isLoading) ...[
                   const Center(child: CircularProgressIndicator()),
@@ -188,50 +175,26 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
     );
   }
 
-  // Widget _buildHeader() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Text(
-  //         'Xin chào,',
-  //         style: TextStyle(
-  //           fontSize: 14,
-  //           color: _spaTextColor.withOpacity(0.7),
-  //         ),
-  //       ),
-  //       Text(
-  //         'Nguyễn Văn Khách',
-  //         style: TextStyle(
-  //           fontSize: 24,
-  //           fontWeight: FontWeight.bold,
-  //           color: _spaTextColor,
-  //         ),
-  //       ),
-  //       const SizedBox(height: 8),
-  //       Text(
-  //         'Theo dõi lịch sử và hoạt động đặt lịch của bạn',
-  //         style: TextStyle(
-  //           fontSize: 14,
-  //           color: _spaTextColor.withOpacity(0.6),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Lịch sử hoạt động',
+          style: TextStyle(
+            fontSize: 20,
+            color: ColorConfig.textBlack,
+            fontWeight: FontWeight.bold
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildFilterSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Text(
-        //   'Lọc theo trạng thái',
-        //   style: TextStyle(
-        //     fontSize: 16,
-        //     fontWeight: FontWeight.w600,
-        //     color: _spaTextColor,
-        //   ),
-        // ),
-        // const SizedBox(height: 12),
         SizedBox(
           height: 40,
           child: ListView.builder(
@@ -242,18 +205,23 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
               final isSelected = _selectedFilter == filter;
 
               return Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 4), // 👈 giảm mạnh
                 child: FilterChip(
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 6), // 👈 giảm padding text
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // 👈 bỏ vùng tap thừa
+                  visualDensity: VisualDensity.compact, // 👈 nén lại tổng thể
+
                   label: Text(
                     filter,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : _spaTextColor,
+                      color: isSelected ? Colors.white : ColorConfig.textBlack,
                       fontWeight: FontWeight.w500,
+                      fontSize: 12,
                     ),
                   ),
                   selected: isSelected,
-                  backgroundColor: _spaLightColor,
-                  selectedColor: _spaPrimaryColor,
+                  backgroundColor: ColorConfig.white,
+                  selectedColor: ColorConfig.primary,
                   checkmarkColor: Colors.white,
                   onSelected: (selected) {
                     setState(() {
@@ -263,7 +231,9 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                     side: BorderSide(
-                      color: isSelected ? _spaPrimaryColor : _spaLightColor,
+                      color: isSelected
+                          ? ColorConfig.primary
+                          : ColorConfig.primary.withOpacity(.2),
                     ),
                   ),
                 ),
@@ -288,7 +258,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: _spaLightColor.withOpacity(0.3),
+            color: ColorConfig.primary.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -312,10 +282,10 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: _spaLightColor.withOpacity(0.3),
+            color: ColorConfig.primary.withOpacity(0.3),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: _spaPrimaryColor, size: 20),
+          child: Icon(icon, color: ColorConfig.primary, size: 20),
         ),
         const SizedBox(height: 8),
         Text(
@@ -323,14 +293,14 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: _spaTextColor,
+            color: ColorConfig.textBlack,
           ),
         ),
         Text(
           title,
           style: TextStyle(
             fontSize: 12,
-            color: _spaTextColor.withOpacity(0.6),
+            color: ColorConfig.textBlack.withOpacity(0.6),
           ),
         ),
       ],
@@ -342,17 +312,12 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
       return Center(
         child: Column(
           children: [
-            Icon(
-              Icons.calendar_today_outlined,
-              size: 64,
-              color: _spaLightColor,
-            ),
             const SizedBox(height: 16),
             Text(
-              'Không có đơn hàng nào',
+              'Bạn chưa có đơn nào',
               style: TextStyle(
                 fontSize: 16,
-                color: _spaTextColor.withOpacity(0.6),
+                color: ColorConfig.textBlack.withOpacity(0.6),
               ),
             ),
           ],
@@ -371,7 +336,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: _spaTextColor,
+                color: ColorConfig.textBlack,
               ),
             ),
             TextButton(
@@ -379,7 +344,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
               child: Text(
                 'Làm mới',
                 style: TextStyle(
-                  color: _spaPrimaryColor,
+                  color: ColorConfig.primary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -395,7 +360,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
   Widget _buildOrderItem(Map<String, dynamic> order) {
     final status = order['status'] ?? 'pending';
     final statusText = _statusMap[status] ?? 'Không xác định';
-    final statusColor = _statusColorMap[status] ?? _spaPendingColor;
+    final statusColor = _statusColorMap[status] ?? ColorConfig.yellow.withOpacity(.3);
     final price = order['price'] ?? 0;
     final technicianName = order['technicianName'] ?? 'Chưa xác định';
     final workingHours = order['workingHours'] ?? '';
@@ -409,7 +374,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: _spaLightColor.withOpacity(0.2),
+            color: ColorConfig.primary.withOpacity(0.2),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -438,7 +403,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: _spaTextColor,
+                          color: ColorConfig.textBlack,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -469,10 +434,10 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                   children: [
                     CircleAvatar(
                       radius: 20,
-                      backgroundColor: _spaLightColor,
+                      backgroundColor: ColorConfig.primary.withOpacity(.2),
                       child: Icon(
                         Icons.person,
-                        color: _spaPrimaryColor,
+                        color: ColorConfig.primary,
                         size: 20,
                       ),
                     ),
@@ -482,10 +447,10 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Kỹ thuật viên: $technicianName',
+                            'Kỹ thuật viên: ${FormatHelper.formatNameTechnician(technicianName)}',
                             style: TextStyle(
                               fontSize: 14,
-                              color: _spaTextColor.withOpacity(0.8),
+                              color: ColorConfig.textBlack.withOpacity(0.8),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -495,7 +460,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                             _formatWorkingHours(workingHours),
                             style: TextStyle(
                               fontSize: 13,
-                              color: _spaTextColor.withOpacity(0.6),
+                              color: ColorConfig.textBlack.withOpacity(0.6),
                             ),
                           ),
                         ],
@@ -511,7 +476,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                     Icon(
                       Icons.location_on_outlined,
                       size: 16,
-                      color: _spaTextColor.withOpacity(0.5),
+                      color: ColorConfig.textBlack.withOpacity(0.5),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -519,7 +484,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                         address,
                         style: TextStyle(
                           fontSize: 13,
-                          color: _spaTextColor.withOpacity(0.6),
+                          color: ColorConfig.textBlack.withOpacity(0.6),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -531,7 +496,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: _spaPrimaryColor,
+                        color: ColorConfig.primary,
                       ),
                     ),
                   ],
@@ -544,7 +509,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                     'Ghi chú: $note',
                     style: TextStyle(
                       fontSize: 13,
-                      color: _spaTextColor.withOpacity(0.7),
+                      color: ColorConfig.textBlack.withOpacity(0.7),
                       fontStyle: FontStyle.italic,
                     ),
                     maxLines: 2,
@@ -556,7 +521,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                 const SizedBox(height: 12),
                 Divider(
                   height: 1,
-                  color: _spaLightColor.withOpacity(0.5),
+                  color: ColorConfig.primary.withOpacity(0.5),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -566,7 +531,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                       'Đã tạo: ${_formatDateTime(order['createdAt'] ?? '')}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: _spaTextColor.withOpacity(0.5),
+                        color: ColorConfig.textBlack.withOpacity(0.5),
                       ),
                     ),
                     if (status == 'approved' && order['approvedAt'] != null)
@@ -574,7 +539,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                         'Xác nhận: ${_formatDateTime(order['approvedAt'] ?? '')}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: _spaSuccessColor.withOpacity(0.8),
+                          color: ColorConfig.primary.withOpacity(0.8),
                         ),
                       ),
                     if (status == 'rejected' && order['rejectedAt'] != null)
@@ -582,7 +547,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                         'Hủy: ${_formatDateTime(order['rejectedAt'] ?? '')}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: _spaCancelColor.withOpacity(0.8),
+                          color: ColorConfig.textError.withOpacity(0.8),
                         ),
                       ),
                   ],
@@ -603,7 +568,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: _spaLightColor.withOpacity(0.2),
+            color: ColorConfig.primary.withOpacity(0.2),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -614,7 +579,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: _spaCancelColor,
+            color: ColorConfig.textError,
           ),
           const SizedBox(height: 16),
           Text(
@@ -622,7 +587,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: _spaTextColor,
+              color: ColorConfig.textBlack,
             ),
           ),
           const SizedBox(height: 8),
@@ -631,14 +596,14 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: _spaTextColor.withOpacity(0.7),
+              color: ColorConfig.textBlack.withOpacity(0.7),
             ),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _loadOrders,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _spaPrimaryColor,
+              backgroundColor: ColorConfig.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -651,128 +616,128 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
     );
   }
 
-  void _showOrderDetails(Map<String, dynamic> order) {
-    final status = order['status'] ?? 'pending';
-    final statusText = _statusMap[status] ?? 'Không xác định';
-    final statusColor = _statusColorMap[status] ?? _spaPendingColor;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (context, scrollController) {
-            return Container(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: _spaLightColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Chi tiết đơn hàng',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: _spaTextColor,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          statusText,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: statusColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: ListView(
-                      controller: scrollController,
-                      children: [
-                        _buildDetailItem('Dịch vụ:', order['nameService'] ?? 'Không xác định'),
-                        _buildDetailItem('Kỹ thuật viên:', order['technicianName'] ?? 'Chưa xác định'),
-                        _buildDetailItem('Thời gian làm việc:', order['workingHours'] ?? ''),
-                        _buildDetailItem('Địa chỉ:', order['address'] ?? ''),
-                        _buildDetailItem('Giá:', '${_currencyFormat.format(order['price'] ?? 0)}'),
-
-                        if (order['noteCustomer']?.isNotEmpty == true)
-                          _buildDetailItem('Ghi chú:', order['noteCustomer'] ?? ''),
-
-                        if (order['noteTechnician']?.isNotEmpty == true)
-                          _buildDetailItem('Ghi chú kỹ thuật viên:', order['noteTechnician'] ?? ''),
-
-                        _buildDetailItem('Phương thức thanh toán:', order['paymentMethod'] == 'momo' ? 'Momo' : 'Không xác định'),
-
-                        if (order['coupon']?.isNotEmpty == true)
-                          _buildDetailItem('Mã giảm giá:', order['coupon'] ?? ''),
-
-                        _buildDetailItem('Thời gian tạo:', _formatDateTime(order['createdAt'] ?? '')),
-
-                        if (order['submittedAt'] != null)
-                          _buildDetailItem('Thời gian gửi:', _formatDateTime(order['submittedAt'] ?? '')),
-
-                        if (order['approvedAt'] != null)
-                          _buildDetailItem('Thời gian xác nhận:', _formatDateTime(order['approvedAt'] ?? '')),
-
-                        if (order['rejectedAt'] != null)
-                          _buildDetailItem('Thời gian hủy:', _formatDateTime(order['rejectedAt'] ?? '')),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _spaPrimaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Đóng'),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  // void _showOrderDetails(Map<String, dynamic> order) {
+  //   final status = order['status'] ?? 'pending';
+  //   final statusText = _statusMap[status] ?? 'Không xác định';
+  //   final statusColor = _statusColorMap[status] ?? ColorConfig.primary;
+  //
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     backgroundColor: Colors.white,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  //     ),
+  //     builder: (context) {
+  //       return DraggableScrollableSheet(
+  //         initialChildSize: 0.7,
+  //         minChildSize: 0.5,
+  //         maxChildSize: 0.9,
+  //         expand: false,
+  //         builder: (context, scrollController) {
+  //           return Container(
+  //             padding: const EdgeInsets.all(20),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Center(
+  //                   child: Container(
+  //                     width: 40,
+  //                     height: 4,
+  //                     decoration: BoxDecoration(
+  //                       color: ColorConfig.primary,
+  //                       borderRadius: BorderRadius.circular(2),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 16),
+  //                 Row(
+  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     Text(
+  //                       'Chi tiết đơn hàng',
+  //                       style: TextStyle(
+  //                         fontSize: 20,
+  //                         fontWeight: FontWeight.bold,
+  //                         color: ColorConfig.textBlack,
+  //                       ),
+  //                     ),
+  //                     Container(
+  //                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  //                       decoration: BoxDecoration(
+  //                         color: statusColor.withOpacity(0.1),
+  //                         borderRadius: BorderRadius.circular(20),
+  //                       ),
+  //                       child: Text(
+  //                         statusText,
+  //                         style: TextStyle(
+  //                           fontSize: 14,
+  //                           fontWeight: FontWeight.w600,
+  //                           color: statusColor,
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(height: 20),
+  //                 Expanded(
+  //                   child: ListView(
+  //                     controller: scrollController,
+  //                     children: [
+  //                       _buildDetailItem('Dịch vụ:', order['nameService'] ?? 'Không xác định'),
+  //                       _buildDetailItem('Kỹ thuật viên:', order['technicianName'] ?? 'Chưa xác định'),
+  //                       _buildDetailItem('Thời gian làm việc:', order['workingHours'] ?? ''),
+  //                       _buildDetailItem('Địa chỉ:', order['address'] ?? ''),
+  //                       _buildDetailItem('Giá:', '${_currencyFormat.format(order['price'] ?? 0)}'),
+  //
+  //                       if (order['noteCustomer']?.isNotEmpty == true)
+  //                         _buildDetailItem('Ghi chú:', order['noteCustomer'] ?? ''),
+  //
+  //                       if (order['noteTechnician']?.isNotEmpty == true)
+  //                         _buildDetailItem('Ghi chú kỹ thuật viên:', order['noteTechnician'] ?? ''),
+  //
+  //                       _buildDetailItem('Phương thức thanh toán:', order['paymentMethod'] == 'momo' ? 'Momo' : 'Không xác định'),
+  //
+  //                       if (order['coupon']?.isNotEmpty == true)
+  //                         _buildDetailItem('Mã giảm giá:', order['coupon'] ?? ''),
+  //
+  //                       _buildDetailItem('Thời gian tạo:', _formatDateTime(order['createdAt'] ?? '')),
+  //
+  //                       if (order['submittedAt'] != null)
+  //                         _buildDetailItem('Thời gian gửi:', _formatDateTime(order['submittedAt'] ?? '')),
+  //
+  //                       if (order['approvedAt'] != null)
+  //                         _buildDetailItem('Thời gian xác nhận:', _formatDateTime(order['approvedAt'] ?? '')),
+  //
+  //                       if (order['rejectedAt'] != null)
+  //                         _buildDetailItem('Thời gian hủy:', _formatDateTime(order['rejectedAt'] ?? '')),
+  //                     ],
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 20),
+  //                 SizedBox(
+  //                   width: double.infinity,
+  //                   child: ElevatedButton(
+  //                     onPressed: () => Navigator.pop(context),
+  //                     style: ElevatedButton.styleFrom(
+  //                       backgroundColor: ColorConfig.primary,
+  //                       foregroundColor: Colors.white,
+  //                       padding: const EdgeInsets.symmetric(vertical: 16),
+  //                       shape: RoundedRectangleBorder(
+  //                         borderRadius: BorderRadius.circular(12),
+  //                       ),
+  //                     ),
+  //                     child: const Text('Đóng'),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _buildDetailItem(String label, String value) {
     return Padding(
@@ -784,7 +749,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
             label,
             style: TextStyle(
               fontSize: 14,
-              color: _spaTextColor.withOpacity(0.6),
+              color: ColorConfig.textBlack.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 4),
@@ -792,14 +757,14 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
             value,
             style: TextStyle(
               fontSize: 16,
-              color: _spaTextColor,
+              color: ColorConfig.textBlack,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
           Divider(
             height: 1,
-            color: _spaLightColor.withOpacity(0.3),
+            color: ColorConfig.primary.withOpacity(0.3),
           ),
         ],
       ),

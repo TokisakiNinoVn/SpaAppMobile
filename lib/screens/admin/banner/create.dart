@@ -73,7 +73,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
         await _uploadImage();
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi khi chọn ảnh: $e');
+      SnackBarHelper.showError(context, 'Lỗi khi chọn ảnh: $e');
     }
   }
 
@@ -96,28 +96,28 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
           _isUploading = false;
           _hasUploadedImage = true;
         });
-        SnackbarHelper.showSuccess(context, 'Tải lên hình ảnh thành công');
+        SnackBarHelper.showSuccess(context, 'Tải lên hình ảnh thành công');
       } else {
         setState(() => _isUploading = false);
-        SnackbarHelper.showError(context, 'Không thể tải lên hình ảnh');
+        SnackBarHelper.showError(context, 'Không thể tải lên hình ảnh');
       }
     } catch (e) {
       setState(() => _isUploading = false);
-      SnackbarHelper.showError(context, 'Lỗi tải lên hình ảnh: $e');
+      SnackBarHelper.showError(context, 'Lỗi tải lên hình ảnh: $e');
     }
   }
 
   Future<void> _createBanner() async {
     if (_titleController.text.trim().isEmpty) {
-      SnackbarHelper.showError(context, 'Vui lòng nhập tiêu đề banner');
+      SnackBarHelper.showError(context, 'Vui lòng nhập tiêu đề banner');
       return;
     }
     if (_contentController.text.trim().isEmpty) {
-      SnackbarHelper.showError(context, 'Vui lòng nhập nội dung banner');
+      SnackBarHelper.showError(context, 'Vui lòng nhập nội dung banner');
       return;
     }
     if (_uploadedFileId == null) {
-      SnackbarHelper.showError(context, 'Vui lòng chọn hình ảnh cho banner');
+      SnackBarHelper.showError(context, 'Vui lòng chọn hình ảnh cho banner');
       return;
     }
 
@@ -132,13 +132,13 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
       };
       final response = await bannerService.addBanner(bannerData);
       if (response['success'] == true || response['message'] != null) {
-        SnackbarHelper.showSuccess(context, 'Tạo banner thành công');
+        SnackBarHelper.showSuccess(context, 'Tạo banner thành công');
         context.pop(true);
       } else {
         throw Exception(response['message'] ?? 'Không thể tạo banner');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi: $e');
+      SnackBarHelper.showError(context, 'Lỗi: $e');
     } finally {
       setState(() => _isLoading = false);
     }

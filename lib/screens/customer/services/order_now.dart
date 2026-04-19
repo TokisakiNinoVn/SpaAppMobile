@@ -8,12 +8,12 @@ import 'package:spa_app/services/notification_service.dart';
 import '../../../helper/format_helper.dart';
 import '../../../routes/config/customer_router_config.dart';
 
-class ListNotificationScreen extends StatefulWidget {
+class OrderNowScreen extends StatefulWidget {
   @override
-  State<ListNotificationScreen> createState() => _ListNotificationScreenState();
+  State<OrderNowScreen> createState() => _OrderNowScreenState();
 }
 
-class _ListNotificationScreenState extends State<ListNotificationScreen> {
+class _OrderNowScreenState extends State<OrderNowScreen> {
   final TechnicianService _technicianService = TechnicianService();
   final NotificationService _notificationService = NotificationService();
 

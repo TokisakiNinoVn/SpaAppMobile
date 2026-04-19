@@ -7,7 +7,7 @@ import './customer_router.dart';
 import './admin_router.dart';
 
 import 'package:spa_app/screens/auth/confirm_otp_login_screen.dart';
-import 'package:spa_app/screens/login_screen.dart';
+import 'package:spa_app/screens/auth/login_screen.dart';
 import 'package:spa_app/screens/home_screen.dart';
 import 'package:spa_app/screens/splash_screen.dart';
 
@@ -17,8 +17,8 @@ import 'package:spa_app/screens/create_technician_screen.dart';
 import 'package:spa_app/screens/auth/forgetpasword/get_otp_forget_password.dart';
 import 'package:spa_app/screens/otp_confirm_screen.dart';
 import 'package:spa_app/screens/quanly/home_quanly_screen.dart';
-import 'package:spa_app/screens/register_partner_screen.dart';
-import 'package:spa_app/screens/register_screen.dart';
+import 'package:spa_app/screens/auth/register_partner_screen.dart';
+import 'package:spa_app/screens/auth/register_screen.dart';
 import 'package:spa_app/screens/auth/forgetpasword/reset_password.dart';
 import 'package:spa_app/screens/technician/add_technician_screen.dart';
 import 'package:spa_app/screens/technician/edit_add_technician.dart';

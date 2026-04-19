@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/config/color_config.dart';
 
 import 'package:spa_app/services/like_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -31,12 +32,6 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
   Map<String, dynamic>? _technicianDetails;
   bool _isLoading = true;
   String _errorMessage = '';
-
-  final Color _primaryColor = const Color(0xFF8B7355);
-  final Color _secondaryColor = const Color(0xFFD4B996);
-  final Color _accentColor = const Color(0xFFC19A6B);
-  final Color _backgroundColor = const Color(0xFFF8F5F0);
-  final Color _textColor = const Color(0xFF5D4037);
 
   @override
   void initState() {
@@ -90,7 +85,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
             message,
             style: const TextStyle(color: Colors.white),
           ),
-          backgroundColor: liked ? _primaryColor : Colors.grey,
+          backgroundColor: liked ? ColorConfig.primary : Colors.grey,
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -143,23 +138,6 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
       final selectedPrice = _selectedService!["timePrices"][_selectedTimeIndex!]["price"];
       final serviceTimePrice = _selectedService!["timePrices"][_selectedTimeIndex!];
 
-
-      // Hiển thị thông báo
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text(
-      //       'Đã chọn dịch vụ ${_selectedService!["name"]}',
-      //       style: const TextStyle(color: Colors.white),
-      //     ),
-      //     backgroundColor: _primaryColor,
-      //     duration: const Duration(seconds: 2),
-      //     behavior: SnackBarBehavior.floating,
-      //     shape: RoundedRectangleBorder(
-      //       borderRadius: BorderRadius.circular(10),
-      //     ),
-      //   ),
-      // );
-
       // Điều hướng đến màn hình đặt lịch với thông tin dịch vụ
       // Future.delayed(const Duration(milliseconds: 1500), () {
         context.go(
@@ -182,22 +160,6 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
     }
   }
 
-  // Lấy avatar hoặc ảnh đầu tiên
-  // String _getAvatarUrl() {
-  //   if (_technicianDetails == null) return "https://via.placeholder.com/400x400?text=No+Image";
-  //
-  //   if (_technicianDetails!["avatar"] != null &&
-  //       _technicianDetails!["avatar"]["url"] != null) {
-  //     return _technicianDetails!["avatar"]["url"];
-  //   }
-  //   if (_technicianDetails!["images"] != null &&
-  //       _technicianDetails!["images"].isNotEmpty) {
-  //     return _technicianDetails!["images"][0]["url"];
-  //   }
-  //   return "https://via.placeholder.com/400x400?text=No+Image";
-  // }
-
-  // Lấy danh sách ảnh
   List<String> _getImageUrls() {
     final List<String> urls = [];
 
@@ -243,7 +205,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: _backgroundColor,
+        backgroundColor: ColorConfig.white,
         appBar: AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.white,
@@ -251,14 +213,20 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
           title: Row(
             children: [
               InkWell(
-                onTap: () => Navigator.pop(context),
+                onTap: () => context.pop(),
+                borderRadius: BorderRadius.circular(40),
                 child: Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: _backgroundColor,
-                    shape: BoxShape.circle,
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(40),
                   ),
-                  child: Icon(Icons.arrow_back, color: _textColor),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 18,
+                    color: Color(0xFF1A1A1A),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -267,7 +235,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: _textColor,
+                  color: ColorConfig.black,
                 ),
               ),
             ],
@@ -281,7 +249,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
 
     if (_errorMessage.isNotEmpty) {
       return Scaffold(
-        backgroundColor: _backgroundColor,
+        backgroundColor: ColorConfig.white,
         appBar: AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.white,
@@ -289,14 +257,20 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
           title: Row(
             children: [
               InkWell(
-                onTap: () => Navigator.pop(context),
+                onTap: () => context.pop(),
+                borderRadius: BorderRadius.circular(40),
                 child: Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: _backgroundColor,
-                    shape: BoxShape.circle,
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(40),
                   ),
-                  child: Icon(Icons.arrow_back, color: _textColor),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 18,
+                    color: Color(0xFF1A1A1A),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -305,7 +279,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: _textColor,
+                  color: ColorConfig.black,
                 ),
               ),
             ],
@@ -326,7 +300,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: _textColor,
+                  color: ColorConfig.textBlack,
                 ),
               ),
               const SizedBox(height: 8),
@@ -336,7 +310,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                   _errorMessage,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: _textColor.withOpacity(0.7),
+                    color: ColorConfig.textBlack.withOpacity(0.7),
                   ),
                 ),
               ),
@@ -344,7 +318,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
               ElevatedButton(
                 onPressed: _loadTechnicianDetails,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryColor,
+                  backgroundColor: ColorConfig.primary,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Thử lại'),
@@ -366,7 +340,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
     final imageUrls = _getImageUrls();
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: ColorConfig.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
@@ -374,14 +348,20 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
         title: Row(
           children: [
             InkWell(
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
+              borderRadius: BorderRadius.circular(40),
               child: Container(
-                padding: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: _backgroundColor,
-                  shape: BoxShape.circle,
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(40),
                 ),
-                child: Icon(Icons.arrow_back, color: _textColor),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Color(0xFF1A1A1A),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -390,7 +370,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: _textColor,
+                color: ColorConfig.black,
               ),
             ),
           ],
@@ -401,10 +381,17 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildImageSlider(imageUrls),
-            _buildTechnicianInfo(),
-            _buildDescription(),
-            _buildServicesSection(),
-            const SizedBox(height: 20),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+              child: Column(
+                children: [
+                  _buildTechnicianInfo(),
+                  _buildDescription(),
+                  _buildServicesSection(),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -413,7 +400,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
 
   Widget _buildImageSlider(List<String> imageUrls) {
     return SizedBox(
-      height: 400,
+      height: 370,
       child: Stack(
         children: [
           PageView.builder(
@@ -436,7 +423,6 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
             },
           ),
 
-          // Indicators
           Positioned(
             bottom: 20,
             left: 0,
@@ -459,34 +445,6 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
               ),
             ),
           ),
-
-          // Nút yêu thích
-          Positioned(
-            top: 16,
-            right: 16,
-            child: InkWell(
-              onTap: _toggleFavorite,
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  _isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: _isFavorite ? Colors.red : _primaryColor,
-                  size: 28,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -495,202 +453,136 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
   Widget _buildTechnicianInfo() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      FormatHelper.formatNameTechnician(_technicianDetails!["fullName"] ?? "Không có tên"),
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: _textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // Text(
-                    //   "Kinh nghiệm: ${_technicianDetails!["experience"] ?? "Không có"}",
-                    //   style: TextStyle(
-                    //     fontSize: 14,
-                    //     color: _textColor.withOpacity(0.7),
-                    //   ),
-                    // ),
-                  ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  FormatHelper.formatNameTechnician(
+                      _technicianDetails!["fullName"] ?? "Không có tên"),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: ColorConfig.black,
+                  ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _primaryColor.withOpacity(0.3)),
-                ),
-                child: Row(
+                const SizedBox(height: 6),
+
+                Row(
                   children: [
-                    const Icon(
-                      FontAwesomeIcons.star,
-                      color: Colors.amber,
-                      size: 18,
+                    FaIcon(
+                      FontAwesomeIcons.solidStar,
+                      size: 14,
+                      color: ColorConfig.yellow.withOpacity(0.9),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       _technicianDetails!["rate"]?.toString() ?? "0.0",
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: _textColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: ColorConfig.black.withOpacity(0.7),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
 
-          // const SizedBox(height: 16),
-
-          // Thông tin chi tiết
-          // Wrap(
-          //   spacing: 8,
-          //   runSpacing: 8,
-          //   children: [
-          //     if (_technicianDetails!["yearOfBirth"] != null)
-          //       _buildInfoChip(
-          //         icon: Icons.cake,
-          //         text: "${_technicianDetails!["yearOfBirth"]}",
-          //       ),
-          //
-          //     _buildInfoChip(
-          //       icon: Icons.person,
-          //       text: _getGenderText(),
-          //     ),
-          //
-          //     if (_technicianDetails!["province"] != null)
-          //       _buildInfoChip(
-          //         icon: Icons.location_city,
-          //         text: _technicianDetails!["province"],
-          //       ),
-          //
-          //     // if (_technicianDetails!["districts"] != null &&
-          //     //     _technicianDetails!["districts"].isNotEmpty)
-          //     //   _buildInfoChip(
-          //     //     icon: Icons.location_on,
-          //     //     text: "${_technicianDetails!["districts"].length} quận",
-          //     //   ),
-          //   ],
-          // ),
-
-          // const SizedBox(height: 16),
-
-          // Địa chỉ
-          // if (_technicianDetails!["address"] != null)
-          //   Row(
-          //     crossAxisAlignment: CrossAxisAlignment.start,
-          //     children: [
-          //       Icon(
-          //         Icons.location_pin,
-          //         color: _primaryColor,
-          //         size: 20,
-          //       ),
-          //       const SizedBox(width: 8),
-          //       Expanded(
-          //         child: Text(
-          //           _technicianDetails!["address"],
-          //           style: TextStyle(
-          //             fontSize: 14,
-          //             color: _textColor.withOpacity(0.7),
-          //           ),
-          //           maxLines: 2,
-          //           overflow: TextOverflow.ellipsis,
-          //         ),
-          //       ),
-          //     ],
-          //   ),
+          GestureDetector(
+            onTap: _toggleFavorite,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: ColorConfig.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(40),
+              ),
+              child: Icon(
+                Icons.favorite,
+                color: ColorConfig.primary,
+                size: 20,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // Widget _buildInfoChip({required IconData icon, required String text}) {
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-  //     decoration: BoxDecoration(
-  //       color: _secondaryColor.withOpacity(0.3),
-  //       borderRadius: BorderRadius.circular(20),
-  //     ),
-  //     child: Row(
-  //       mainAxisSize: MainAxisSize.min,
-  //       children: [
-  //         Icon(
-  //           icon,
-  //           size: 14,
-  //           color: _textColor,
-  //         ),
-  //         const SizedBox(width: 6),
-  //         Text(
-  //           text,
-  //           style: TextStyle(
-  //             fontSize: 12,
-  //             color: _textColor,
-  //             fontWeight: FontWeight.w500,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   Widget _buildDescription() {
-    final bio = _technicianDetails!["bio"] ?? "Không có thông tin giới thiệu";
+    Widget _buildCheckItem(String text) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(3),
+              child: const Icon(
+                Icons.check,
+                color: Colors.green,
+                size: 14,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: ColorConfig.black.withOpacity(0.85),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+          border: Border.all(
+            color: ColorConfig.primary,
+            width: 1,
+          )
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              // Icon(
-              //   Icons.description,
-              //   color: _primaryColor,
-              //   size: 20,
-              // ),
-              // const SizedBox(width: 8),
-              Text(
-                "Giới thiệu",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: _textColor,
-                ),
-              ),
-            ],
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              "https://i.pinimg.com/1200x/23/10/6c/23106cb9b6f1888a3b5ffe604ec81359.jpg",
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+            ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            bio,
-            style: TextStyle(
-              fontSize: 14,
-              color: _textColor.withOpacity(0.8),
-              height: 1.6,
+
+          const SizedBox(width: 8),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildCheckItem("Không mất tiền tip, không phí di chuyển"),
+                _buildCheckItem("Bồi thường nếu không đúng người"),
+              ],
             ),
           ),
         ],
@@ -709,7 +601,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
             "Không có dịch vụ nào",
             style: TextStyle(
               fontSize: 16,
-              color: _textColor.withOpacity(0.5),
+              color: ColorConfig.black.withOpacity(0.5),
             ),
           ),
         ),
@@ -725,16 +617,16 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
             children: [
               // Icon(
               //   Icons.spa,
-              //   color: _primaryColor,
+              //   color: ColorConfig.primary,
               //   size: 24,
               // ),
               // const SizedBox(width: 8),
               Text(
-                "Dịch vụ",
+                "Dịch vụ của tôi",
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: _textColor,
+                  color: ColorConfig.black,
                 ),
               ),
             ],
@@ -751,7 +643,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w600,
-              color: _textColor,
+              color: ColorConfig.black,
             ),
           ),
         ],
@@ -764,7 +656,6 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
     final name = service["name"] as String? ?? "Không có tên";
     final description = service["description"] as String? ?? "";
 
-    // Tìm giá thấp nhất và cao nhất
     int minPrice = 0;
     int maxPrice = 0;
     if (timePrices.isNotEmpty) {
@@ -776,7 +667,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Color(0xE0F1F1F1),
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
@@ -803,59 +694,35 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: _textColor,
+                          color: ColorConfig.black,
                         ),
                       ),
-                      // if (description.isNotEmpty) ...[
-                      //   const SizedBox(height: 4),
-                      //   Text(
-                      //     description,
-                      //     style: TextStyle(
-                      //       fontSize: 14,
-                      //       color: _textColor.withOpacity(0.7),
-                      //     ),
-                      //     maxLines: 2,
-                      //     overflow: TextOverflow.ellipsis,
-                      //   ),
-                      // ],
-                      // const SizedBox(height: 8),
-                      // // Hiển thị khoảng giá
-                      // if (minPrice > 0 && maxPrice > 0)
-                      //   Text(
-                      //     minPrice == maxPrice
-                      //         ? "${FormatHelper.formatPrice(minPrice)} VNĐ"
-                      //         : "${FormatHelper.formatPrice(minPrice)} - ${FormatHelper.formatPrice(maxPrice)} VNĐ",
-                      //     style: TextStyle(
-                      //       fontSize: 16,
-                      //       fontWeight: FontWeight.bold,
-                      //       color: _primaryColor,
-                      //     ),
-                      //   ),
                     ],
                   ),
                 ),
-                ElevatedButton(
+                TextButton(
                   onPressed: () => _showBookingBottomSheetFunction(service),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryColor,
+                  style: TextButton.styleFrom(
+                    backgroundColor: ColorConfig.primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 1,
-                      vertical: 1,
+                      horizontal: 18,
+                      vertical: 4,
                     ),
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                   child: const Text("Đặt"),
                 ),
+
               ],
             ),
 
             if (timePrices.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 18),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -867,14 +734,15 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
 
                   return Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                      horizontal: 14,
+                      vertical: 4,
                     ),
+
                     decoration: BoxDecoration(
-                      color: _secondaryColor.withOpacity(0.2),
+                      color: ColorConfig.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: _secondaryColor,
+                        color: ColorConfig.primary,
                         width: 1,
                       ),
                     ),
@@ -884,18 +752,10 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                           "$duration phút",
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
-                            color: _textColor,
+                            color: ColorConfig.black,
+                            fontSize: 12
                           ),
                         ),
-                        // const SizedBox(height: 2),
-                        // Text(
-                        //   "${FormatHelper.formatPrice(price)} VNĐ",
-                        //   style: TextStyle(
-                        //     fontWeight: FontWeight.bold,
-                        //     color: _primaryColor,
-                        //     fontSize: 12,
-                        //   ),
-                        // ),
                       ],
                     ),
                   );
@@ -910,7 +770,6 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
 
   Widget _buildBookingBottomSheet(void Function(void Function()) setModalState) {
     if (_selectedService == null) return Container();
-
     final timePrices = _selectedService!["timePrices"] as List<dynamic>? ?? [];
 
     return Container(
@@ -951,7 +810,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
               children: [
                 Icon(
                   Icons.calendar_today,
-                  color: _primaryColor,
+                  color: ColorConfig.primary,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
@@ -960,7 +819,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: _textColor,
+                    color: ColorConfig.black,
                   ),
                 ),
               ],
@@ -973,7 +832,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: _textColor,
+                color: ColorConfig.black,
               ),
             ),
 
@@ -985,7 +844,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                   _selectedService!["description"],
                   style: TextStyle(
                     fontSize: 14,
-                    color: _textColor.withOpacity(0.7),
+                    color: ColorConfig.black.withOpacity(0.7),
                   ),
                 ),
               ),
@@ -997,13 +856,12 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: _textColor,
+                color: ColorConfig.black,
               ),
             ),
 
             const SizedBox(height: 10),
 
-            // Lựa chọn thời gian
             if (timePrices.isNotEmpty)
               Column(
                 children: List.generate(
@@ -1023,15 +881,15 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 14,
+                          horizontal: 20,
+                          vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected ? _primaryColor : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          color: isSelected ? ColorConfig.primary : Colors.white,
+                          borderRadius: BorderRadius.circular(40),
                           border: Border.all(
-                            color: isSelected ? _primaryColor : _secondaryColor,
-                            width: 2,
+                            color: isSelected ? ColorConfig.primary : ColorConfig.primary.withOpacity(.6),
+                            width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -1049,7 +907,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: isSelected ? Colors.white : _textColor,
+                                color: isSelected ? Colors.white : ColorConfig.black,
                               ),
                             ),
                             Text(
@@ -1057,7 +915,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: isSelected ? Colors.white : _primaryColor,
+                                color: isSelected ? Colors.white : ColorConfig.textBlack,
                               ),
                             ),
                           ],
@@ -1074,34 +932,29 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                   child: Text(
                     "Không có thông tin giá dịch vụ",
                     style: TextStyle(
-                      color: _textColor.withOpacity(0.5),
+                      color: ColorConfig.black.withOpacity(0.5),
                     ),
                   ),
                 ),
               ),
 
             const SizedBox(height: 8),
-            const Divider(height: 24),
-            const SizedBox(height: 12),
+            const Divider(height: 18),
+            const SizedBox(height: 8),
 
             // Hiển thị tổng tiền
             if (_selectedTimeIndex != null)
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _secondaryColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: _secondaryColor),
-                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Tổng tiền:",
+                      "Tổng dịch vụ:",
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: _textColor,
+                        color: ColorConfig.black,
                       ),
                     ),
                     Text(
@@ -1109,14 +962,14 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: _primaryColor,
+                        color: ColorConfig.textBlack,
                       ),
                     ),
                   ],
                 ),
               ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 20),
 
             // Nút xác nhận
             SizedBox(
@@ -1124,14 +977,14 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
               child: ElevatedButton(
                 onPressed: _selectedTimeIndex != null ? _confirmBooking : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryColor,
+                  backgroundColor: ColorConfig.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
-                    vertical: 16,
+                    vertical: 10,
                   ),
                   disabledBackgroundColor: Colors.grey.shade300,
                   disabledForegroundColor: Colors.grey.shade500,
@@ -1143,7 +996,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            // const SizedBox(height: 16),
           ],
         ),
       ),

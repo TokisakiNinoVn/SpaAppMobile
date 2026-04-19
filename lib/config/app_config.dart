@@ -1,5 +1,9 @@
 // lib/config/app_config.dart
 class AppConfig {
+  static const String appName = "Zen Home";
+  static const String appNameUpperCase = "ZEN HOME";
+  static const String emailAppSupport = "zenhome.spa.support@gmail.com";
+  static const String logoAppUrl = "lib/assets/images/zen-hone-circle-logo.png";
 
   static const List<int> time = [60, 90, 120];
   static final bool isProduction = true;

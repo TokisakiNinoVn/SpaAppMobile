@@ -1,39 +1,25 @@
-import 'package:spa_app/apis/helper/api_methods_public.dart';
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 
-import '../apis/banner_api.dart';
+import '../apis/information_api.dart';
 
-class BannerService {
-  Future<Map<String, dynamic>> addBanner(Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.postRequest(BannerApiRoutes.createAdminBanner, data);
+class InformationService {
+  // Bank
+  Future<Map<String, dynamic>> addBank(Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.postRequest(InformationApiRoutes.createBank, data);
   }
 
-  Future<Map<String, dynamic>> listAdminBanner() async {
-    return await ApiMethodsPrivate.getRequest(BannerApiRoutes.listAdminBanner);
+  Future<Map<String, dynamic>> listAdminBank() async {
+    return await ApiMethodsPrivate.getRequest(InformationApiRoutes.listBank);
   }
 
-  Future<Map<String, dynamic>> listStatusAdminBanner() async {
-    return await ApiMethodsPrivate.getRequest(BannerApiRoutes.listStatusAdminBanner);
+  Future<Map<String, dynamic>> updateBank(String id, Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.putRequest('${InformationApiRoutes.editBank}/$id', data);
   }
 
-  Future<Map<String, dynamic>> updateBanner(String id, Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.putRequest('${BannerApiRoutes.updateAdminBanner}/$id', data);
+  Future<Map<String, dynamic>> deleteBank(String id) async {
+    return await ApiMethodsPrivate.deleteRequest('${InformationApiRoutes.deleteBank}/$id');
   }
 
-  Future<Map<String, dynamic>> configNumberBanner(Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.putRequest('${BannerApiRoutes.configNumberAdminBanner}', data);
-  }
+  //Banner
 
-  Future<Map<String, dynamic>> configDisplayBanner(Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.putRequest('${BannerApiRoutes.configDisplayAdminBanner}', data);
-  }
-
-  Future<Map<String, dynamic>> deleteBanner(String id) async {
-    return await ApiMethodsPrivate.deleteRequest('${BannerApiRoutes.deleteAdminBanner}/$id');
-  }
-
-
-  Future<Map<String, dynamic>> listPublicBanner() async {
-    return await ApiMethodsPublic.getRequest(BannerApiRoutes.listBanner);
-  }
 }

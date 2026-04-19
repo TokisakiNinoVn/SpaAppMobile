@@ -58,7 +58,7 @@ class _AccountAdminTabState extends State<AccountAdminTab> {
               if (!mounted) return;
               Navigator.of(context).pop();
               context.go(CustomerRouterConfig.homeCustomer);
-              // SnackbarHelper.showSuccess(context, "Đăng xuất thành công");
+              // SnackBarHelper.showSuccess(context, "Đăng xuất thành công");
             },
             icon: const Icon(Icons.logout),
             label: const Text("Đăng xuất"),

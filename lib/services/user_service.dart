@@ -3,6 +3,7 @@
 
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/user_api.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 
 class UserService {
   Future<Map<String, dynamic>> getAllUserService() async {
@@ -55,12 +56,60 @@ class UserService {
     );
   }
 
+  Future<Map<String, dynamic>> getDataUserLoginService() async {
+    return await ApiMethodsPrivate.getRequest(
+      '${UserApiRoutes.mee}',
+    );
+  }
+
   Future<Map<String, dynamic>> changeStatusUserService(
     Map<String, dynamic> data,
   ) async {
     return await ApiMethodsPrivate.postRequest(
       '${UserApiRoutes.changeStatusUser}',
       data,
+    );
+  }
+
+  // Customer - Address
+  Future<Map<String, dynamic>> addAddressService(
+      Map<String, dynamic> data,
+      ) async {
+    return await ApiMethodsPrivate.postRequest(
+      '${UserApiRoutes.addAddress}',
+      data,
+    );
+  }
+
+  Future<Map<String, dynamic>> updateAddressService(
+      String id,
+      Map<String, dynamic> data
+      ) async {
+    appLog("data: $id - $data");
+    return await ApiMethodsPrivate.putRequest(
+      '${UserApiRoutes.updateAddress}/$id', data
+    );
+  }
+
+  Future<Map<String, dynamic>> setDefaultAddressService(
+      String id, Map<String, dynamic> data
+      ) async {
+    return await ApiMethodsPrivate.putRequest(
+      '${UserApiRoutes.setDefaultAddress}/$id', data
+    );
+  }
+
+  Future<Map<String, dynamic>> deleteAddressService(
+      String id,
+      ) async {
+    return await ApiMethodsPrivate.deleteRequest(
+      '${UserApiRoutes.deleteAddress}/$id'
+    );
+  }
+
+  Future<Map<String, dynamic>> listAddress() async {
+    return await ApiMethodsPrivate.getRequest(
+      '${UserApiRoutes.listAddress}',
     );
   }
 }

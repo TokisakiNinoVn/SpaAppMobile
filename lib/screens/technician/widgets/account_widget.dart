@@ -189,7 +189,7 @@ class _AccountTabState extends State<AccountTab> {
         // ScaffoldMessenger.of(context).showSnackBar(
         //   const SnackBar(content: Text("Đăng xuất thành công")),
         // );
-        // SnackbarHelper.showSuccess(context, "Đăng xuất thành công");
+        // SnackBarHelper.showSuccess(context, "Đăng xuất thành công");
 
         context.go('/login');
       } else {

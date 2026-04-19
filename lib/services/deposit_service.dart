@@ -1,39 +1,22 @@
-import 'package:spa_app/apis/helper/api_methods_public.dart';
 import 'package:spa_app/apis/helper/api_methods_private.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 
-import '../apis/banner_api.dart';
+import '../apis/deposit_api.dart';
 
-class BannerService {
-  Future<Map<String, dynamic>> addBanner(Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.postRequest(BannerApiRoutes.createAdminBanner, data);
+class DepositService {
+  Future<Map<String, dynamic>> createQR(Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.postRequest(DepositApi.createQr, data);
   }
 
-  Future<Map<String, dynamic>> listAdminBanner() async {
-    return await ApiMethodsPrivate.getRequest(BannerApiRoutes.listAdminBanner);
+  Future<Map<String, dynamic>> confirmDeposit(Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.postRequest(DepositApi.confirmDeposit, data);
   }
 
-  Future<Map<String, dynamic>> listStatusAdminBanner() async {
-    return await ApiMethodsPrivate.getRequest(BannerApiRoutes.listStatusAdminBanner);
+  Future<Map<String, dynamic>> historyDeposit() async {
+    return await ApiMethodsPrivate.getRequest(DepositApi.history);
   }
 
-  Future<Map<String, dynamic>> updateBanner(String id, Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.putRequest('${BannerApiRoutes.updateAdminBanner}/$id', data);
-  }
-
-  Future<Map<String, dynamic>> configNumberBanner(Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.putRequest('${BannerApiRoutes.configNumberAdminBanner}', data);
-  }
-
-  Future<Map<String, dynamic>> configDisplayBanner(Map<String, dynamic> data) async {
-    return await ApiMethodsPrivate.putRequest('${BannerApiRoutes.configDisplayAdminBanner}', data);
-  }
-
-  Future<Map<String, dynamic>> deleteBanner(String id) async {
-    return await ApiMethodsPrivate.deleteRequest('${BannerApiRoutes.deleteAdminBanner}/$id');
-  }
-
-
-  Future<Map<String, dynamic>> listPublicBanner() async {
-    return await ApiMethodsPublic.getRequest(BannerApiRoutes.listBanner);
+  Future<Map<String, dynamic>> deleteDeposit(String id) async {
+    return await ApiMethodsPrivate.deleteRequest("${DepositApi.delete}/$id");
   }
 }

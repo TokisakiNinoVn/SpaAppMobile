@@ -1,10 +1,10 @@
-import 'package:firebase_app_installations/firebase_app_installations.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
 import 'package:flutter/foundation.dart';
@@ -29,12 +29,10 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
   String? _fcmToken;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
-  late Animation<Offset> _slideAnim;
 
   final FlutterLocalNotificationsPlugin _localNotifications =
   FlutterLocalNotificationsPlugin();
 
-  // Android notification channel
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'otp_channel',
     'OTP Notifications',
@@ -52,7 +50,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
 
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 600),
     );
 
     _fadeAnim = CurvedAnimation(
@@ -60,34 +58,18 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
       curve: Curves.easeOut,
     );
 
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.12),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOut,
-    ));
-
     _animController.forward();
   }
 
-  // ──────────────────────────────────────────────────────────────
-  // NOTIFICATIONS SETUP
-  // ──────────────────────────────────────────────────────────────
-
   Future<void> _initializeNotifications() async {
-    // Android settings
     const AndroidInitializationSettings androidSettings =
     AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // iOS settings: request permission on init
     const DarwinInitializationSettings iosSettings =
     DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
-      // Called when a notification is received while app is in foreground (iOS 10+)
-      // onDidReceiveNotificationResponse: _onDidReceiveLocalNotification,
     );
 
     const InitializationSettings settings = InitializationSettings(
@@ -107,42 +89,35 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
       sound: true,
     );
 
-    // Create Android notification channel (required for Android 8.0+)
     await _localNotifications
         .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(_channel);
 
-    // Request Android 13+ notification permission
     await _localNotifications
         .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
   }
 
-  /// Called on iOS when notification arrives while app is in foreground (iOS < 10)
   static void _onDidReceiveLocalNotification(int id, String? title, String? body, String? payload) {
     appLog('iOS foreground notification: $title | $body | payload: $payload');
   }
 
-  /// Called when user taps a notification
   void _onNotificationTapped(NotificationResponse response) {
     final payload = response.payload;
     appLog('Notification tapped, payload: $payload');
-    // Optionally navigate or pre-fill OTP if payload contains it
     if (payload != null && payload.isNotEmpty && mounted) {
-      // Example: navigate to OTP confirm screen with the phone from payload
       // context.go('${GlobalRouterConfig.confirmLoginOTP}/$payload');
     }
   }
 
-  /// Show a local push notification with the OTP details
   Future<void> _showOTPNotification({
     required String phone,
-    String? lastOTP, // only present in dev mode
+    String? lastOTP,
   }) async {
     final String body = lastOTP != null
-        ? 'Mã OTP của bạn là: $lastOTP (dev mode)'
+        ? 'Mã OTP của bạn là: $lastOTP'
         : 'Mã OTP đã được gửi đến số $phone';
 
     const AndroidNotificationDetails androidDetails =
@@ -171,40 +146,16 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
     );
 
     await _localNotifications.show(
-      0, // notification id
-      '🔐 Mã OTP Serene Spa',
+      0,
+      'Mã OTP',
       body,
       details,
-      payload: phone, // pass phone as payload so tapping can navigate
+      payload: phone,
     );
   }
 
-  // ──────────────────────────────────────────────────────────────
-  // FCM TOKEN
-  // ──────────────────────────────────────────────────────────────
-
-  // Future<void> _getFCMToken() async {
-  //   try {
-  //     await FirebaseMessaging.instance.requestPermission(
-  //       alert: true,
-  //       badge: true,
-  //       sound: true,
-  //     );
-  //     final token = await FirebaseMessaging.instance.getToken();
-  //     if (token != null) {
-  //       setState(() => _fcmToken = token);
-  //     }
-  //     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-  //       _fcmToken = newToken;
-  //       _updateFCMTokenIfLoggedIn(newToken);
-  //     });
-  //   } catch (e) {
-  //     appLog("Lỗi lấy FCM token: $e");
-  //   }
-  // }
   Future<void> _getFCMToken() async {
     try {
-      // iOS: phải request permission và chờ APNs token trước
       final settings = await FirebaseMessaging.instance.requestPermission(
         alert: true,
         badge: true,
@@ -213,17 +164,15 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
 
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
         appLog('User từ chối permission notification');
-        SnackbarHelper.showError(context, 'Bạn cần cho phép thông báo để nhận mã OTP. Vui lòng bật quyền thông báo trong cài đặt.');
+        SnackBarHelper.showError(context, 'Bạn cần cho phép thông báo để nhận mã OTP. Vui lòng bật quyền thông báo trong cài đặt.');
         return;
       }
 
-      // iOS simulator không hỗ trợ FCM token — chỉ test trên real device
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        // Đợi APNs token sẵn sàng (quan trọng!)
         final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
         if (apnsToken == null) {
           appLog('APNs token null — chạy trên simulator hoặc chưa config APNs');
-          SnackbarHelper.showError(context, 'Không thể lấy APNs token. Vui lòng chạy trên thiết bị thật và đảm bảo đã cấu hình APNs đúng cách.');
+          SnackBarHelper.showError(context, 'Không thể lấy APNs token. Vui lòng chạy trên thiết bị thật và đảm bảo đã cấu hình APNs đúng cách.');
           return;
         }
         appLog('APNs token: $apnsToken');
@@ -234,7 +183,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
         setState(() => _fcmToken = token);
         appLog('FCM token: $token');
       } else {
-        SnackbarHelper.showError(context, 'Không thể lấy FCM token. Vui lòng thử lại hoặc kiểm tra cấu hình Firebase.');
+        SnackBarHelper.showError(context, 'Không thể lấy FCM token. Vui lòng thử lại hoặc kiểm tra cấu hình Firebase.');
         appLog('FCM token null sau khi đã có APNs token');
       }
 
@@ -259,10 +208,6 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
     }
   }
 
-  // ──────────────────────────────────────────────────────────────
-  // COUNTDOWN
-  // ──────────────────────────────────────────────────────────────
-
   void startCountdown() {
     setState(() {
       _countdown = 60;
@@ -277,10 +222,6 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
     });
   }
 
-  // ──────────────────────────────────────────────────────────────
-  // REQUEST OTP — handle response shape
-  // ──────────────────────────────────────────────────────────────
-
   Future<void> requestOTP() async {
     final phone = _phoneController.text.trim();
 
@@ -288,11 +229,10 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Vui lòng nhập số điện thoại của bạn.'),
-            backgroundColor: const Color(0xFF8B6F61),
+            content: const Text('Vui lòng nhập số điện thoại'),
+            backgroundColor: const Color(0xFFE74C3C),
             behavior: SnackBarBehavior.floating,
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -302,69 +242,42 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
     try {
       final authService = AuthService();
 
-      // Response shape:
-      // {
-      //   status: "success",
-      //   message: "Đã gửi mã OTP...",
-      //   data: {
-      //     status: "success",
-      //     phone: "...",
-      //     lastOTP: "123456"   // only in dev mode
-      //   }
-      // }
       final response = await authService.getOTPService(
           {'phone': phone, 'fcm_token': _fcmToken, "type": "otp_login"});
 
-      appLog('OTP response: $response');
-
-      // Parse response
       if (response != null && response['status'] == 'success') {
         final data = response['data'] as Map<String, dynamic>?;
         final String? lastOTP = data?['lastOTP'] as String?;
 
-        // Start the countdown after a successful request
         startCountdown();
-
-        // Show local notification (includes OTP code in dev mode)
         await _showOTPNotification(phone: phone, lastOTP: lastOTP);
 
-        // Show a friendly snackbar with the server message
-        if (mounted) {
-          final String message = response['message'] as String? ??
-              'Đã gửi mã OTP đến số điện thoại của bạn.';
+        // if (mounted) {
+        //   final String message = response['message'] as String? ??
+        //       'Đã gửi mã OTP đến số điện thoại của bạn';
+        //
+        //   ScaffoldMessenger.of(context).showSnackBar(
+        //     SnackBar(
+        //       content: Text(message),
+        //       backgroundColor: const Color(0xFF27AE60),
+        //       behavior: SnackBarBehavior.floating,
+        //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        //       duration: const Duration(seconds: 2),
+        //     ),
+        //   );
+        // }
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle_outline,
-                      color: Colors.white, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(message)),
-                ],
-              ),
-              backgroundColor: const Color(0xFF6B4C41),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-
-        // Navigate to OTP confirm screen
         if (mounted) {
           context.go('${GlobalRouterConfig.confirmLoginOTP}/$phone');
         }
       } else {
-        // Unexpected response shape
-        final String errMsg = response?['message'] as String? ?? 'Có lỗi xảy ra.';
-        if (mounted) SnackbarHelper.showError(context, errMsg);
+        final String errMsg = response?['message'] as String? ?? 'Có lỗi xảy ra';
+        if (mounted) SnackBarHelper.showError(context, errMsg);
       }
     } catch (error) {
       appLog('Lỗi requestOTP: $error');
       if (mounted) {
-        SnackbarHelper.showError(context, 'Đã xảy ra lỗi: $error');
+        SnackBarHelper.showError(context, 'Đã xảy ra lỗi: $error');
       }
     }
   }
@@ -377,427 +290,224 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
     super.dispose();
   }
 
-  // ──────────────────────────────────────────────────────────────
-  // BUILD
-  // ──────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
-    const Color creamBg = Color(0xFFFAF6F1);
-    const Color roseTaupe = Color(0xFF9C7B6E);
-    const Color warmBrown = Color(0xFF6B4C41);
-    const Color softGold = Color(0xFFBFA07A);
-    const Color mutedSage = Color(0xFF8A9E8C);
-    const Color textDark = Color(0xFF3A2E2A);
-    const Color inputBg = Color(0xFFF3EDE7);
-
     return Scaffold(
-      backgroundColor: creamBg,
-      body: Stack(
-        children: [
-          // Decorative top arc
-          Positioned(
-            top: -80,
-            left: -60,
-            child: Container(
-              width: 280,
-              height: 280,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: softGold.withOpacity(0.12),
-              ),
-            ),
-          ),
-          Positioned(
-            top: -40,
-            right: -80,
-            child: Container(
-              width: 220,
-              height: 220,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: mutedSage.withOpacity(0.10),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -60,
-            right: -40,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: roseTaupe.withOpacity(0.10),
-              ),
-            ),
-          ),
+      backgroundColor: Colors.white,
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Back button - minimal
+                GestureDetector(
+                  onTap: () => context.go(CustomerRouterConfig.homeCustomer),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 18,
+                      color: Color(0xFF333333),
+                    ),
+                  ),
+                ),
 
-          SafeArea(
-            child: SingleChildScrollView(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-              child: FadeTransition(
-                opacity: _fadeAnim,
-                child: SlideTransition(
-                  position: _slideAnim,
+                const SizedBox(height: 40),
+
+                // Logo/Brand - simple and clean
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppConfig.appName,
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w600,
+                        color: ColorConfig.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Đăng nhập bằng số điện thoại',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF666666),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 30),
+
+                // Phone input - clean card
+                Container(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Back button
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: GestureDetector(
-                          onTap: () => context
-                              .go(CustomerRouterConfig.homeCustomer),
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: inputBg,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                  color: softGold.withOpacity(0.4), width: 1),
-                            ),
-                            child: const Icon(Icons.arrow_back_ios_new_rounded,
-                                size: 16, color: warmBrown),
+                      const Text(
+                        'Số điện thoại',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Nhập số điện thoại của bạn',
+                          hintStyle: const TextStyle(
+                            color: Color(0xFF999999),
+                            fontSize: 15,
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-
-                      // Logo + Brand
-                      Center(
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 88,
-                              height: 88,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: softGold.withOpacity(0.25),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: ClipOval(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Image.asset(
-                                    'lib/assets/images/spa_logo.png',
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            const Text(
-                              'Serene Spa',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w700,
-                                color: warmBrown,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                    width: 24,
-                                    height: 1,
-                                    color: softGold.withOpacity(0.6)),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Thư giãn & làm đẹp',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: roseTaupe,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                    width: 24,
-                                    height: 1,
-                                    color: softGold.withOpacity(0.6)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      // Card
-                      Container(
-                        padding: const EdgeInsets.all(28),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: warmBrown.withOpacity(0.08),
-                              blurRadius: 32,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Text(
-                              'Đăng nhập bằng OTP',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: textDark,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Nhập số điện thoại để nhận mã xác thực',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                color: roseTaupe,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Phone field
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Số điện thoại',
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: warmBrown,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  controller: _phoneController,
-                                  keyboardType: TextInputType.phone,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: textDark,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: '0901 234 567',
-                                    hintStyle: TextStyle(
-                                      color: roseTaupe.withOpacity(0.5),
-                                      fontSize: 15,
-                                    ),
-                                    filled: true,
-                                    fillColor: inputBg,
-                                    prefixIcon: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 14),
-                                      child: Icon(Icons.phone_outlined,
-                                          size: 20,
-                                          color: softGold.withOpacity(0.9)),
-                                    ),
-                                    prefixIconConstraints:
-                                    const BoxConstraints(minWidth: 50),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      borderSide: BorderSide(
-                                          color: softGold.withOpacity(0.2),
-                                          width: 1.2),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      borderSide: const BorderSide(
-                                          color: softGold, width: 1.6),
-                                    ),
-                                    contentPadding:
-                                    const EdgeInsets.symmetric(
-                                        vertical: 16, horizontal: 16),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 28),
-
-                            // OTP Button
-                            AnimatedOpacity(
-                              opacity: _isButtonDisabled ? 0.65 : 1.0,
-                              duration: const Duration(milliseconds: 200),
-                              child: GestureDetector(
-                                onTap: _isButtonDisabled ? null : requestOTP,
-                                child: Container(
-                                  height: 54,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(14),
-                                    gradient: _isButtonDisabled
-                                        ? LinearGradient(
-                                      colors: [
-                                        roseTaupe.withOpacity(0.6),
-                                        roseTaupe.withOpacity(0.4),
-                                      ],
-                                    )
-                                        : const LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        Color(0xFF9C7B6E),
-                                        Color(0xFF6B4C41),
-                                      ],
-                                    ),
-                                    boxShadow: _isButtonDisabled
-                                        ? []
-                                        : [
-                                      BoxShadow(
-                                        color:
-                                        roseTaupe.withOpacity(0.40),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Center(
-                                    child: _isButtonDisabled
-                                        ? Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.timer_outlined,
-                                            color: Colors.white70,
-                                            size: 18),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Gửi lại sau $_countdown giây',
-                                          style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                        : const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.lock_open_outlined,
-                                            color: Colors.white,
-                                            size: 18),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'Lấy mã OTP',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-
-                            TextButton(
-                              onPressed: () =>
-                                  context.go(GlobalRouterConfig.register),
-                              child: const Text(
-                                "Đã có tài khoản? Đăng ký",
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Footer links
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _FooterLink(
-                            label: 'Đăng nhập bằng mật khẩu',
-                            onTap: () => context.go('/login'),
-                            color: roseTaupe,
+                          filled: true,
+                          fillColor: const Color(0xFFF8F8F8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(40),
+                            borderSide: BorderSide.none,
                           ),
-                          Container(
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(40),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(40),
+                            borderSide: BorderSide(
+                              color: ColorConfig.primary,
                               width: 1,
-                              height: 14,
-                              margin:
-                              const EdgeInsets.symmetric(horizontal: 12),
-                              color: softGold.withOpacity(0.4)),
-                          _FooterLink(
-                            label: 'Quên mật khẩu?',
-                            onTap: () => context.go('/get-otp'),
-                            color: mutedSage,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 20,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // OTP Button - minimal but elegant
+                GestureDetector(
+                  onTap: _isButtonDisabled ? null : requestOTP,
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: _isButtonDisabled
+                          ? const Color(0xFFCCCCCC)
+                          : ColorConfig.primary,
+                      borderRadius: BorderRadius.circular(40),
+                    ),
+                    child: Center(
+                      child: _isButtonDisabled
+                          ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.timer_outlined,
+                            color: Colors.white70,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Gửi lại sau $_countdown giây',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
+                      )
+                          : const Text(
+                        'Tiếp tục',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                    ),
+                  ),
+                ),
 
-                      const SizedBox(height: 32),
+                const SizedBox(height: 20),
 
-                      Center(
-                        child: Text(
-                          '✦  Serene Spa  ✦',
+                Center(
+                  child: Column(
+                    children: [
+                      TextButton(
+                        onPressed: () => context.go('/login'),
+                        child: const Text(
+                          'Đăng nhập bằng mật khẩu',
                           style: TextStyle(
-                            fontSize: 11,
-                            color: softGold.withOpacity(0.55),
-                            letterSpacing: 3,
+                            color: Color(0xFF666666),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => context.go('/get-otp'),
+                        child: const Text(
+                          'Quên mật khẩu?',
+                          style: TextStyle(
+                            color: Color(0xFF999999),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Chưa có tài khoản?',
+                            style: TextStyle(
+                              color: Color(0xFF666666),
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () => context.go(GlobalRouterConfig.register),
+                            child: Text(
+                              'Đăng ký ngay',
+                              style: TextStyle(
+                                color: ColorConfig.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FooterLink extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  final Color color;
-
-  const _FooterLink({
-    required this.label,
-    required this.onTap,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          decoration: TextDecoration.underline,
-          decorationColor: color.withOpacity(0.4),
         ),
       ),
     );

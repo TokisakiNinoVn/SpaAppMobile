@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/config/app_config.dart';
+import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/services/auth_service.dart';
@@ -20,7 +21,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final fullnameController = TextEditingController();
   final authService = AuthService();
 
-  // String? selectedRole = 'ktv';
   bool isLoading = false;
   bool showPassword = false;
   bool showConfirmPassword = false;
@@ -31,7 +31,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final confirmPassword = confirmPasswordController.text;
     final fullname = fullnameController.text.trim();
 
-    // Validation
     if (phone.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       _showSnack('Vui lòng nhập đầy đủ thông tin bắt buộc');
       return;
@@ -68,29 +67,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       if (response['status'] == 'success') {
-        // if (selectedRole == 'quanly') {
-          SnackbarHelper.showSuccess(context, "Đăng ký tài khoản thành công");
-          context.go('/login');
-        // } else {
-        //   if(response['isHaveTechnician'] == false) {
-        //     final prefs = await SharedPreferences.getInstance();
-        //     await prefs.setString('token', response['token']);
-        //
-        //     SnackbarHelper.showSuccess(context, "Đăng ký tài khoản thành công!");
-        //     context.go('/create-technician');
-        //   }
-        //   // else {
-        //   //   _showSnack('Đăng ký tài khoản thành công!');
-        //   // }
-        // }
+        SnackBarHelper.showSuccess(context, "Đăng ký tài khoản thành công");
+        context.go('/login');
       } else {
-        // _showSnack(response['message'] ?? 'Đăng ký thất bại');
-        SnackbarHelper.showError(context, response['message'] ?? 'Đăng ký thất bại');
+        SnackBarHelper.showError(context, response['message'] ?? 'Đăng ký thất bại');
       }
-
     } catch (e) {
-      // _showSnack('Lỗi hệ thống: $e');
-      SnackbarHelper.showError(context, 'Lỗi hệ thống: $e');
+      SnackBarHelper.showError(context, 'Lỗi hệ thống: $e');
       print("Lỗi đăng ký: $e");
     } finally {
       setState(() => isLoading = false);
@@ -100,14 +83,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.lora(color: Colors.white),
-        ),
+        content: Text(message),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.redAccent,
+        backgroundColor: const Color(0xFFE74C3C),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(40),
         ),
       ),
     );
@@ -136,228 +116,243 @@ class _RegisterScreenState extends State<RegisterScreen> {
       textInputAction: inputAction,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF8B5E3C)),
-        suffixIcon: suffix,
-        labelStyle: GoogleFonts.lora(
-          color: const Color(0xFF8B5E3C),
-          fontSize: 16,
+        labelStyle: const TextStyle(
+          color: Color(0xFF666666),
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
         ),
+        prefixIcon: Icon(icon, color: const Color(0xFF999999), size: 20),
+        suffixIcon: suffix,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
+        fillColor: const Color(0xFFF8F8F8),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(40),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFD4A373), width: 2),
+          borderRadius: BorderRadius.circular(40),
+          borderSide: BorderSide(color: ColorConfig.primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
       ),
-      style: GoogleFonts.lora(
-        color: Colors.black87,
-        fontSize: 16,
+      style: const TextStyle(
+        color: Color(0xFF1A1A1A),
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
       ),
     );
   }
-
-  // Widget _buildDropdown() {
-  //   return DropdownButtonFormField<String>(
-  //     value: selectedRole,
-  //     decoration: InputDecoration(
-  //       labelText: 'Vai trò',
-  //       prefixIcon: const Icon(Icons.person, color: Color(0xFF8B5E3C)),
-  //       labelStyle: GoogleFonts.lora(
-  //         color: const Color(0xFF8B5E3C),
-  //         fontSize: 16,
-  //       ),
-  //       filled: true,
-  //       fillColor: Colors.white.withOpacity(0.9),
-  //       enabledBorder: OutlineInputBorder(
-  //         borderRadius: BorderRadius.circular(16),
-  //         borderSide: BorderSide(color: Colors.grey[300]!),
-  //       ),
-  //       focusedBorder: OutlineInputBorder(
-  //         borderRadius: BorderRadius.circular(16),
-  //         borderSide: const BorderSide(color: Color(0xFFD4A373), width: 2),
-  //       ),
-  //       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-  //     ),
-  //     items: const [
-  //       DropdownMenuItem(
-  //         value: 'quanly',
-  //         child: Text('Đầu bắn tour'),
-  //       ),
-  //       DropdownMenuItem(
-  //         value: 'ktv',
-  //         child: Text('Kĩ thuật viên'),
-  //       ),
-  //     ],
-  //     onChanged: (value) {
-  //       setState(() => selectedRole = value);
-  //     },
-  //     style: GoogleFonts.lora(
-  //       color: Colors.black87,
-  //       fontSize: 16,
-  //     ),
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'lib/assets/images/spa_logo.png',
-                  height: 100,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
+
+              Image.asset(
+                'lib/assets/images/zen-hone-circle-logo.png',
+                height: 100,
+              ),
+
+              const SizedBox(height: 24),
+
+              Text(
+                AppConfig.appNameUpperCase,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w600,
+                  color: ColorConfig.textPrimary,
+                  letterSpacing: -0.5,
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Serene Spa',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF8B5E3C),
+              ),
+
+              const SizedBox(height: 8),
+
+              const Text(
+                'Đăng ký tài khoản',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF666666),
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+
+              const SizedBox(height: 48),
+
+              _buildTextField(
+                controller: fullnameController,
+                label: 'Họ và tên',
+                icon: Icons.person_outline,
+                inputAction: TextInputAction.next,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Phone field
+              _buildTextField(
+                controller: phoneController,
+                label: 'Số điện thoại',
+                icon: Icons.phone_outlined,
+                inputAction: TextInputAction.next,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Password field
+              _buildTextField(
+                controller: passwordController,
+                label: 'Mật khẩu',
+                icon: Icons.lock_outline,
+                obscure: !showPassword,
+                suffix: IconButton(
+                  icon: Icon(
+                    showPassword ? Icons.visibility : Icons.visibility_off,
+                    color: const Color(0xFF999999),
+                    size: 20,
                   ),
+                  onPressed: () => setState(() => showPassword = !showPassword),
                 ),
-                Text(
-                  'Đăng ký tài khoản',
-                  style: GoogleFonts.lora(
-                    fontSize: 18,
-                    color: const Color(0xFF8B5E3C),
+                inputAction: TextInputAction.next,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Confirm password field
+              _buildTextField(
+                controller: confirmPasswordController,
+                label: 'Xác nhận mật khẩu',
+                icon: Icons.lock_outline,
+                obscure: !showConfirmPassword,
+                suffix: IconButton(
+                  icon: Icon(
+                    showConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                    color: const Color(0xFF999999),
+                    size: 20,
                   ),
+                  onPressed: () => setState(() => showConfirmPassword = !showConfirmPassword),
                 ),
-                // const SizedBox(height: 40),
-                // _buildDropdown(),
-                // if (selectedRole == 'quanly') ...[
-                  const SizedBox(height: 20),
-                  _buildTextField(
-                    controller: fullnameController,
-                    label: 'Họ và tên',
-                    icon: Icons.person_outline,
-                    inputAction: TextInputAction.done,
-                  ),
-                // ],
-                const SizedBox(height: 24),
-                _buildTextField(
-                  controller: phoneController,
-                  label: 'Số điện thoại',
-                  icon: Icons.phone,
-                ),
-                const SizedBox(height: 20),
-                _buildTextField(
-                  controller: passwordController,
-                  label: 'Mật khẩu',
-                  icon: Icons.lock,
-                  obscure: !showPassword,
-                  suffix: IconButton(
-                    icon: Icon(
-                      showPassword ? Icons.visibility : Icons.visibility_off,
-                      color: const Color(0xFF8B5E3C),
+                inputAction: TextInputAction.done,
+              ),
+
+              const SizedBox(height: 32),
+
+              // Register button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : handleRegister,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    backgroundColor: ColorConfig.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(40),
                     ),
-                    onPressed: () => setState(() => showPassword = !showPassword),
+                    elevation: 0,
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Text(
+                    'Đăng ký',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                _buildTextField(
-                  controller: confirmPasswordController,
-                  label: 'Xác nhận mật khẩu',
-                  icon: Icons.lock_outline,
-                  obscure: !showConfirmPassword,
-                  suffix: IconButton(
-                    icon: Icon(
-                      showConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                      color: const Color(0xFF8B5E3C),
+              ),
+
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Đã có tài khoản?',
+                    style: TextStyle(
+                      color: Color(0xFF666666),
+                      fontSize: 14,
                     ),
-                    onPressed: () => setState(() => showConfirmPassword = !showConfirmPassword),
                   ),
-                  inputAction: TextInputAction.done,
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : handleRegister,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: const Color(0xFFD4A373),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 5,
-                      shadowColor: Colors.black.withOpacity(0.2),
-                    ),
-                    child: isLoading
-                        ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                        : Text(
-                      'Đăng ký',
-                      style: GoogleFonts.lora(
-                        fontSize: 16,
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => context.go(GlobalRouterConfig.loginOTP),
+                    child: Text(
+                      'Đăng nhập',
+                      style: TextStyle(
+                        color: ColorConfig.textPrimary,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => context.go(GlobalRouterConfig.loginOTP),
-                  child: Text(
-                    'Đã có tài khoản? Đăng nhập',
-                    style: GoogleFonts.lora(
-                      color: const Color(0xFF8B5E3C),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Đăng ký đối tác với',
+                    style: TextStyle(
+                      color: Color(0xFF666666),
                       fontSize: 14,
                     ),
                   ),
-                ),
-                TextButton(
-                  onPressed: () => context.go('/register-partner'),
-                  child: Text(
-                    'Đăng ký đối tác với Serene Spa',
-                    style: GoogleFonts.lora(
-                      color: const Color(0xFF8B5E3C),
-                      fontSize: 14,
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => context.go('/register-partner'),
+                    child: Text(
+                      '${AppConfig.appName}',
+                      style: TextStyle(
+                        color: ColorConfig.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 32),
-                Column(
-                  children: [
-                    Text(
-                      'Phiên bản: 2.4.1.23',
-                      style: GoogleFonts.lora(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
+                ],
+              ),
+
+              const SizedBox(height: 48),
+
+              // Footer info
+              Column(
+                children: [
+                  Text(
+                    'Phiên bản: 2.4.1.23',
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 11,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Liên hệ: support@serenespa.vn',
-                      style: GoogleFonts.lora(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Liên hệ: ${AppConfig.emailAppSupport}',
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 11,
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+            ],
           ),
         ),
       ),

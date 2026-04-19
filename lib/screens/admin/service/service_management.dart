@@ -50,7 +50,7 @@ class _ServiceManagementState extends State<ServiceManagement> {
         _filteredServices = _services;
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Không tải được danh sách dịch vụ');
+      SnackBarHelper.showError(context, 'Không tải được danh sách dịch vụ');
     }
 
     setState(() => _loading = false);
@@ -99,12 +99,12 @@ class _ServiceManagementState extends State<ServiceManagement> {
     try {
       final res = await _serviceService.deleteService(serviceId);
       if (res['success'] == true) {
-        SnackbarHelper.showSuccess(context, 'Xóa thành công');
+        SnackBarHelper.showSuccess(context, 'Xóa thành công');
       } else {
-        SnackbarHelper.showError(context, 'Xóa thất bại');
+        SnackBarHelper.showError(context, 'Xóa thất bại');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Có lỗi xảy ra');
+      SnackBarHelper.showError(context, 'Có lỗi xảy ra');
     }
     _fetchServices();
   }

@@ -108,7 +108,7 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
       final listTinhThanh = await tinhThanhService.getTinhThanh();
       // print("DS Tinh thanh: $listTinhThanh");
       if (listTinhThanh.isEmpty) {
-        SnackbarHelper.showError(context, 'Không thể tải danh sách tỉnh thành');
+        SnackBarHelper.showError(context, 'Không thể tải danh sách tỉnh thành');
       } else {
         setState(() {
           provinces = listTinhThanh;
@@ -116,7 +116,7 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
         });
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi tải tỉnh thành: $e');
+      SnackBarHelper.showError(context, 'Lỗi tải tỉnh thành: $e');
     } finally {
       setState(() => isProvincesLoading = false);
     }
@@ -135,7 +135,7 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
     try {
       final listQuanHuyen = await tinhThanhService.getHuyenByTinh(idProvince);
       if (listQuanHuyen.isEmpty) {
-        SnackbarHelper.showError(context, 'Không thể tải danh sách huyện');
+        SnackBarHelper.showError(context, 'Không thể tải danh sách huyện');
       } else {
         setState(() {
           districts = listQuanHuyen;
@@ -143,7 +143,7 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
         });
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi tải huyện: $e');
+      SnackBarHelper.showError(context, 'Lỗi tải huyện: $e');
     } finally {
       setState(() => isDistrictsLoading = false);
     }
@@ -156,27 +156,27 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
     // final bio = bioController.text.trim();
 
     if (fullname.isEmpty) {
-      SnackbarHelper.showWarning(context, 'Vui lòng nhập họ tên');
+      SnackBarHelper.showWarning(context, 'Vui lòng nhập họ tên');
       return;
     }
     if (selectedProvince == null || selectedDistricts.isEmpty) {
-      SnackbarHelper.showWarning(context, 'Vui lòng chọn đầy đủ địa chỉ');
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn đầy đủ địa chỉ');
       return;
     }
     if (address.isEmpty) {
-      SnackbarHelper.showWarning(context, 'Vui lòng nhập địa chỉ nơi ở');
+      SnackBarHelper.showWarning(context, 'Vui lòng nhập địa chỉ nơi ở');
       return;
     }
     if (selectedYear == null) {
-      SnackbarHelper.showWarning(context, 'Vui lòng chọn năm sinh');
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn năm sinh');
       return;
     }
     if (experience == null) {
-      SnackbarHelper.showWarning(context, 'Vui lòng chọn kinh nghiệm');
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn kinh nghiệm');
       return;
     }
     if (images.length < 3) {
-      SnackbarHelper.showWarning(context, 'Vui lòng chọn tối thiểu 3 ảnh');
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn tối thiểu 3 ảnh');
       return;
     }
 
@@ -202,14 +202,14 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
 
       final response = await technicianService.addTechnicianService(data);
       if (response['success'] == true) {
-        SnackbarHelper.showSuccess(context, 'Đã thêm hồ sơ vui lòng chờ duyệt');
+        SnackBarHelper.showSuccess(context, 'Đã thêm hồ sơ vui lòng chờ duyệt');
         context.go('/home-technician');
       } else {
-        SnackbarHelper.showError(context, response['message'] ?? 'Có lỗi xảy ra khi tạo hồ sơ');
+        SnackBarHelper.showError(context, response['message'] ?? 'Có lỗi xảy ra khi tạo hồ sơ');
         print('Lỗi khi tạo hồ sơ: ${response['message']} - $response');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi hệ thống: $e');
+      SnackBarHelper.showError(context, 'Lỗi hệ thống: $e');
       print('Lỗi hệ thống: $e');
     } finally {
       setState(() => isLoading = false);
@@ -231,16 +231,16 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
           }
         });
       } else {
-        SnackbarHelper.showError(context, 'Không thể tải lên hình ảnh');
+        SnackBarHelper.showError(context, 'Không thể tải lên hình ảnh');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi tải lên hình ảnh: $e');
+      SnackBarHelper.showError(context, 'Lỗi tải lên hình ảnh: $e');
     }
   }
 
   Future<void> _pickImage({bool isAvatar = false}) async {
     if (!isAvatar && images.length >= 5) {
-      SnackbarHelper.showError(context, 'Bạn chỉ được chọn tối đa 5 ảnh');
+      SnackBarHelper.showError(context, 'Bạn chỉ được chọn tối đa 5 ảnh');
       return;
     }
 
@@ -284,13 +284,13 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
       final response = await fileService.deleteFileService(idImage);
 
       if (response['status'] == 'success') {
-        SnackbarHelper.showSuccess(context, 'Hình ảnh đã được xóa');
+        SnackBarHelper.showSuccess(context, 'Hình ảnh đã được xóa');
         setState(() => images.removeWhere((img) => img['_id'] == idImage));
       } else {
-        SnackbarHelper.showError(context, 'Không thể xóa hình ảnh');
+        SnackBarHelper.showError(context, 'Không thể xóa hình ảnh');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi xóa hình ảnh: $e');
+      SnackBarHelper.showError(context, 'Lỗi xóa hình ảnh: $e');
     }
   }
 
@@ -389,7 +389,7 @@ class _AddTechnicianScreen extends State<AddTechnicianScreen> {
 
   void _showDistrictBottomSheet() {
     if (selectedProvince == null) {
-      SnackbarHelper.showWarning(context, 'Vui lòng chọn tỉnh trước');
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn tỉnh trước');
       return;
     }
     showModalBottomSheet(

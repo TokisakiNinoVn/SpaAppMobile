@@ -396,11 +396,11 @@ class _UserDetailWidgetState extends State<UserDetailWidget> {
         if (mounted) {
           Navigator.pop(context); // Đóng bottom sheet
           widget.onDeleteSuccess(); // Reload danh sách
-          SnackbarHelper.showSuccess(context, 'Xóa kỹ thuật viên thành công');
+          SnackBarHelper.showSuccess(context, 'Xóa kỹ thuật viên thành công');
         }
       } else {
         if (mounted) {
-          SnackbarHelper.showError(
+          SnackBarHelper.showError(
             context,
             response['message'] ?? 'Xóa thất bại',
           );
@@ -408,7 +408,7 @@ class _UserDetailWidgetState extends State<UserDetailWidget> {
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, 'Có lỗi xảy ra: $e');
+        SnackBarHelper.showError(context, 'Có lỗi xảy ra: $e');
       }
     } finally {
       if (mounted) {

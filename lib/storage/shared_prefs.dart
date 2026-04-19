@@ -1,10 +1,9 @@
 import 'dart:convert';
 
-import 'package:edu_ai/core/storage/pref_type.dart';
-import 'package:edu_ai/presentation/utils/logger_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/storage/pref_type.dart';
 
-class SharedPrefsService {
+class SharedPrefs {
   static Future<void> saveValue(PrefType type, String key, dynamic value) async {
     // appLog('Saving value: $value with type: ${value == null ? "null" : value.runtimeType} for key: $key');
     final prefs = await SharedPreferences.getInstance();
