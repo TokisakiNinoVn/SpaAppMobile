@@ -20,7 +20,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final CustomerService _customerService = CustomerService();
 
   final TextEditingController _fullnameController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
+  // final TextEditingController _addressController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
 
   String _gender = 'female';
@@ -48,7 +48,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         final profile = jsonDecode(rawProfile) as Map<String, dynamic>;
 
         _fullnameController.text = profile['fullname'] ?? '';
-        _addressController.text = profile['address'] ?? '';
+        // _addressController.text = profile['address'] ?? '';
         _bioController.text = profile['bio'] ?? '';
         _gender = profile['gender'] ?? 'female';
       }
@@ -76,7 +76,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     final payload = {
       "fullname": _fullnameController.text.trim(),
       "gender": _gender,
-      "address": _addressController.text.trim(),
+      // "address": _addressController.text.trim(),
       "bio": _bioController.text.trim(),
     };
 
@@ -131,7 +131,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   @override
   void dispose() {
     _fullnameController.dispose();
-    _addressController.dispose();
+    // _addressController.dispose();
     _bioController.dispose();
     super.dispose();
   }
@@ -312,13 +312,13 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           ],
         ),
         const SizedBox(height: 24),
-        _buildInputField(
-          label: "Địa chỉ",
-          hint: "Nhập địa chỉ của bạn",
-          controller: _addressController,
-          icon: Icons.location_on_outlined,
-          maxLines: 2,
-        ),
+        // _buildInputField(
+        //   label: "Địa chỉ",
+        //   hint: "Nhập địa chỉ của bạn",
+        //   controller: _addressController,
+        //   icon: Icons.location_on_outlined,
+        //   maxLines: 2,
+        // ),
         const SizedBox(height: 24),
         _buildInputField(
           label: "Giới thiệu bản thân",
