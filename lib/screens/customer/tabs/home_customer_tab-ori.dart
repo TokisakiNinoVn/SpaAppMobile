@@ -1178,7 +1178,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
           _buildImageServiceCard(
             title: 'Đặt lịch trước',
             description: 'Chọn kỹ thuật viên và thời gian phù hợp với bạn',
-            router: CustomerRouterConfig.books,
+            router: CustomerRouterConfig.listBookTechnician,
             imageUrl: skincareImage,
             tag: 'Mới',
             tagColor: const Color(0xFF7C4DFF),

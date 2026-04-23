@@ -20,6 +20,17 @@ class InformationService {
     return await ApiMethodsPrivate.deleteRequest('${InformationApiRoutes.deleteBank}/$id');
   }
 
-  //Banner
+  //Feature Service
+  Future<Map<String, dynamic>> listFeatureService() async {
+    return await ApiMethodsPrivate.getRequest(InformationApiRoutes.listFeatureService);
+  }
+
+  Future<Map<String, dynamic>> listFeatureServicePublic() async {
+    return await ApiMethodsPrivate.getRequest(InformationApiRoutes.listFeatureServicePublic);
+  }
+
+  Future<Map<String, dynamic>> updateFeatureService(String id, Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.putRequest('${InformationApiRoutes.updateFeatureService}/$id', data);
+  }
 
 }

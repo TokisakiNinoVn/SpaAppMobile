@@ -34,4 +34,11 @@ class AdminRouterConfig {
   static String addBank = "/home-admin/manage-bank/add";
   static String editBank = "/home-admin/manage-bank/edit";
 
+  //request withdraw
+  static String listWithdraw = "/home-admin/list-withdraw";
+  static String detailWithdraw = "/home-admin/list-withdraw/details";
+
+  //FeatureService
+  static String listFeatureService = "/home-admin/feature-service";
+  static String editFeatureService = "/home-admin/feature-service/edit";
 }

@@ -9,7 +9,6 @@ import 'package:spa_app/helper/full_screen_single_image.dart';
 import 'package:spa_app/helper/full_screen_list_image.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/services/realtime_service.dart';
-
 import '../../../../helper/snackbar_helper.dart';
 
 class ManagementAccountTechnician extends StatefulWidget {
@@ -651,7 +650,8 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
                       radius: 30,
                       backgroundColor: Colors.grey[100],
                       backgroundImage:
-                      avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      // avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      avatarUrl != null ? NetworkImage(FormatHelper.formatNetworkImageUrl(avatarUrl)) : null,
                       child: avatarUrl == null
                           ? Icon(Icons.person, size: 30, color: ColorConfig.secondary)
                           : null,
@@ -853,14 +853,14 @@ class UserDetailWidget extends StatelessWidget {
                         if (imageUrl != null && imageUrl.isNotEmpty) {
                           showDialog(
                             context: context,
-                            builder: (_) => FullScreenSingleImageViewer(imageUrl: FormatHelper.formatImageUrl(imageUrl)),
+                            builder: (_) => FullScreenSingleImageViewer(imageUrl: FormatHelper.formatNetworkImageUrl(imageUrl)),
                           );
                         }
                       },
                       child: CircleAvatar(
                         radius: 50,
                         backgroundColor: Colors.grey[300],
-                        backgroundImage: hasTechnician && technician?['avatar'] != null ? NetworkImage(FormatHelper.formatImageUrl(technician!['avatar']['url'] ?? '')) : null,
+                        backgroundImage: hasTechnician && technician?['avatar'] != null ? NetworkImage(FormatHelper.formatNetworkImageUrl(technician!['avatar']['url'] ?? '')) : null,
                         child: hasTechnician && technician?['avatar'] == null ? const Icon(Icons.person, size: 50) : null,
                       ),
                     ),
@@ -939,7 +939,7 @@ class UserDetailWidget extends StatelessWidget {
                               child: GestureDetector(
                                 onTap: () => _showFullScreenImages(context, technician['images'], index),
                                 child: Image.network(
-                                  FormatHelper.formatImageUrl(image['url'] ?? ''),
+                                  FormatHelper.formatNetworkImageUrl(image['url'] ?? ''),
                                   width: 100,
                                   height: 100,
                                   fit: BoxFit.cover,

@@ -1,6 +1,8 @@
 class CustomerRouterConfig {
   static String homeCustomer = "/home-customer";
-  static String createOrder = "/home-customer/list-technician/create-order-technician";
+
+  static String listTechnician = "/home-customer/list-technician";
+
   static String updateProfile = "/home-customer/update-profile";
   static String listLike = "/home-customer/likes";
   static String toNotificationScreen = "/home-customer/notifications";
@@ -18,10 +20,18 @@ class CustomerRouterConfig {
   static String editAddress = "/home-customer/list-address/edit-address";
 
   static String orderNow = "/home-customer/order-now";
-  static String books = "/home-customer/books";
   static String automaticMatching = "/home-customer/automatic-matching";
 
   static String createReqWithdraw = "/home-customer/withdraw";
   static String confirmWithdraw = "/home-customer/withdraw/confirm";
   static String historyWithdraw = "/home-customer/withdraw/history";
+
+  // Order Now
+  static String createOrderNow = "/home-customer/list-technician/create-order-technician";
+
+  // Book Order
+  static String listBookTechnician = "/home-customer/book";
+  static String detailBookTechnician = "/home-customer/book/detail";
+  static String createBookOrder = "/home-customer/book/create-order";
+
 }

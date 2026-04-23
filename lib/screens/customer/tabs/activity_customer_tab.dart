@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/services/order_service.dart';
 
 import '../../../helper/check_login_helper.dart';
@@ -20,6 +21,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
   final OrderService _orderService = OrderService();
 
   bool _isLoading = true;
+  bool _isLogin = false;
   String _errorMessage = '';
 
   String _selectedFilter = 'Tất cả';
@@ -76,13 +78,6 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
     }
   }
 
-  // Format tiền VND
-  final NumberFormat _currencyFormat = NumberFormat.currency(
-    locale: 'vi_VN',
-    symbol: 'đ',
-    decimalDigits: 0,
-  );
-
   @override
   void initState() {
     super.initState();
@@ -91,10 +86,11 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
 
   Future<void> checkLogin() async {
     final loggedIn = await CheckLoginHelper.isLoggedIn();
-    if (loggedIn)
+    if (loggedIn) {
+      _isLogin = true;
       _loadOrders();
-    else
-    context.go(GlobalRouterConfig.signup);
+    } else
+      _isLogin = false;
   }
 
   Future<void> _loadOrders() async {
@@ -123,57 +119,86 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
     }
   }
 
-  // Format ngày giờ
-  String _formatDateTime(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      return DateFormat('dd/MM/yyyy HH:mm').format(date.toLocal());
-    } catch (e) {
-      return dateString;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ColorConfig.white,
-      body: RefreshIndicator(
-        onRefresh: _loadOrders,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
+      body: _isLogin ? _buildLoggedInView() : _buildGuestView(),
+    );
+  }
+
+  Widget _buildLoggedInView() {
+    return RefreshIndicator(
+      onRefresh: _loadOrders,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 24),
+
+              if (_isLoading) ...[
+                const Center(child: CircularProgressIndicator()),
+                const SizedBox(height: 20),
+              ] else if (_errorMessage.isNotEmpty) ...[
+                _buildErrorWidget(),
+              ] else ...[
+                _buildFilterSection(),
                 const SizedBox(height: 24),
 
-                if (_isLoading) ...[
-                  const Center(child: CircularProgressIndicator()),
-                  const SizedBox(height: 20),
-                ] else if (_errorMessage.isNotEmpty) ...[
-                  _buildErrorWidget(),
-                ] else ...[
-                  // Phần lọc
-                  _buildFilterSection(),
-                  const SizedBox(height: 24),
+                _buildQuickStats(),
+                const SizedBox(height: 24),
 
-                  // Thống kê nhanh
-                  _buildQuickStats(),
-                  const SizedBox(height: 24),
-
-                  // Danh sách đơn hàng
-                  _buildOrdersSection(),
-                  const SizedBox(height: 24),
-                ],
+                _buildOrdersSection(),
+                const SizedBox(height: 24),
               ],
-            ),
+            ],
           ),
         ),
       ),
     );
   }
+
+
+  Widget _buildGuestView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "Đăng nhập Zen Home Spa",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: ColorConfig.textBlack,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+
+            ElevatedButton(
+              onPressed: () {
+                context.go(GlobalRouterConfig.loginOTP);
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: const Text("Đăng nhập"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildHeader() {
     return Column(
@@ -492,7 +517,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      _currencyFormat.format(price),
+                      FormatHelper.formatPrice(price),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -528,7 +553,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Đã tạo: ${_formatDateTime(order['createdAt'] ?? '')}',
+                      'Đã tạo: ${FormatHelper.formatDateTime(order['createdAt'] ?? '')}',
                       style: TextStyle(
                         fontSize: 12,
                         color: ColorConfig.textBlack.withOpacity(0.5),
@@ -536,7 +561,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                     ),
                     if (status == 'approved' && order['approvedAt'] != null)
                       Text(
-                        'Xác nhận: ${_formatDateTime(order['approvedAt'] ?? '')}',
+                        'Xác nhận: ${FormatHelper.formatDateTime((order['approvedAt'] ?? ''))}',
                         style: TextStyle(
                           fontSize: 12,
                           color: ColorConfig.primary.withOpacity(0.8),
@@ -544,7 +569,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                       ),
                     if (status == 'rejected' && order['rejectedAt'] != null)
                       Text(
-                        'Hủy: ${_formatDateTime(order['rejectedAt'] ?? '')}',
+                        'Hủy: ${FormatHelper.formatDateTime((order['rejectedAt'] ?? ''))}',
                         style: TextStyle(
                           fontSize: 12,
                           color: ColorConfig.textError.withOpacity(0.8),

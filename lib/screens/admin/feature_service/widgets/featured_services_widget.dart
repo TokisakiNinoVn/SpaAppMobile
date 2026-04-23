@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/routes/config/admin_router_config.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 
-class FeaturedServicesWidget extends StatelessWidget {
-  // final bool isDark;
-  final String massageImage;
-  final String skincareImage;
-  final String skincareImage2;
+class FeaturedServicesAdminWidget extends StatelessWidget {
+  final String title;
+  final String description;
+  final String tag;
+  final String imageUrl;
+  final extra;
 
-  const FeaturedServicesWidget({
+  const FeaturedServicesAdminWidget({
     super.key,
-    // required this.isDark,
-    required this.massageImage,
-    required this.skincareImage,
-    required this.skincareImage2,
+    required this.title,
+    required this.description,
+    required this.tag,
+    required this.imageUrl,
+    this.extra
   });
 
   @override
@@ -27,34 +31,15 @@ class FeaturedServicesWidget extends StatelessWidget {
           const SizedBox(height: 16),
           _buildImageServiceCard(
             context: context,
-            title: 'Đặt Kỹ thuật viên tại nhà',
-            description:
-            'Dịch vụ massage & chăm sóc sức khỏe tại nhà theo yêu cầu',
-            router: '/home-customer/list-technician',
-            imageUrl: massageImage,
-            tag: 'Phổ biến',
+            title: title,
+            description: description,
+            router: AdminRouterConfig.editFeatureService,
+            imageUrl: FormatHelper.formatNetworkImageUrl(imageUrl),
+            tag: tag,
+            extraData: extra,
             tagColor: ColorConfig.primary,
           ),
-          const SizedBox(height: 16),
-          _buildImageServiceCard(
-            context: context,
-            title: 'Đặt lịch trước',
-            description: 'Chọn kỹ thuật viên và thời gian phù hợp với bạn',
-            router: CustomerRouterConfig.books,
-            imageUrl: skincareImage,
-            tag: 'Mới',
-            tagColor: ColorConfig.primary,
-          ),
-          const SizedBox(height: 16),
-          _buildImageServiceCard(
-            context: context,
-            title: 'Ghép kỹ thuật viên tự động',
-            description: 'Hệ thống sẽ chọn kỹ thuật viên phù hợp cho bạn',
-            router: CustomerRouterConfig.automaticMatching,
-            imageUrl: skincareImage2,
-            tag: 'Mới',
-            tagColor: ColorConfig.primary,
-          ),
+          const SizedBox(height: 1),
         ],
       ),
     );
@@ -68,11 +53,12 @@ class FeaturedServicesWidget extends StatelessWidget {
     required String router,
     required String tag,
     required Color tagColor,
+    required extraData,
   }) {
     return InkWell(
       onTap: () {
         if (router.isNotEmpty) {
-          context.go(router);
+          context.push(router, extra: extraData);
         }
       },
 

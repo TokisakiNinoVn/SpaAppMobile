@@ -638,7 +638,7 @@ class _NotificationManagementScreenState
         children: [
           // Search bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -657,10 +657,14 @@ class _NotificationManagementScreenState
                 )
                     : null,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(40),
                 ),
                 filled: true,
                 fillColor: Colors.grey[50],
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 12,
+                ),
               ),
               onChanged: (value) {
                 setState(() {

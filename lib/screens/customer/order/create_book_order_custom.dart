@@ -56,7 +56,7 @@ class _CreateOrderTechnicianScreenState
   final _noteController = TextEditingController();
   final _moneyPrioritizeController = TextEditingController();
 
-  DateTime _selectedDateTime = DateTime.now(); // Mặc định là hiện tại
+  DateTime _selectedDateTime = DateTime.now().add(const Duration(minutes: 20));
 
   // Focus nodes
   final _noteFocusNode = FocusNode();
@@ -106,18 +106,72 @@ class _CreateOrderTechnicianScreenState
     return _totalBeforeDiscount;
   }
 
-  // Kiểm tra số dư ví có đủ cho tổng tiền sau giảm không
-  // bool get _isInsufficientBalance {
-  //   if (_paymentMethod != PaymentMethod.zenhome) return false;
-  //   final finalPrice = _discountData != null
-  //       ? (_discountData!['orderValueAfterDiscount'] as int)
-  //       : (widget.data['serviceTimePrice']['price'] as int);
-  //   return finalPrice > balance;
-  // }
+  Future<void> _pickDateTime() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now().add(const Duration(minutes: 20)),
+      lastDate: DateTime.now().add(const Duration(days: 7)),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(primary: Colors.amber),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (date == null) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(DateTime.now().add(const Duration(minutes: 20))),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(primary: Colors.amber),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (time == null) return;
+
+    final selectedDateTime = DateTime(
+      date.year, date.month, date.day, time.hour, time.minute,
+    );
+
+    if (selectedDateTime.isBefore(DateTime.now().add(const Duration(minutes: 20)))) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Thời gian không hợp lệ"),
+            content: const Text("Thời gian đặt lịch phải sau thời điểm hiện tại ít nhất 20 phút và không quá 7 ngày."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("OK"),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _selectedDateTime = selectedDateTime);
+  }
 
   bool get _isInsufficientBalance {
     if (_paymentMethod != PaymentMethod.zenhome) return false;
     return _finalTotal > balance;
+  }
+
+  bool _isPastTime(DateTime selectedTime) {
+    return selectedTime.isBefore(DateTime.now());
   }
 
   Future<void> _refreshDiscount() async {
@@ -157,7 +211,9 @@ class _CreateOrderTechnicianScreenState
       "address": _addressController.text.trim(),
       "paymentMethod": _paymentMethod!.name,
       "noteCustomer": _noteController.text.trim(),
-      "moneyPrioritize": moneyPrioritize,  // gửi lên server
+      "moneyPrioritize": moneyPrioritize,
+      'workingHours': _formatWorkingHours(_selectedDateTime),
+
       if (_discountData != null)
         'discountInput': {
           "discountId": _discountData!['discountId'],
@@ -261,7 +317,7 @@ class _CreateOrderTechnicianScreenState
   void _showAddressPicker() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // 🔥 cho phép set chiều cao
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -283,7 +339,6 @@ class _CreateOrderTechnicianScreenState
                     ),
                   ),
 
-                  /// 🔥 LIST ĐỊA CHỈ
                   Expanded(
                     child: (_addresses.isEmpty)
                         ? const Center(
@@ -614,13 +669,8 @@ class _CreateOrderTechnicianScreenState
   Widget build(BuildContext context) {
     final technician = widget.data['technician'];
     final service = widget.data['serviceTimePrice'];
-    // final price = service['price'] as int;
-    // final workingHours = _formatWorkingHours(_selectedDateTime);
+    final workingHours = _formatWorkingHours(_selectedDateTime);
     final totalOrderValue = _totalBeforeDiscount;
-
-    // final discountedPrice = _discountData != null
-    //     ? (_discountData!['orderValueAfterDiscount'] as int)
-    //     : price;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
@@ -665,6 +715,12 @@ class _CreateOrderTechnicianScreenState
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                ),
+
+              if (_selectedDateTime.isBefore(DateTime.now().add(const Duration(minutes: 20))))
+                const Text(
+                  "Thời gian phải sau thời điểm hiện tại ít nhất 20 phút",
+                  style: TextStyle(color: Colors.red, fontSize: 12),
                 ),
 
               // 🧾 Nội dung chính
@@ -789,6 +845,63 @@ class _CreateOrderTechnicianScreenState
                 ],
               ),
             ),
+
+            const SizedBox(height: 12),
+
+            // === Thời gian thực hiện ===
+            _Section(
+              title: "Thời gian thực hiện",
+              icon: Icons.access_time,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InkWell(
+                    onTap: _pickDateTime,
+                    child: _InputBox(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today,
+                              color: Colors.grey, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "${_selectedDateTime.day.toString().padLeft(2, '0')}/${_selectedDateTime.month.toString().padLeft(2, '0')}/${_selectedDateTime.year}",
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                Text(
+                                  "${_selectedDateTime.hour.toString().padLeft(2, '0')}:${_selectedDateTime.minute.toString().padLeft(2, '0')}",
+                                  style: const TextStyle(
+                                      fontSize: 14, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_selectedDateTime.isBefore(DateTime.now().add(const Duration(minutes: 20))))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.warning, color: Colors.red, size: 16),
+                          SizedBox(width: 4),
+                          Text(
+                            "Thời gian này đã qua, vui lòng chọn thời gian khác",
+                            style: TextStyle(color: Colors.red, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 12),
             // === Địa chỉ (click mở bottom sheet) ===
             _Section(
@@ -806,7 +919,6 @@ class _CreateOrderTechnicianScreenState
             ),
             const SizedBox(height: 12),
 
-            // === Phương thức thanh toán ===
             // === Phương thức thanh toán ===
             _Section(
               title: "Phương thức thanh toán",

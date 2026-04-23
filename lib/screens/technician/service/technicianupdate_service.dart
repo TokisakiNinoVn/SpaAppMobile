@@ -78,7 +78,6 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
   Future<void> _loadAllServices() async {
     try {
       final response = await _serviceService.listService();
-      print("Response: $response");
       setState(() {
         allServices = response['data'];
       });

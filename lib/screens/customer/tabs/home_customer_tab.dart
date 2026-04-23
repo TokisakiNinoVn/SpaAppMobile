@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:spa_app/routes/config/customer_router_config.dart';
@@ -14,10 +15,10 @@ import 'package:spa_app/helper/format_helper.dart';
 import '../../../helper/check_login_helper.dart';
 import '../../../helper/snackbar_helper.dart';
 import '../../../services/banner_service.dart';
+import '../../../services/information_service.dart';
 import 'package:spa_app/helper/location_helper.dart';
 import 'package:spa_app/utils/address_util.dart';
 
-// Import các widget đã tách
 import 'widgets/home_header_widget.dart';
 import 'widgets/location_bar_widget.dart';
 import 'widgets/banner_section_widget.dart';
@@ -33,13 +34,16 @@ class HomeCustomerTab extends StatefulWidget {
 class _HomeCustomerTabState extends State<HomeCustomerTab>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   final BannerService _bannerService = BannerService();
+  final InformationService _informationService = InformationService();
 
   @override
   bool get wantKeepAlive => true;
 
   // ─── Banner Data from API ─────────────────────────────────
   List<Map<String, dynamic>> bannerData = [];
+  List<Map<String, dynamic>> featuredServices = [];
   bool _isBannerLoading = true;
+  bool _isFeaturedServiceLoading = true;
   bool isLoading = true;
   String? _bannerError;
   String? _currentAddress;
@@ -75,13 +79,13 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
   final int _notificationCount = 3;
 
   // ─── Services ─────────────────────────────────────────────
-  final String massageImage =
-      'https://i.pinimg.com/736x/b5/0f/b8/b50fb8f8e4ea9423c61b36f6dc3edbcd.jpg';
-  final String skincareImage =
-      'https://i.pinimg.com/736x/fd/c4/05/fdc4051627ff930ccd716a523706449c.jpg';
-
-  final String skincareImage2 =
-      'https://i.pinimg.com/736x/3e/0d/c2/3e0dc2ff82049cc97aac309f676ad115.jpg';
+  // final String massageImage =
+  //     'https://i.pinimg.com/736x/b5/0f/b8/b50fb8f8e4ea9423c61b36f6dc3edbcd.jpg';
+  // final String skincareImage =
+  //     'https://i.pinimg.com/736x/fd/c4/05/fdc4051627ff930ccd716a523706449c.jpg';
+  //
+  // final String skincareImage2 =
+  //     'https://i.pinimg.com/736x/3e/0d/c2/3e0dc2ff82049cc97aac309f676ad115.jpg';
 
   // ─── Support Button State ─────────────────────────────────
   bool _showSupportButton = true;
@@ -142,29 +146,6 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
     _loadData();
   }
 
-  // ─── Load toàn bộ dữ liệu (trừ vị trí) ──────────────────
-  // Future<void> _loadData() async {
-  //   setState(() {
-  //     isLoading = true;
-  //     _showSupportButton = true; // Reset trạng thái nút hỗ trợ mỗi khi load màn hình
-  //   });
-  //
-  //   try {
-  //     await Future.wait([
-  //       _loadBanners(),
-  //       _checkLogin(),
-  //       _initLocationState(), // chỉ đọc trạng thái, KHÔNG xin quyền
-  //     ]);
-  //     // _startCouponTimer();
-  //   } finally {
-  //     if (mounted) {
-  //       setState(() {
-  //         isLoading = false;
-  //       });
-  //     }
-  //   }
-  // }
-
   Future<void> _loadData() async {
     // Nếu đã có banner data rồi thì không loading lại
     if (bannerData.isNotEmpty) {
@@ -185,6 +166,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
         _loadBanners(),
         _checkLogin(),
         _initLocationState(),
+        _loadFeatureService()
       ]);
     } finally {
       if (mounted) {
@@ -195,66 +177,14 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
     }
   }
 
-  // ─── Pull-to-refresh: load lại mọi thứ TRỪ vị trí ───────
-  // Future<void> _onRefresh() async {
-  //   // Huỷ timer cũ để tránh trùng
-  //   _bannerTimer?.cancel();
-  //
-  //   await Future.wait([
-  //     _loadBanners(),
-  //     _checkLogin(),
-  //   ]);
-  // }
-
   Future<void> _onRefresh() async {
     _bannerTimer?.cancel();
 
     await Future.wait([
-      _loadBanners(forceRefresh: true),  // Thêm forceRefresh
+      _loadBanners(forceRefresh: true),
       _checkLogin(),
     ]);
   }
-
-  // Future<void> _loadBanners() async {
-  //   setState(() {
-  //     _isBannerLoading = true;
-  //     _bannerError = null;
-  //   });
-  //
-  //   try {
-  //     final response = await _bannerService.listPublicBanner();
-  //     _isDisplayBanner = response["display"];
-  //
-  //     if (response != null && response['data'] != null) {
-  //       final List<dynamic> data = response['data'];
-  //       setState(() {
-  //         bannerData = data.map((item) {
-  //           return {
-  //             'image': FormatHelper.formatNetworkImageUrl(item['urlImage'] ?? ''),
-  //             'title': item['title'] ?? 'Banner',
-  //             'description': item['content'] ?? '',
-  //             'id': item['_id'],
-  //           };
-  //         }).toList();
-  //         _isBannerLoading = false;
-  //       });
-  //
-  //       if (bannerData.isNotEmpty) {
-  //         _startBannerTimer();
-  //       }
-  //     } else {
-  //       throw Exception('Invalid response format');
-  //     }
-  //   } catch (e) {
-  //     if (mounted) {
-  //       setState(() {
-  //         _bannerError = 'Không thể tải banner: $e';
-  //         _isBannerLoading = false;
-  //       });
-  //       SnackBarHelper.showError(context, 'Lỗi khi tải banner');
-  //     }
-  //   }
-  // }
 
   Future<void> _loadBanners({bool forceRefresh = false}) async {
     // Nếu đã có data và không force refresh thì bỏ qua
@@ -296,6 +226,50 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
         setState(() {
           _bannerError = 'Không thể tải banner: $e';
           _isBannerLoading = false;
+        });
+        SnackBarHelper.showError(context, 'Lỗi khi tải banner');
+      }
+    }
+  }
+
+  Future<void> _loadFeatureService({bool forceRefresh = false}) async {
+    // Nếu đã có data và không force refresh thì bỏ qua
+    if (!forceRefresh && featuredServices.isNotEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isFeaturedServiceLoading = true;
+      // _bannerError = null;
+    });
+
+    try {
+      final response = await _informationService.listFeatureServicePublic();
+      // appLog("response: ${response['data']}");
+      if (response['data'] != null) {
+        final List<dynamic> data = response['data'];
+
+        setState(() {
+          featuredServices = data.map((item) {
+            return {
+              'image': item['fileId']?['url'] ?? '',
+              'title': item['title'] ?? 'Banner',
+              'description': item['description'] ?? '',
+              'id': item['_id'],
+              'tag': item['tag']
+            };
+          }).toList();
+
+          _isFeaturedServiceLoading = false;
+        });
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _bannerError = 'Không thể tải danh sách dịch vụ: $e';
+          _isFeaturedServiceLoading = false;
         });
         SnackBarHelper.showError(context, 'Lỗi khi tải banner');
       }
@@ -901,24 +875,48 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                         onLocationTap: _onLocationButtonTap,
                         formatCooldown: _formatCooldown,
                       ),
-                      if (_isDisplayBanner) ...[
-                        BannerSectionWidget(
-                          isBannerLoading: _isBannerLoading,
-                          bannerError: _bannerError,
-                          bannerData: bannerData,
-                          currentBannerIndex: _currentBannerIndex,
-                          bannerController: _bannerController,
-                          onBannerPageChanged: (index) {
-                            setState(() => _currentBannerIndex = index);
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 5),
-                      FeaturedServicesWidget(
-                        massageImage: massageImage,
-                        skincareImage: skincareImage,
-                        skincareImage2: skincareImage2,
+                      AnimatedSwitcher(
+                        duration: Duration(milliseconds: 300),
+                        child: _isDisplayBanner
+                            ? BannerSectionWidget(
+                                isBannerLoading: _isBannerLoading,
+                                bannerError: _bannerError,
+                                bannerData: bannerData,
+                                currentBannerIndex: _currentBannerIndex,
+                                bannerController: _bannerController,
+                                onBannerPageChanged: (index) {
+                                  setState(() => _currentBannerIndex = index);
+                                },
+                              )
+                            : SizedBox.shrink(),
                       ),
+
+                      const SizedBox(height: 5),
+                      if(featuredServices.isNotEmpty)...[
+                        FeaturedServicesWidget(
+                          title: featuredServices[0]['title'],
+                          description: featuredServices[0]['description'],
+                          tag: featuredServices[0]['tag'],
+                          imageUrl: featuredServices[0]['image'],
+                          router: CustomerRouterConfig.orderNow,
+                        ),
+                        FeaturedServicesWidget(
+                          title: featuredServices[1]['title'],
+                          description: featuredServices[1]['description'],
+                          tag: featuredServices[1]['tag'],
+                          imageUrl: featuredServices[1]['image'],
+                          router: CustomerRouterConfig.listBookTechnician,
+                        ),
+
+                        FeaturedServicesWidget(
+                          title: featuredServices[2]['title'],
+                          description: featuredServices[2]['description'],
+                          tag: featuredServices[2]['tag'],
+                          imageUrl: featuredServices[2]['image'],
+                          router: CustomerRouterConfig.automaticMatching,
+                        ),
+                      ] else
+                        const Text(""),
                       const SizedBox(height: 30),
                     ],
                   ),

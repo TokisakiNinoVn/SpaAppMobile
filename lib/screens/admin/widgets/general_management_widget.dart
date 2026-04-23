@@ -28,7 +28,7 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
     {
       'icon': Icons.outbond,
       'title': 'Yêu cầu rút tiền',
-      'route': AdminRouterConfig.managementBank,
+      'route': AdminRouterConfig.listWithdraw,
       'color': Color(0xFFF3A4A4),
       'badge': '',
     },
@@ -58,17 +58,18 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
       'color': Colors.greenAccent,
     },
     {
+      'icon': Icons.airplay_sharp,
+      'title': 'Cài đặt hiển thị dịch vụ',
+      'route': AdminRouterConfig.listFeatureService,
+      'color': Color(0x69680B75),
+    },
+    {
       'icon': Icons.bar_chart_outlined,
       'title': "Thống kê",
       'route': AdminRouterConfig.statistical,
       'color': Colors.green,
     },
-    // {
-    //   'icon': Icons.wallet,
-    //   'title': "Tài khoản thanh toán",
-    //   'route': AdminRouterConfig.statistical,
-    //   'color': Colors.orange,
-    // },
+
     {
       'icon': Icons.report_gmailerrorred,
       'title': "Báo cáo",

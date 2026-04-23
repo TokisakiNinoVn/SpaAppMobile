@@ -163,7 +163,7 @@ class _HistoryWithdrawScreenState extends State<HistoryWithdrawScreen> {
 
   String _getStatusText(String status) {
     switch (status) {
-      case 'success':
+      case 'completed':
         return 'Thành công';
       case 'pending':
         return 'Đang xử lý';
@@ -176,7 +176,7 @@ class _HistoryWithdrawScreenState extends State<HistoryWithdrawScreen> {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'success':
+      case 'completed':
         return Colors.green;
       case 'pending':
         return Colors.orange;

@@ -4,6 +4,7 @@ import 'package:spa_app/config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/helper/shared_preferences_helper.dart';
@@ -72,18 +73,11 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
     setState(() => _isRefreshing = true);
 
     try {
-      await _reloadAllData();
+      var response = await _reloadAllData();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Đã cập nhật thông tin'),
-            backgroundColor: ColorConfig.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        SnackBarHelper.showSuccess(context, "Đã cập nhật thông tin");
       }
+
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,6 +101,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
       await _loadInforUser();
       balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
       await _fetchLatestUserData();
+
     } else {
       setState(() {
         _isLogin = false;

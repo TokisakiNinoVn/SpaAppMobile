@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:spa_app/config/color_config.dart';
-import 'package:spa_app/routes/config/customer_router_config.dart';
+import 'package:spa_app/helper/check_login_helper.dart';
+import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/screens/customer/tabs/account_customer_tab.dart';
 import 'package:spa_app/screens/customer/tabs/activity_customer_tab.dart';
 import 'package:spa_app/screens/customer/tabs/home_customer_tab.dart';
@@ -17,31 +17,56 @@ class HomeCustomerScreen extends StatefulWidget {
 }
 
 class _HomeCustomerScreenState extends State<HomeCustomerScreen> {
-  String? role;
   bool isLoading = true;
+  bool isLoggedIn = false;
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const HomeCustomerTab(),
-    const ActivityCustomerTab(),
-    const AccountCustomerTab(),
-  ];
+  final Map<int, Widget> _pageCache = {};
 
   @override
   void initState() {
     super.initState();
+    _init();
+  }
 
-    Future.delayed(const Duration(milliseconds: 300), () {
-      setState(() {
-        isLoading = false;
-      });
+  Future<void> _init() async {
+    final loggedIn = await CheckLoginHelper.isLoggedIn();
+
+    if (!mounted) return;
+
+    setState(() {
+      isLoggedIn = loggedIn;
+      isLoading = false;
     });
   }
 
   void _onItemTapped(int index) {
+    // Tab Hoạt động cần login
+    if (index == 1 && !isLoggedIn) {
+      context.go(GlobalRouterConfig.signup);
+      return;
+    }
+
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  Widget _getPage(int index) {
+    if (_pageCache.containsKey(index)) {
+      return _pageCache[index]!;
+    }
+
+    switch (index) {
+      case 0:
+        return _pageCache[index] = const HomeCustomerTab();
+      case 1:
+        return _pageCache[index] = const ActivityCustomerTab();
+      case 2:
+        return _pageCache[index] = const AccountCustomerTab();
+      default:
+        return const SizedBox();
+    }
   }
 
   @override
@@ -54,7 +79,12 @@ class _HomeCustomerScreenState extends State<HomeCustomerScreen> {
 
     return ExitAppWrapper(
       child: Scaffold(
-        body: SafeArea(child: _pages[_selectedIndex]),
+        body: SafeArea(
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: List.generate(3, (index) => _getPage(index)),
+          ),
+        ),
         bottomNavigationBar: Container(
           decoration: const BoxDecoration(
             border: Border(

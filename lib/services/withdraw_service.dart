@@ -15,4 +15,18 @@ class WithdrawService {
   Future<Map<String, dynamic>> deleteWithdraw(String id) async {
     return await ApiMethodsPrivate.deleteRequest("${WithdrawApi.delete}/$id");
   }
+
+  // Admin
+  Future<Map<String, dynamic>> listRequestWithdraw() async {
+    return await ApiMethodsPrivate.getRequest(WithdrawApi.listRequest);
+  }
+
+  Future<Map<String, dynamic>> confirmRequestWithdraw(data) async {
+    appLog("data: $data");
+    return await ApiMethodsPrivate.putRequest(WithdrawApi.confirmRequest, data);
+  }
+
+  Future<Map<String, dynamic>> detailRequestWithdraw(String id) async {
+    return await ApiMethodsPrivate.getRequest("${WithdrawApi.detailRequestWithdraw}/$id");
+  }
 }

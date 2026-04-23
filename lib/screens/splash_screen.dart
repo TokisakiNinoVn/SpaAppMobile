@@ -74,7 +74,7 @@ class _SplashScreenState extends State<SplashScreen>
     await _updateLoadingProgress(0.2, "Kiểm tra quyền truy cập...");
     await _requestPermissions();
 
-    await _updateLoadingProgress(0.5, "Khởi tạo thông báo...");
+    await _updateLoadingProgress(0.5, "...");
     await _initializeNotification();
 
     await _updateLoadingProgress(0.8, "Đang tải...");

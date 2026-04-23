@@ -2,23 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/routes/config/admin_router_config.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 
-class FeaturedServicesAdminWidget extends StatelessWidget {
+class FeaturedServicesWidget extends StatelessWidget {
   final String title;
   final String description;
   final String tag;
   final String imageUrl;
-  final extra;
+  final String router;
 
-  const FeaturedServicesAdminWidget({
+  const FeaturedServicesWidget({
     super.key,
     required this.title,
     required this.description,
     required this.tag,
     required this.imageUrl,
-    this.extra
+    required this.router
   });
 
   @override
@@ -33,10 +34,9 @@ class FeaturedServicesAdminWidget extends StatelessWidget {
             context: context,
             title: title,
             description: description,
-            router: AdminRouterConfig.editFeatureService,
+            router: router,
             imageUrl: FormatHelper.formatNetworkImageUrl(imageUrl),
             tag: tag,
-            extraData: extra,
             tagColor: ColorConfig.primary,
           ),
           const SizedBox(height: 1),
@@ -52,13 +52,12 @@ class FeaturedServicesAdminWidget extends StatelessWidget {
     required String imageUrl,
     required String router,
     required String tag,
-    required Color tagColor,
-    required extraData,
+    required Color tagColor
   }) {
     return InkWell(
       onTap: () {
         if (router.isNotEmpty) {
-          context.push(router, extra: extraData);
+          context.push(router);
         }
       },
 

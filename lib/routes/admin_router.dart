@@ -4,7 +4,12 @@ import 'package:spa_app/screens/admin/account/technician/management_account_tech
 import 'package:spa_app/screens/admin/bank/add.dart';
 import 'package:spa_app/screens/admin/bank/edit.dart';
 import 'package:spa_app/screens/admin/bank/management.dart';
+import 'package:spa_app/screens/admin/feature_service/edit.dart';
+import 'package:spa_app/screens/admin/feature_service/list.dart';
 import 'package:spa_app/screens/admin/notification/create_notification_screen.dart';
+import 'package:spa_app/screens/admin/withdraw/confirm_request_screen.dart';
+import 'package:spa_app/screens/admin/withdraw/detail_request.dart';
+import 'package:spa_app/screens/admin/withdraw/list_request.dart';
 
 import '../screens/admin/account/customer/management_account_customer.dart';
 import '../screens/admin/banner/banner_management.dart';
@@ -80,6 +85,35 @@ final List<GoRoute> adminRoutes = [
       ),
 
       GoRoute(
+          path: 'list-withdraw',
+          builder: (context, state) => ListRequestWithdraw(),
+          routes: [
+            GoRoute(
+              path: 'details/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return DetailsRequestWithdraw(id: id);
+              },
+              routes: [
+                GoRoute(
+                  path: 'confirm',
+                  builder: (context, state) {
+                    final id = state.pathParameters['id']!;
+                    final extra = state.extra as Map?;
+                    final type = extra?['type'];
+
+                    return ConfirmRequestScreen(
+                      id: id,
+                      type: type,
+                    );
+                  },
+                ),
+              ]
+            ),
+          ]
+      ),
+
+      GoRoute(
         path: 'manage-discount',
         builder: (context, state) => const DiscountManagement(),
         routes: [
@@ -116,6 +150,19 @@ final List<GoRoute> adminRoutes = [
       GoRoute(
         path: 'settings-app',
         builder: (context, state) => const SettingScreen(),
+      ),
+      GoRoute(
+        path: 'feature-service',
+        builder: (context, state) => const ListFeatureService(),
+        routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) {
+              final featureData = state.extra as Map<String, dynamic>;
+              return EditFeatureService(featureData: featureData);
+            },
+          ),
+        ]
       ),
       GoRoute(
         path: 'statistical',

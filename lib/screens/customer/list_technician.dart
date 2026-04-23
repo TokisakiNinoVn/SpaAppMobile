@@ -760,8 +760,8 @@ class _ListTechnicianScreenState extends State<ListTechnicianScreen> {
                         clipBehavior: Clip.none,
                         children: [
                           Container(
-                            width: 40,
-                            height: 40,
+                            width: 37,
+                            height: 37,
                             decoration: BoxDecoration(
                               color: ColorConfig.black.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
@@ -823,9 +823,9 @@ class _ListTechnicianScreenState extends State<ListTechnicianScreen> {
       ),
 
       body: isLoading
-          ? const Center(
+          ? Center(
         child: CircularProgressIndicator(
-          color: Color(0xFFD4A574),
+          color: ColorConfig.primary,
         ),
       )
           : Expanded(
@@ -1050,7 +1050,7 @@ class _ListTechnicianScreenState extends State<ListTechnicianScreen> {
       onTap: onTap,
       child: Container(
         padding:
-        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
         decoration: BoxDecoration(
           color: isActive
               ? ColorConfig.primary.withOpacity(0.15)
@@ -1058,7 +1058,7 @@ class _ListTechnicianScreenState extends State<ListTechnicianScreen> {
           borderRadius: BorderRadius.circular(20),
           border: isActive
               ? Border.all(color: ColorConfig.primary, width: 1)
-              : null,
+              : Border.all(color: ColorConfig.primary, width: .2),
         ),
         child: Row(
           children: [

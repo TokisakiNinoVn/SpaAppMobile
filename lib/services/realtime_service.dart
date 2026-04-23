@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import 'package:web_socket_channel/io.dart';
@@ -28,44 +29,6 @@ class RealtimeService {
       // Cậu có thể thêm logic đặc biệt cho production ở đây
     }
   }
-
-  // Dùng cái này khi AppConfig.isProduction == false
-  // Future<void> connect() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final token = prefs.getString('token');
-  //   final uri = Uri(
-  //     scheme: 'ws',
-  //     host: AppConfig.ip,
-  //     port: 5001,
-  //     path: '/api/private/ws/account-status',
-  //   );
-  //
-  //   try {
-  //     final socket = await WebSocket.connect(
-  //       uri.toString(),
-  //       headers: {
-  //         'Authorization': 'Bearer $token',
-  //       },
-  //     );
-  //
-  //     _channel = IOWebSocketChannel(socket);
-  //
-  //
-  //     print('[RealtimeService] ✅ WebSocket đã sẵn sàng');
-  //
-  //     _channel.stream.listen(
-  //       _handleEvent,
-  //       onError: (error) {
-  //         debugPrint('[RealtimeService] ❌ Lỗi WebSocket: $error');
-  //       },
-  //       onDone: () {
-  //         debugPrint('[RealtimeService] 🔴 WebSocket đã đóng');
-  //       },
-  //     );
-  //   } catch (e) {
-  //     debugPrint('[RealtimeService] ❌ Không thể kết nối WebSocket: $e');
-  //   }
-  // }
 
   // Dùng cái này khi AppConfig.isProduction == true
   Future<void> connect() async {
@@ -96,7 +59,7 @@ class RealtimeService {
         },
       );
 
-      print("infor socket: ${socket.toString()}");
+      appLog("infor socket: ${socket.toString()}");
 
       _channel = IOWebSocketChannel(socket);
 
@@ -118,8 +81,7 @@ class RealtimeService {
     try {
       final data = jsonDecode(event);
 
-      if (data is Map<String, dynamic> &&
-          data['type'] == 'user_status_updated') {
+      if (data is Map<String, dynamic> && data['type'] == 'user_status_updated') {
         // final userId = data['userId'];
         final technicianName = data['technicianName'];
         final status = data['status'] == true;

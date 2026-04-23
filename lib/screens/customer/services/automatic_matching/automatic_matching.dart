@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 
 import 'package:spa_app/services/like_service.dart';
+import 'package:spa_app/services/service_service.dart';
 import 'package:spa_app/services/technician_service.dart';
 import 'package:spa_app/services/notification_service.dart';
-import '../../../helper/format_helper.dart';
-import '../../../routes/config/customer_router_config.dart';
+import '../../../../helper/format_helper.dart';
+import '../../../../routes/config/customer_router_config.dart';
 
 class AutomaticMatchingScreen extends StatefulWidget {
   @override
@@ -16,6 +19,9 @@ class AutomaticMatchingScreen extends StatefulWidget {
 class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
   final TechnicianService _technicianService = TechnicianService();
   final NotificationService _notificationService = NotificationService();
+  final ServiceService _serviceService = ServiceService();
+
+  List<dynamic>? allServices = [];
 
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -30,48 +36,29 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
   bool _isLoading = true;
   String _errorMessage = '';
 
-  final Color _primaryColor = const Color(0xFF8B7355);
-  final Color _secondaryColor = const Color(0xFFD4B996);
-  final Color _accentColor = const Color(0xFFC19A6B);
-  final Color _backgroundColor = const Color(0xFFF8F5F0);
-  final Color _textColor = const Color(0xFF5D4037);
 
   @override
   void initState() {
     super.initState();
-    // _loadListNotification();
+    _loadAllServices();
   }
 
-  Future<void> _loadListNotification() async {
+  Future<void> _loadAllServices() async {
     try {
+      final response = await _serviceService.listService();
+      appLog('List service: $response');
       setState(() {
-        _isLoading = true;
-        _errorMessage = '';
+        allServices = response['data'];
       });
-
-      final response = await _notificationService.listNotificationService();
-
-      if (response['success'] == true) {
-        setState(() {
-          _notificationList = response['data'];
-          _isLoading = false;
-        });
-      } else {
-        throw Exception(response['message'] ?? 'Không thể tải thông tin kỹ thuật viên');
-      }
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
-      print('Error loading technician details: $e');
+      print("Error loading services: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
       return Scaffold(
-        backgroundColor: _backgroundColor,
+        backgroundColor: ColorConfig.white,
         appBar: AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.white,
@@ -79,14 +66,21 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
           title: Row(
             children: [
               InkWell(
-                onTap: () => Navigator.pop(context),
+                onTap: () => context.pop(),
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: _backgroundColor,
-                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.grey.shade200),
                   ),
-                  child: Icon(Icons.arrow_back, color: _textColor),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 18,
+                    color: Colors.black54,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -95,7 +89,7 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: _textColor,
+                  color: ColorConfig.textBlack,
                 ),
               ),
             ],

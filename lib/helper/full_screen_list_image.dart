@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/permission_helper.dart';
 import 'package:spa_app/utils/image_download_util.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class FullScreenImageViewer extends StatefulWidget {
   final List<dynamic> images;
@@ -70,7 +71,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
               setState(() => _currentIndex = index);
             },
             itemBuilder: (context, index) {
-              final imageUrl = widget.formatImageUrl(widget.images[index]['url']);
+              final imageUrl = FormatHelper.formatImageUrl(widget.images[index]['url']);
               return InteractiveViewer(
                 maxScale: 4.0,
                 minScale: 1.0,
@@ -105,7 +106,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
             bottom: 16,
             right: 16,
             child: FloatingActionButton(
-              backgroundColor: const Color(0xFFD4A373),
+              backgroundColor: ColorConfig.primary,
               onPressed: _isDownloading
                   ? null
                   : () => _downloadImage(widget.formatImageUrl(widget.images[_currentIndex]['url'])),
@@ -137,7 +138,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                 ),
                 child: Text(
                   '${_currentIndex + 1}/${widget.images.length}',
-                  style: GoogleFonts.lora(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                   ),

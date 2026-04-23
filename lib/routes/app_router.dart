@@ -1,6 +1,7 @@
 // file: app_router.dart
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import 'package:spa_app/routes/technician_router.dart';
 
 import '../screens/auth/signup_screen.dart';
 import './customer_router.dart';
@@ -23,7 +24,7 @@ import 'package:spa_app/screens/auth/forgetpasword/reset_password.dart';
 import 'package:spa_app/screens/technician/add_technician_screen.dart';
 import 'package:spa_app/screens/technician/edit_add_technician.dart';
 import 'package:spa_app/screens/technician/home_technician_screen.dart';
-import 'package:spa_app/screens/technician/new_order.dart';
+import 'package:spa_app/screens/technician/order/new_order.dart';
 import 'package:spa_app/screens/technician/service/technicianupdate_service.dart';
 import 'package:spa_app/screens/technician/technician/user_edit_technician.dart';
 
@@ -95,29 +96,7 @@ final GoRouter appRouter = GoRouter(
       path: '/home-quanly',
       builder: (context, state) => const HomeQuanLyScreen(),
     ),
-    GoRoute(
-      path: '/home-technician',
-      builder: (context, state) => const HomeTechnicianScreen(),
-      routes: [
-        GoRoute(
-          path: 'technician-update-service',
-          builder: (context, state) => const TechnicianUpdateService(),
-        ),
-        GoRoute(
-          path: 'add-technician',
-          builder: (context, state) => const AddTechnicianScreen(),
-        ),
 
-        GoRoute(
-          path: 'orders/:orderId',
-          builder: (context, state) {
-            final orderId = state.pathParameters['orderId']!;
-            return NewOrderScreen(orderId: orderId);
-          },
-        ),
-
-      ]
-    ),
     GoRoute(
       path: '/create-technician',
       builder: (context, state) => const CreateTechnicianScreen(),
@@ -138,13 +117,8 @@ final GoRouter appRouter = GoRouter(
       },
     ),
 
-    // KTV - Technician
-    GoRoute(
-      path: '/user-edit-technician',
-      builder: (context, state) => const UserEditTechnicianScreen(),
-    ),
-
     ...adminRoutes,
     ...customerRoutes,
+    ...technicianRoutes,
   ],
 );

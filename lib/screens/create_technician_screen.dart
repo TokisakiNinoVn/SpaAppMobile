@@ -9,10 +9,12 @@ import 'package:spa_app/config/theme_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
 import 'package:spa_app/services/tinhthanh_service_v2.dart';
 import 'package:spa_app/services/file_service.dart';
+import 'package:spa_app/services/service_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
 
 class CreateTechnicianScreen extends StatefulWidget {
@@ -23,6 +25,9 @@ class CreateTechnicianScreen extends StatefulWidget {
 }
 
 class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
+  final UploadService _uploadService = UploadService();
+  final ServiceService _serviceService = ServiceService();
+
   final fullnameController = TextEditingController();
   final addressController = TextEditingController();
   final technicianService = TechnicianService();
@@ -39,38 +44,57 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
   List<Map<String, dynamic>> images = [];
   Map<String, dynamic>? avatarImage;
 
-  // Track uploaded file IDs for cleanup
   List<String> _uploadedImageIds = [];
   String? _uploadedAvatarId;
 
   final _provinceSearchController = TextEditingController();
   final _districtSearchController = TextEditingController();
+  final _serviceSearchController = TextEditingController();
 
   List<dynamic> filteredProvinces = [];
   List<dynamic> filteredDistricts = [];
+  List<dynamic> filteredServices = [];
+
+  List<dynamic> selectedServiceIds = [];
+  List<dynamic>? allServices = [];
+
+  // Gender: 'male' | 'female' | 'other'
+  String selectedGender = 'male';
 
   bool isProvincesLoading = false;
   bool isDistrictsLoading = false;
-
-  final List<String> years = List.generate(
-    50, (index) => (DateTime.now().year - 49 + index).toString(),
-  );
+  late final List<String> years;
 
   @override
   void initState() {
     super.initState();
     _provinceSearchController.addListener(_filterProvinces);
     _districtSearchController.addListener(_filterDistricts);
+    _serviceSearchController.addListener(_filterServices);
     _loadProvinces();
+    _loadAllServices();
+    _generateYearsList();
   }
 
   @override
   void dispose() {
     _provinceSearchController.dispose();
     _districtSearchController.dispose();
+    _serviceSearchController.dispose();
     fullnameController.dispose();
     addressController.dispose();
     super.dispose();
+  }
+
+  void _generateYearsList() {
+    final currentYear = DateTime.now().year;
+    final minYear = currentYear - 100;
+    final maxYear = currentYear - 18;
+
+    years = List.generate(
+      maxYear - minYear + 1,
+          (index) => (minYear + index).toString(),
+    ).reversed.toList(); // Đảo ngược để năm gần nhất lên đầu
   }
 
   void _filterProvinces() {
@@ -89,6 +113,27 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         return district['name'].toString().toLowerCase().contains(query);
       }).toList();
     });
+  }
+
+  void _filterServices() {
+    final query = _serviceSearchController.text.toLowerCase();
+    setState(() {
+      filteredServices = (allServices ?? []).where((service) {
+        return service['name'].toString().toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  Future<void> _loadAllServices() async {
+    try {
+      final response = await _serviceService.listService();
+      setState(() {
+        allServices = response['data'];
+        filteredServices = allServices ?? [];
+      });
+    } catch (e) {
+      print("Error loading services: $e");
+    }
   }
 
   Future<void> _loadProvinces() async {
@@ -135,11 +180,9 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     }
   }
 
-  // Clean up uploaded images
   Future<void> _cleanupUploadedImages() async {
     bool hasErrors = false;
 
-    // Delete avatar if uploaded
     if (_uploadedAvatarId != null) {
       try {
         await fileService.deleteFileService(_uploadedAvatarId!);
@@ -150,7 +193,6 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       }
     }
 
-    // Delete all uploaded images
     for (final imageId in _uploadedImageIds) {
       try {
         await fileService.deleteFileService(imageId);
@@ -174,6 +216,14 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       SnackBarHelper.showWarning(context, 'Vui lòng nhập họ tên');
       return;
     }
+
+    final currentYear = DateTime.now().year;
+    final selectedYearInt = int.tryParse(selectedYear!);
+    if (selectedYearInt == null || (currentYear - selectedYearInt) < 18) {
+      SnackBarHelper.showWarning(context, 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký');
+      return;
+    }
+
     if (selectedProvince == null || selectedDistricts.isEmpty) {
       SnackBarHelper.showWarning(context, 'Vui lòng chọn đầy đủ địa chỉ');
       return;
@@ -188,6 +238,10 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     }
     if (experience == null) {
       SnackBarHelper.showWarning(context, 'Vui lòng chọn kinh nghiệm');
+      return;
+    }
+    if (selectedServiceIds.isEmpty) {
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn ít nhất 1 dịch vụ cung cấp');
       return;
     }
     if (images.length < 3) {
@@ -207,11 +261,12 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         'yearOfBirth': int.tryParse(selectedYear.toString()),
         'experience': experience,
         'images': images,
+        'serviceIds': selectedServiceIds.map((s) => s['_id']).toList(),
+        'gender': selectedGender,
       };
 
       final response = await technicianService.createTechnicianService(data);
       if (response['success'] == true) {
-        // Clear tracking as profile was created successfully
         _uploadedImageIds.clear();
         _uploadedAvatarId = null;
 
@@ -233,7 +288,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
               duration: const Duration(seconds: 2),
             ),
           );
-          context.go('/login');
+          context.go(GlobalRouterConfig.login);
         }
       } else {
         SnackBarHelper.showError(context, response['message'] ?? 'Có lỗi xảy ra khi tạo hồ sơ');
@@ -247,14 +302,12 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
 
   Future<void> uploadImage(String filePath, {bool isAvatar = false}) async {
     try {
-      final uploadService = UploadService();
-      final response = await uploadService.uploadSingleFileService(filePath);
+      final response = await _uploadService.uploadSingleFileService(filePath);
       final imageData = response['data'];
 
       if (imageData != null) {
         setState(() {
           if (isAvatar) {
-            // Delete old avatar if exists
             if (_uploadedAvatarId != null) {
               fileService.deleteFileService(_uploadedAvatarId!);
             }
@@ -335,19 +388,14 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                   borderRadius: BorderRadius.circular(40),
                 ),
               ),
-              child: const Text(
-                'Ở lại',
-                style: TextStyle(color: Color(0xFF666666)),
-              ),
+              child: const Text('Ở lại', style: TextStyle(color: Color(0xFF666666))),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE74C3C),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(40),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
                 elevation: 0,
               ),
               child: const Text('Hủy & Xóa ảnh'),
@@ -386,9 +434,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
               content: const Text('Đã xóa hình ảnh'),
               backgroundColor: const Color(0xFF27AE60),
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(40),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
               duration: const Duration(seconds: 1),
             ),
           );
@@ -401,6 +447,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     }
   }
 
+  // ── Bottom sheets ──────────────────────────────────────────────
+
   void _showProvinceBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -408,18 +456,21 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
       ),
-      builder: (context) => _buildLocationBottomSheet(
-        title: 'Chọn tỉnh/thành phố',
-        controller: _provinceSearchController,
-        items: filteredProvinces,
-        onSelected: (province) {
-          setState(() {
-            selectedProvince = province;
-            selectedDistricts.clear();
-          });
-          _loadDistricts(province['id']);
-          Navigator.pop(context);
-        },
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.5,
+        child: _buildLocationBottomSheet(
+          title: 'Chọn tỉnh/thành phố',
+          controller: _provinceSearchController,
+          items: filteredProvinces,
+          onSelected: (province) {
+            setState(() {
+              selectedProvince = province;
+              selectedDistricts.clear();
+            });
+            _loadDistricts(province['id']);
+            Navigator.pop(context);
+          },
+        ),
       ),
     );
   }
@@ -429,105 +480,162 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       SnackBarHelper.showWarning(context, 'Vui lòng chọn tỉnh/thành phố trước');
       return;
     }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
       ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateModal) {
-          return Container(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-              left: 20,
-              right: 20,
-              top: 20,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 30),
-                const Text(
-                  'Chọn quận/huyện',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A1A),
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.8,
+        child: StatefulBuilder(
+          builder: (context, setStateModal) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 20,
+                right: 20,
+                top: 20,
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  _buildSheetHandle(),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Chọn quận/huyện',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _districtSearchController,
-                  decoration: InputDecoration(
-                    hintText: 'Tìm kiếm',
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFF999999), size: 20),
-                    filled: true,
-                    fillColor: const Color(0xFFF8F8F8),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(40),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: filteredDistricts.length,
-                    itemBuilder: (context, index) {
-                      final district = filteredDistricts[index];
-                      final isSelected = selectedDistricts.contains(district);
-                      return CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          district['name'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFF666666),
+                  const SizedBox(height: 16),
+                  _buildSearchField(_districtSearchController, 'Tìm kiếm quận/huyện'),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: filteredDistricts.length,
+                      itemBuilder: (context, index) {
+                        final district = filteredDistricts[index];
+                        final isSelected = selectedDistricts.contains(district);
+                        return CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            district['name'],
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFF666666),
+                            ),
                           ),
-                        ),
-                        value: isSelected,
-                        activeColor: const Color(0xFF1A1A1A),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(40),
-                        ),
-                        onChanged: (bool? value) {
-                          setStateModal(() {
-                            if (value == true) {
-                              selectedDistricts.add(district);
-                            } else {
-                              selectedDistricts.remove(district);
-                            }
-                          });
-                          setState(() {});
-                        },
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ColorConfig.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                      elevation: 0,
+                          value: isSelected,
+                          activeColor: const Color(0xFF1A1A1A),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+                          onChanged: (bool? value) {
+                            setStateModal(() {
+                              if (value == true) {
+                                selectedDistricts.add(district);
+                              } else {
+                                selectedDistricts.remove(district);
+                              }
+                            });
+                            setState(() {});
+                          },
+                        );
+                      },
                     ),
-                    child: const Text('Xác nhận'),
                   ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          );
-        },
+                  const SizedBox(height: 12),
+                  _buildConfirmButton(() => Navigator.pop(context)),
+                  const SizedBox(height: 10),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showServicesBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+      ),
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.8,
+        child: StatefulBuilder(
+          builder: (context, setStateModal) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 20,
+                right: 20,
+                top: 20,
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  _buildSheetHandle(),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Dịch vụ cung cấp',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Chọn các dịch vụ bạn có thể thực hiện',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSearchField(_serviceSearchController, 'Tìm kiếm dịch vụ'),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: filteredServices.isEmpty
+                        ? Center(
+                      child: Text(
+                        'Không có dịch vụ nào',
+                        style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      ),
+                    )
+                        : ListView.builder(
+                      itemCount: filteredServices.length,
+                      itemBuilder: (context, index) {
+                        final service = filteredServices[index];
+                        final isSelected = selectedServiceIds.any((s) => s['_id'] == service['_id']);
+                        return CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            service['name'],
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFF666666),
+                            ),
+                          ),
+                          value: isSelected,
+                          activeColor: ColorConfig.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+                          onChanged: (bool? value) {
+                            setStateModal(() {
+                              if (value == true) {
+                                selectedServiceIds.add(service);
+                              } else {
+                                selectedServiceIds.removeWhere((s) => s['_id'] == service['_id']);
+                              }
+                            });
+                            setState(() {});
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildConfirmButton(() => Navigator.pop(context)),
+                  const SizedBox(height: 10),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -550,11 +658,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
           children: [
             const Text(
               'Chọn kinh nghiệm',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -580,6 +684,9 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
   }
 
   void _showYearBottomSheet() {
+    final currentYear = DateTime.now().year;
+    final maxYear = currentYear - 18; // Chỉ cho phép đến 18 tuổi
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -590,12 +697,30 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Text(
-              'Chọn năm sinh',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Chọn năm sinh',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+                ),
+                // Thêm indicator tuổi
+                Text(
+                  'Phải >= 18 tuổi',
+                  style: TextStyle(fontSize: 12, color: ColorConfig.primary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Được chọn năm sinh từ 19xx đến $maxYear',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ),
             const SizedBox(height: 16),
@@ -603,18 +728,78 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
               child: ListView.builder(
                 itemCount: years.length,
                 itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(years[index]),
-                    onTap: () {
-                      setState(() => selectedYear = years[index]);
-                      Navigator.pop(context);
-                    },
+                  final year = years[index];
+                  final yearInt = int.tryParse(year) ?? 0;
+                  final isDisabled = yearInt > maxYear; // Vô hiệu hóa năm không hợp lệ
+
+                  return Opacity(
+                    opacity: isDisabled ? 0.5 : 1.0,
+                    child: ListTile(
+                      title: Text(
+                        year,
+                        style: TextStyle(
+                          color: isDisabled ? Colors.grey : null,
+                        ),
+                      ),
+                      onTap: isDisabled
+                          ? null
+                          : () {
+                        setState(() => selectedYear = year);
+                        Navigator.pop(context);
+                      },
+                    ),
                   );
                 },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ── Shared helpers ─────────────────────────────────────────────
+  Widget _buildSheetHandle() {
+    return Container(
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(10),
+      ),
+    );
+  }
+
+  Widget _buildSearchField(TextEditingController controller, String hint) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixIcon: const Icon(Icons.search, color: Color(0xFF999999), size: 20),
+        filled: true,
+        fillColor: const Color(0xFFF8F8F8),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(40),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      ),
+    );
+  }
+
+  Widget _buildConfirmButton(VoidCallback onPressed) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: ColorConfig.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+          elevation: 0,
+        ),
+        child: const Text('Xác nhận'),
       ),
     );
   }
@@ -637,27 +822,10 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
-            ),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: controller,
-            decoration: InputDecoration(
-              hintText: 'Tìm kiếm',
-              prefixIcon: const Icon(Icons.search, color: Color(0xFF999999), size: 20),
-              filled: true,
-              fillColor: const Color(0xFFF8F8F8),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(40),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            ),
-          ),
+          _buildSearchField(controller, 'Tìm kiếm'),
           const SizedBox(height: 16),
           Expanded(
             child: ListView.builder(
@@ -673,6 +841,72 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // ── Sections ───────────────────────────────────────────────────
+
+  /// Radio button group for gender selection
+  Widget _buildGenderSection() {
+    final genderOptions = [
+      {'value': 'male', 'label': 'Nam', 'icon': Icons.male_rounded},
+      {'value': 'female', 'label': 'Nữ', 'icon': Icons.female_rounded},
+      {'value': 'other', 'label': 'Khác', 'icon': Icons.person_outline_rounded},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Giới tính',
+          style: TextStyle(fontSize: 14, color: ColorConfig.textBlack),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: genderOptions.map((option) {
+            final isSelected = selectedGender == option['value'];
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => selectedGender = option['value'] as String),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: EdgeInsets.only(
+                    right: option['value'] != 'other' ? 10 : 0,
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  decoration: BoxDecoration(
+                    color: isSelected ? ColorConfig.primary : const Color(0xFFF8F8F8),
+                    borderRadius: BorderRadius.circular(40),
+                    border: Border.all(
+                      color: isSelected ? ColorConfig.primary : const Color(0xFFE8E8E8),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        option['icon'] as IconData,
+                        size: 18,
+                        color: isSelected ? Colors.white : const Color(0xFF888888),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        option['label'] as String,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                          color: isSelected ? Colors.white : const Color(0xFF666666),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -777,9 +1011,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                       if (_uploadedAvatarId != null) {
                         deleteImage(_uploadedAvatarId!, isAvatar: true);
                       } else {
-                        setState(() {
-                          avatarImage = null;
-                        });
+                        setState(() => avatarImage = null);
                       }
                     },
                     child: Container(
@@ -804,9 +1036,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
             style: TextStyle(color: Color(0xFF1A1A1A), fontSize: 13),
           ),
           style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(40),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
           ),
         ),
       ],
@@ -852,6 +1082,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     );
   }
 
+  // ── Build ──────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -863,14 +1095,13 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             child: Column(
               children: [
+                // Back button
                 Align(
                   alignment: Alignment.centerLeft,
                   child: GestureDetector(
                     onTap: () async {
                       final shouldPop = await _onWillPop();
-                      if (shouldPop) {
-                        context.go('/login');
-                      }
+                      if (shouldPop) context.go('/login');
                     },
                     child: Container(
                       width: 40,
@@ -902,15 +1133,14 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
 
                 const Text(
                   'Hoàn tất hồ sơ để trở thành đối tác',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF666666),
-                  ),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
                 ),
 
                 const SizedBox(height: 20),
 
                 _buildAvatarSection(),
+
+                const SizedBox(height: 16),
 
                 _buildTextField(
                   controller: fullnameController,
@@ -920,19 +1150,19 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
 
                 const SizedBox(height: 16),
 
+                _buildGenderSection(),
+
+                const SizedBox(height: 16),
+
+                // Province / District
                 Row(
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Tỉnh/Thành phố',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF666666),
-                            ),
-                          ),
+                          Text('Tỉnh/Thành phố',
+                            style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
                           const SizedBox(height: 6),
                           _buildLocationField(
                             label: 'Chọn tỉnh/thành phố',
@@ -948,13 +1178,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Quận/Huyện',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF666666),
-                            ),
-                          ),
+                           Text('Quận/Huyện',
+                              style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
                           const SizedBox(height: 6),
                           _buildLocationField(
                             label: 'Chọn quận/huyện',
@@ -972,7 +1197,6 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
 
                 const SizedBox(height: 16),
 
-                // Address field
                 _buildTextField(
                   controller: addressController,
                   label: 'Địa chỉ nơi ở',
@@ -981,19 +1205,22 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
 
                 const SizedBox(height: 16),
 
-                // Year and Experience row
+                // Year / Experience
                 Row(
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Năm sinh',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF666666),
-                            ),
+                          Row(
+                            children: [
+                              Text('Năm sinh', style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                              const SizedBox(width: 4),
+                              Tooltip(
+                                message: 'Phải từ đủ 18 tuổi trở lên',
+                                child: Icon(Icons.info_outline, size: 14, color: Colors.grey.shade400),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 6),
                           _buildLocationField(
@@ -1009,13 +1236,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Kinh nghiệm',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF666666),
-                            ),
-                          ),
+                          Text('Kinh nghiệm',
+                              style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
                           const SizedBox(height: 6),
                           _buildLocationField(
                             label: 'Chọn kinh nghiệm',
@@ -1028,6 +1250,25 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                   ],
                 ),
 
+                const SizedBox(height: 16),
+
+                // Services
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Dịch vụ cung cấp',
+                      style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                    const SizedBox(height: 6),
+                    _buildLocationField(
+                      label: 'Chọn dịch vụ',
+                      value: selectedServiceIds.isEmpty
+                          ? null
+                          : '${selectedServiceIds.length} dịch vụ',
+                      onTap: _showServicesBottomSheet,
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: 24),
 
                 // Images section
@@ -1036,18 +1277,11 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                   children: [
                     const Text(
                       'Hình ảnh',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
-                      ),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
                     ),
                     Text(
                       '${images.length}/5',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF666666),
-                      ),
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF666666)),
                     ),
                   ],
                 ),
@@ -1065,21 +1299,14 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                       child: OutlinedButton(
                         onPressed: isLoading ? null : () async {
                           final shouldPop = await _onWillPop();
-                          if (shouldPop) {
-                            context.go('/login');
-                          }
+                          if (shouldPop) context.go('/login');
                         },
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           side: const BorderSide(color: Color(0xFFCCCCCC)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(40),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
                         ),
-                        child: const Text(
-                          'Hủy',
-                          style: TextStyle(color: Color(0xFF666666)),
-                        ),
+                        child: const Text('Hủy', style: TextStyle(color: Color(0xFF666666))),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1090,19 +1317,14 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           backgroundColor: ColorConfig.primary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(40),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
                           elevation: 0,
                         ),
                         child: isLoading
                             ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                             : const Text('Tạo hồ sơ'),
                       ),
@@ -1128,13 +1350,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            color: Color(0xFF666666),
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
         const SizedBox(height: 6),
         TextField(
           controller: controller,

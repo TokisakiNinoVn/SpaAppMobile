@@ -24,21 +24,21 @@ enum PaymentMethod {
   const PaymentMethod(this.label, this.name);
 }
 
-class CreateOrderTechnicianScreen extends StatefulWidget {
+class CreateBookOrderScreen extends StatefulWidget {
   final dynamic data;
 
-  const CreateOrderTechnicianScreen({
+  const CreateBookOrderScreen({
     super.key,
     required this.data,
   });
 
   @override
-  State<CreateOrderTechnicianScreen> createState() =>
-      _CreateOrderTechnicianScreenState();
+  State<CreateBookOrderScreen> createState() =>
+      _CreateBookOrderScreenState();
 }
 
-class _CreateOrderTechnicianScreenState
-    extends State<CreateOrderTechnicianScreen> {
+class _CreateBookOrderScreenState
+    extends State<CreateBookOrderScreen> {
   final OrderService _orderService = OrderService();
   final DiscountService _discountService = DiscountService();
   final UserDiscountService _userDiscountService = UserDiscountService();

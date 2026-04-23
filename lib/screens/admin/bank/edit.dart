@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/services/information_service.dart';
 
 class EditBankScreen extends StatefulWidget {
@@ -436,11 +437,11 @@ class _EditBankScreenState extends State<EditBankScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _updateBank,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0066CC),
+                    backgroundColor: ColorConfig.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(40),
                     ),
                     disabledBackgroundColor: Colors.grey.shade300,
                   ),

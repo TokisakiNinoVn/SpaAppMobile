@@ -11,7 +11,12 @@ import '../../routes/config/customer_router_config.dart';
 
 class DetailsTechnicianScreen extends StatefulWidget {
   final String id;
-  const DetailsTechnicianScreen({super.key, required this.id});
+  final String type;
+  const DetailsTechnicianScreen({
+    super.key,
+    required this.id,
+    required this.type
+  });
 
   @override
   State<DetailsTechnicianScreen> createState() => _DetailsTechnicianScreenState();
@@ -140,8 +145,9 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
 
       // Điều hướng đến màn hình đặt lịch với thông tin dịch vụ
       // Future.delayed(const Duration(milliseconds: 1500), () {
+      if(widget.type == 'now')
         context.go(
-          CustomerRouterConfig.createOrder,
+          CustomerRouterConfig.createOrderNow,
           extra: {
             // 'technician': _technicianDetails?["_id"],
             'technician': {
@@ -156,6 +162,24 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
             'serviceTimePrice': serviceTimePrice,
           },
         );
+      else {
+        context.go(
+          CustomerRouterConfig.createBookOrder,
+          extra: {
+            // 'technician': _technicianDetails?["_id"],
+            'technician': {
+              "id": _technicianDetails!["_id"],
+              "fullName": _technicianDetails!["fullName"],
+              "avatar": _technicianDetails!["avatar"],
+              "rate": _technicianDetails!["rate"],
+            },
+            // 'service': _selectedService,
+            // 'selectedDuration': selectedDuration,
+            'nameService': _selectedService!["name"],
+            'serviceTimePrice': serviceTimePrice,
+          },
+        );
+      }
       // });
     }
   }

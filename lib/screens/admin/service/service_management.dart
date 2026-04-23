@@ -213,7 +213,7 @@ class _ServiceManagementState extends State<ServiceManagement> {
                       hintText: 'Tìm theo tên dịch vụ...',
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(40),
                       ),
                       isDense: true,
                     ),
