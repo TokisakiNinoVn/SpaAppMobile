@@ -19,12 +19,19 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
       'route': AdminRouterConfig.technicianManagementAccount,
       'color': Colors.blue,
     },
-    // {
-    //   'icon': Icons.group_outlined,
-    //   'title': 'Quản lý khách',
-    //   'route': AdminRouterConfig.customerManagementAccount,
-    //   'color': Colors.purple,
-    // },
+    {
+      'icon': Icons.payment,
+      'title': 'Quản lý ngân hàng',
+      'route': AdminRouterConfig.managementBank,
+      'color': Colors.purple,
+    },
+    {
+      'icon': Icons.outbond,
+      'title': 'Yêu cầu rút tiền',
+      'route': AdminRouterConfig.listWithdraw,
+      'color': Color(0xFFF3A4A4),
+      'badge': '',
+    },
     {
       'icon': Icons.menu_open,
       'title': 'Quản lý dịch vụ',
@@ -42,7 +49,7 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
       'title': 'Thông báo hệ thống',
       'route': AdminRouterConfig.notificationManagement,
       'color': Colors.red,
-      'badge': '0',
+      'badge': '',
     },
     {
       'icon': Icons.airplay_sharp,
@@ -51,23 +58,25 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
       'color': Colors.greenAccent,
     },
     {
+      'icon': Icons.airplay_sharp,
+      'title': 'Cài đặt hiển thị dịch vụ',
+      'route': AdminRouterConfig.listFeatureService,
+      'color': Color(0x69680B75),
+    },
+    {
       'icon': Icons.bar_chart_outlined,
       'title': "Thống kê",
       'route': AdminRouterConfig.statistical,
       'color': Colors.green,
     },
+
     {
-      'icon': Icons.wallet,
-      'title': "Tài khoản thanh toán",
-      'route': AdminRouterConfig.statistical,
-      'color': Colors.orange,
+      'icon': Icons.report_gmailerrorred,
+      'title': "Báo cáo",
+      'route': AdminRouterConfig.managementBanner,
+      'color': Colors.red,
+      'badge': '',
     },
-    // {
-    //   'icon': Icons.report_gmailerrorred,
-    //   'title': "Báo cáo",
-    //   'route': AdminRouterConfig.managementBanner,
-    //   'color': Colors.red,
-    // },
     // {
     //   'icon': Icons.settings_outlined,
     //   'title': 'Cài đặt hệ thống',

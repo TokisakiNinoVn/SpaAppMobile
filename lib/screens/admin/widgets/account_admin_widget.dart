@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/config/app_config.dart';
 
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/shared_preferences_helper.dart';
@@ -58,7 +59,7 @@ class _AccountAdminTabState extends State<AccountAdminTab> {
               if (!mounted) return;
               Navigator.of(context).pop();
               context.go(CustomerRouterConfig.homeCustomer);
-              // SnackbarHelper.showSuccess(context, "Đăng xuất thành công");
+              // SnackBarHelper.showSuccess(context, "Đăng xuất thành công");
             },
             icon: const Icon(Icons.logout),
             label: const Text("Đăng xuất"),
@@ -85,7 +86,8 @@ class _AccountAdminTabState extends State<AccountAdminTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header với avatar và thông tin
+              const SizedBox(height: 50),
+
               Center(
                 child: Column(
                   children: [
@@ -105,11 +107,11 @@ class _AccountAdminTabState extends State<AccountAdminTab> {
                       //   size: 50,
                       //   color: ColorConfig.primary,
                       // ),
-                      child: Image.asset('lib/assets/images/spa_logo.png'),
+                      child: Image.asset(AppConfig.logoAppUrl),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "Serene Spa",
+                      "${AppConfig.appName}",
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isDarkMode ? Colors.white : Colors.black,
@@ -182,7 +184,7 @@ class _AccountAdminTabState extends State<AccountAdminTab> {
                     backgroundColor: Colors.redAccent,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(40),
                     ),
                   ),
                 ),

@@ -27,6 +27,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 
+	<key>FirebaseAppDelegateProxyEnabled</key>
+    <string>NO</string>
+
 	<!-- Permissions -->
 	<key>NSCameraUsageDescription</key>
 	<string>Allow access to camera to take photos</string>

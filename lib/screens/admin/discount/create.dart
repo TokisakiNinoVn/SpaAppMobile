@@ -62,17 +62,17 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
 
     // Validate dates
     if (_startDate == null) {
-      SnackbarHelper.showError(context, 'Vui lòng chọn ngày bắt đầu');
+      SnackBarHelper.showError(context, 'Vui lòng chọn ngày bắt đầu');
       return;
     }
 
     if (_expiresAt == null) {
-      SnackbarHelper.showError(context, 'Vui lòng chọn ngày kết thúc');
+      SnackBarHelper.showError(context, 'Vui lòng chọn ngày kết thúc');
       return;
     }
 
     if (_expiresAt!.isBefore(_startDate!)) {
-      SnackbarHelper.showError(context, 'Ngày kết thúc phải sau ngày bắt đầu');
+      SnackBarHelper.showError(context, 'Ngày kết thúc phải sau ngày bắt đầu');
       return;
     }
 
@@ -94,13 +94,13 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
 
       final response = await discountService.createDiscount(discountData);
       if (response['success'] == true) {
-        SnackbarHelper.showSuccess(context, 'Tạo mã giảm giá thành công');
+        SnackBarHelper.showSuccess(context, 'Tạo mã giảm giá thành công');
         context.pop(true);
       } else {
         throw Exception(response['message'] ?? 'Không thể tạo mã giảm giá');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi: $e');
+      SnackBarHelper.showError(context, 'Lỗi: $e');
     } finally {
       setState(() => _isLoading = false);
     }

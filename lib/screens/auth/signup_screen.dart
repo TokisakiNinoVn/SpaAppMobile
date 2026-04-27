@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/config/app_config.dart';
 
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import '../../config/color_config.dart';
 import '../../models/Lang.dart';
 import '../../storages/language_storage.dart';
-import '../customer/tabs/widgets/LanguageSheet.dart';
+import '../customer/tabs/components/LanguageSheet.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -151,7 +152,7 @@ class _SignupScreenState extends State<SignupScreen>
 
                             // ── Phone signup button ───────────────────────
                             _PrimaryButton(
-                              icon: Icons.phone_iphone_rounded,
+                              // icon: Icons.phone_iphone_rounded,
                               label: 'Đăng ký bằng số điện thoại',
                               onTap: () => context.go('/register'),
                             ),
@@ -277,46 +278,46 @@ class _LogoBlock extends StatelessWidget {
     return Column(
       children: [
         // Logo circle with gold ring
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFFD4B996), Color(0xFF8B7355)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF8B7355).withOpacity(0.25),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Container(
-            width: 90,
-            height: 90,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: ClipOval(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Image.asset(
-                  'lib/assets/images/spa_logo.png',
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-        ),
+        // Container(
+        //   padding: const EdgeInsets.all(4),
+        //   decoration: BoxDecoration(
+        //     shape: BoxShape.circle,
+        //     gradient: const LinearGradient(
+        //       colors: [Color(0xFFD4B996), Color(0xFF8B7355)],
+        //       begin: Alignment.topLeft,
+        //       end: Alignment.bottomRight,
+        //     ),
+        //     boxShadow: [
+        //       BoxShadow(
+        //         color: const Color(0xFF8B7355).withOpacity(0.25),
+        //         blurRadius: 24,
+        //         offset: const Offset(0, 8),
+        //       ),
+        //     ],
+        //   ),
+        //   child: Container(
+        //     width: 90,
+        //     height: 90,
+        //     decoration: const BoxDecoration(
+        //       color: Colors.white,
+        //       shape: BoxShape.circle,
+        //     ),
+        //     child: ClipOval(
+        //       child: Padding(
+        //         padding: const EdgeInsets.all(18),
+        //         child: Image.asset(
+        //           'lib/assets/images/zenhome-logo.png',
+        //           fit: BoxFit.contain,
+        //         ),
+        //       ),
+        //     ),
+        //   ),
+        // ),
         const SizedBox(height: 16),
 
         // Brand name
         const Text(
-          'SERENE',
+          AppConfig.appNameUpperCase,
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.w300,
@@ -374,7 +375,7 @@ class _HeadlineBlock extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Trải nghiệm dịch vụ chăm sóc sức khỏe\ncao cấp tại Serene Spa',
+          'Trải nghiệm dịch vụ chăm sóc sức khỏe\ncao cấp tại ${AppConfig.appName}',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
@@ -389,27 +390,27 @@ class _HeadlineBlock extends StatelessWidget {
 
 // ─── Primary CTA button ────────────────────────────────────────────────────────
 class _PrimaryButton extends StatelessWidget {
-  final IconData icon;
+  // final IconData? icon;
   final String label;
   final VoidCallback onTap;
   const _PrimaryButton(
-      {required this.icon, required this.label, required this.onTap});
+      { required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(40),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFD4B996), Color(0xFF8B7355)],
+            colors: [Color(0xFF768C77), Color(0xFF768C77)],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(40),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF8B7355).withOpacity(0.35),
@@ -421,8 +422,6 @@ class _PrimaryButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 22),
-            const SizedBox(width: 10),
             Text(
               label,
               style: const TextStyle(
@@ -499,10 +498,10 @@ class _LoginRedirect extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(40),
           border: Border.all(
             color: const Color(0xFF8B7355).withOpacity(0.25),
             width: 1.5,
@@ -518,11 +517,11 @@ class _LoginRedirect extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.login_rounded,
-              color: const Color(0xFF8B7355),
-              size: 20,
-            ),
+            // Icon(
+            //   Icons.login_rounded,
+            //   color: const Color(0xFF8B7355),
+            //   size: 20,
+            // ),
             const SizedBox(width: 8),
             Text.rich(
               TextSpan(children: [
@@ -534,10 +533,10 @@ class _LoginRedirect extends StatelessWidget {
                     fontWeight: FontWeight.w400,
                   ),
                 ),
-                const TextSpan(
+                TextSpan(
                   text: 'Đăng nhập',
                   style: TextStyle(
-                    color: Color(0xFF8B7355),
+                    color: ColorConfig.textBlack,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -565,11 +564,11 @@ class _TermsNote extends StatelessWidget {
             height: 1.6,
           ),
         ),
-        const TextSpan(
+        TextSpan(
           text: 'Điều khoản dịch vụ',
           style: TextStyle(
             fontSize: 12,
-            color: Color(0xFF8B7355),
+            color: ColorConfig.textBlack,
             fontWeight: FontWeight.w600,
             decoration: TextDecoration.underline,
             decorationColor: Color(0xFF8B7355),
@@ -582,11 +581,11 @@ class _TermsNote extends StatelessWidget {
             color: const Color(0xFF3D2C1E).withOpacity(0.4),
           ),
         ),
-        const TextSpan(
+        TextSpan(
           text: 'Chính sách bảo mật',
           style: TextStyle(
             fontSize: 12,
-            color: Color(0xFF8B7355),
+            color: ColorConfig.textBlack,
             fontWeight: FontWeight.w600,
             decoration: TextDecoration.underline,
             decorationColor: Color(0xFF8B7355),

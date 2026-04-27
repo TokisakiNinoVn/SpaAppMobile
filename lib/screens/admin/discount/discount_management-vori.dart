@@ -53,13 +53,13 @@ class _DiscountManagementState extends State<DiscountManagement> {
         setState(() {
           isLoading = false;
         });
-        SnackbarHelper.showError(context, response['message'] ?? 'Không thể tải danh sách khuyến mãi');
+        SnackBarHelper.showError(context, response['message'] ?? 'Không thể tải danh sách khuyến mãi');
       }
     } catch (e) {
       setState(() {
         isLoading = false;
       });
-      SnackbarHelper.showError(context, 'Đã xảy ra lỗi khi tải dữ liệu');
+      SnackBarHelper.showError(context, 'Đã xảy ra lỗi khi tải dữ liệu');
     }
   }
 
@@ -131,13 +131,13 @@ class _DiscountManagementState extends State<DiscountManagement> {
       try {
         final response = await discountService.deleteDiscount(id);
         if (response['success'] == true) {
-          SnackbarHelper.showSuccess(context, 'Xóa mã khuyến mãi thành công');
+          SnackBarHelper.showSuccess(context, 'Xóa mã khuyến mãi thành công');
           fetchDiscounts(); // Refresh list
         } else {
-          SnackbarHelper.showError(context, response['message'] ?? 'Xóa thất bại');
+          SnackBarHelper.showError(context, response['message'] ?? 'Xóa thất bại');
         }
       } catch (e) {
-        SnackbarHelper.showError(context, 'Đã xảy ra lỗi khi xóa');
+        SnackBarHelper.showError(context, 'Đã xảy ra lỗi khi xóa');
       }
     }
   }
@@ -151,16 +151,16 @@ class _DiscountManagementState extends State<DiscountManagement> {
       });
 
       if (response['success'] == true) {
-        SnackbarHelper.showSuccess(
+        SnackBarHelper.showSuccess(
             context,
             discount['isActive'] ? 'Đã vô hiệu hóa mã' : 'Đã kích hoạt mã'
         );
         fetchDiscounts(); // Refresh list
       } else {
-        SnackbarHelper.showError(context, response['message'] ?? 'Thay đổi trạng thái thất bại');
+        SnackBarHelper.showError(context, response['message'] ?? 'Thay đổi trạng thái thất bại');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Đã xảy ra lỗi');
+      SnackBarHelper.showError(context, 'Đã xảy ra lỗi');
     }
   }
 

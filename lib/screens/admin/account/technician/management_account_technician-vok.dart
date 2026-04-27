@@ -269,9 +269,9 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
       try {
         await userService.deleteUserService(userId);
         _loadUsers();
-        SnackbarHelper.showSuccess(context, 'Đã xóa người dùng thành công');
+        SnackBarHelper.showSuccess(context, 'Đã xóa người dùng thành công');
       } catch (e) {
-        SnackbarHelper.showError(context, 'Có lỗi xảy ra, vui lòng thử lại');
+        SnackBarHelper.showError(context, 'Có lỗi xảy ra, vui lòng thử lại');
       }
     }
   }

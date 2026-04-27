@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/services/order_service.dart';
-import '../../helper/format_helper.dart';
+import '../../../helper/format_helper.dart';
 import 'dart:async';
 
-class NewOrderScreen extends StatefulWidget {
+class DetailsJobOrderScreen extends StatefulWidget {
   final String orderId;
-  const NewOrderScreen({
+  const DetailsJobOrderScreen({
     super.key,
     required this.orderId,
   });
 
   @override
-  State<NewOrderScreen> createState() => _NewOrderScreenState();
+  State<DetailsJobOrderScreen> createState() => _DetailsJobOrderScreenState();
 }
 
-class _NewOrderScreenState extends State<NewOrderScreen> {
+class _DetailsJobOrderScreenState extends State<DetailsJobOrderScreen> {
   final OrderService _orderService = OrderService();
   Map<String, dynamic>? orderDetail;
   bool isLoading = true;
@@ -44,6 +45,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
   Future<void> loadDetailOrder() async {
     try {
       final response = await _orderService.detailOrder(widget.orderId);
+      appLog("Chi tiết đơn mới: ${response}");
       if (response['success'] == true) {
         setState(() {
           orderDetail = response['data'];

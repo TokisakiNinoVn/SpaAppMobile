@@ -3,9 +3,11 @@
 
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/customer_api.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 
 class CustomerService {
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    appLog("data: $data");
     return await ApiMethodsPrivate.putRequest(
       '${CustomerApiRoutes.update}', data
     );

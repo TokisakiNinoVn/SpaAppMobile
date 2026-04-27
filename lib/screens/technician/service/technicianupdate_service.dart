@@ -78,7 +78,6 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
   Future<void> _loadAllServices() async {
     try {
       final response = await _serviceService.listService();
-      print("Response: $response");
       setState(() {
         allServices = response['data'];
       });
@@ -174,14 +173,14 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
       // Lưu vào shared_preferences
       await _saveServiceIds();
 
-      SnackbarHelper.showSuccess(
+      SnackBarHelper.showSuccess(
         context,
         'Cập nhật dịch vụ thành công!',
       );
 
       context.pop();
     } catch (e) {
-      SnackbarHelper.showError(
+      SnackBarHelper.showError(
         context,
         'Có lỗi xảy ra: ${e.toString()}',
       );

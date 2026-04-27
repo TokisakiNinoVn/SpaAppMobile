@@ -76,7 +76,7 @@ class _BannerManagementState extends State<BannerManagement>
       }
     } catch (e) {
       setState(() => isLoading = false);
-      SnackbarHelper.showError(context, 'Lỗi khi tải danh sách banner: $e');
+      SnackBarHelper.showError(context, 'Lỗi khi tải danh sách banner: $e');
     }
   }
 
@@ -87,13 +87,13 @@ class _BannerManagementState extends State<BannerManagement>
     try {
       final response = await bannerService.deleteBanner(id);
       if (response['success'] == true || response['message'] != null) {
-        SnackbarHelper.showSuccess(context, 'Xóa banner thành công');
+        SnackBarHelper.showSuccess(context, 'Xóa banner thành công');
         loadBanners();
       } else {
         throw Exception(response['message'] ?? 'Không thể xóa banner');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi khi xóa banner: $e');
+      SnackBarHelper.showError(context, 'Lỗi khi xóa banner: $e');
     }
   }
 
@@ -175,7 +175,7 @@ class _BannerManagementState extends State<BannerManagement>
       });
       if (response['success'] == true || response['message'] != null) {
         setState(() => displayStatus = newValue);
-        SnackbarHelper.showSuccess(
+        SnackBarHelper.showSuccess(
             context,
             newValue
                 ? 'Đã bật hiển thị banner'
@@ -186,7 +186,7 @@ class _BannerManagementState extends State<BannerManagement>
             'Không thể cập nhật trạng thái hiển thị');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi khi cập nhật trạng thái: $e');
+      SnackBarHelper.showError(context, 'Lỗi khi cập nhật trạng thái: $e');
     }
   }
 
@@ -278,7 +278,7 @@ class _BannerManagementState extends State<BannerManagement>
                         if (value != null && value > 0) {
                           Navigator.pop(context, value);
                         } else {
-                          SnackbarHelper.showError(
+                          SnackBarHelper.showError(
                               context, 'Vui lòng nhập số hợp lệ');
                         }
                       },
@@ -309,7 +309,7 @@ class _BannerManagementState extends State<BannerManagement>
           .configNumberBanner({'numberOfBanners': newValue});
       if (response['success'] == true || response['message'] != null) {
         setState(() => numberOfBanners = newValue);
-        SnackbarHelper.showSuccess(
+        SnackBarHelper.showSuccess(
             context, 'Đã cập nhật số lượng banner hiển thị');
         loadBanners();
       } else {
@@ -317,7 +317,7 @@ class _BannerManagementState extends State<BannerManagement>
             'Không thể cập nhật số lượng banner');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi khi cập nhật số lượng: $e');
+      SnackBarHelper.showError(context, 'Lỗi khi cập nhật số lượng: $e');
     }
   }
 

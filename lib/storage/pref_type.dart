@@ -1,0 +1,1 @@
+enum PrefType { string, int, double, bool, stringList }

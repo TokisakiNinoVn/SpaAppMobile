@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
   //       if ((isTechnicianActive == 'false' || isTechnicianActive == false) &&
   //           (isTechnicianActiveResponse == 'true' ||
   //               isTechnicianActiveResponse == true)) {
-  //         SnackbarHelper.showSuccess(context, 'Hồ sơ của bạn đã được phê duyệt, vui lòng đăng nhâp lại!');
+  //         SnackBarHelper.showSuccess(context, 'Hồ sơ của bạn đã được phê duyệt, vui lòng đăng nhâp lại!');
   //         context.go('/login');
   //       } else {
   //         context.go('/home-technician');

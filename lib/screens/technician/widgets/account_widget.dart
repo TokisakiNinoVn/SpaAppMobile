@@ -154,43 +154,46 @@ class _AccountTabState extends State<AccountTab> {
       setState(() {
         isLoading = false;
       });
-      // Có thể xử lý lỗi ở đây
       print("Lỗi load thông tin chi tiết người dùng: $e");
     }
   }
 
-  Widget _buildInfoTile(String title, String? value) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      subtitle: Text(value ?? 'Không có'),
-    );
-  }
-
-  void _showFullScreenImages(BuildContext context, List<dynamic> images, int initialIndex) {
-    showDialog(
-      context: context,
-      builder: (context) => FullScreenImageViewer(
-        images: images,
-        initialIndex: initialIndex,
-        formatImageUrl: FormatHelper.formatNetworkImageUrl,
+  Widget _buildInfoRow(String title, String? value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 100,
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value ?? 'Không có',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Future<void> _logout() async {
-
     final response = await authService.logoutService({});
     try {
       if (response['success'] == true || response['status'] == "success") {
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   const SnackBar(content: Text("Đăng xuất thành công")),
-        // );
-        // SnackbarHelper.showSuccess(context, "Đăng xuất thành công");
-
         context.go('/login');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -222,13 +225,6 @@ class _AccountTabState extends State<AccountTab> {
             ),
             onPressed: () async {
               await _logout();
-              // if (mounted) {
-              //   Navigator.of(context).pop();
-              //   // context.go('/login');
-              //   ScaffoldMessenger.of(context).showSnackBar(
-              //     const SnackBar(content: Text("Đăng xuất thành công")),
-              //   );
-              // }
             },
           ),
         ],
@@ -236,60 +232,95 @@ class _AccountTabState extends State<AccountTab> {
     );
   }
 
-  Widget _buildMenuTile(
-      IconData icon,
-      String text,
-      String route, {
-        Color color = Colors.black87,
-        bool isLogout = false,
-      }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(15),
-        onTap: () {
-          if (route.isNotEmpty) {
-            context.go(route);
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Colors.grey[200]!,
+            width: 1,
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 22,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: color ?? ColorConfig.secondary,
+              size: 22,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: color ?? Colors.black87,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: isLogout ? Colors.red : color,
-                  ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Colors.grey[400],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? iconColor,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: (iconColor ?? ColorConfig.secondary).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                color: iconColor ?? ColorConfig.secondary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
                 ),
               ),
-              if (route.isNotEmpty)
-                Icon(
-                  Icons.chevron_right,
-                  color: color.withOpacity(0.5),
-                ),
-            ],
-          ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: Colors.grey[400],
+            ),
+          ],
         ),
       ),
     );
@@ -307,138 +338,253 @@ class _AccountTabState extends State<AccountTab> {
     final avatarUrl = technician?['avatar']?['url'];
     final images = technician?['images'] ?? [];
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          const Text(
-            'Thông tin tài khoản',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          if (avatarUrl != null)
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => FullScreenSingleImageViewer(imageUrl: FormatHelper.formatNetworkImageUrl(avatarUrl)),
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      body: CustomScrollView(
+        slivers: [
+          // Header với gradient
+          SliverAppBar(
+            expandedHeight: 200,
+            pinned: true,
+            backgroundColor: ColorConfig.secondary,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      ColorConfig.secondary,
+                      ColorConfig.secondary.withOpacity(0.7),
+                    ],
                   ),
-                );
-              },
-              child: CircleAvatar(
-                radius: 60,
-                backgroundImage: NetworkImage(FormatHelper.formatNetworkImageUrl(avatarUrl)),
-              ),
-            ),
-
-          // const SizedBox(height: 16),
-          // _buildInfoTile('Họ tên (tài khoản)', user?['fullname']),
-          // _buildInfoTile('ID', user?['id']),
-          _buildInfoTile('Số điện thoại', user?['phone']),
-          // _buildInfoTile('Vai trò', user?['roles'] == 'ktv' ? 'Kỹ thuật viên' : user?['roles']),
-          // _buildInfoTile('Trạng thái', user?['status'] == 'active' ? 'Đang hoạt động' : 'Bị khóa'),
-
-          const Divider(height: 10),
-          _buildInfoTile('Tên kỹ thuật viên', technician?['fullName']),
-          _buildInfoTile('Khu vực làm việc',
-              'Địa chỉ 1: ${technician?['address'] ?? ''}\nĐịa chỉ 2: ${technician?['province'] ?? ''}'),
-          _buildInfoTile('Kinh nghiệm', technician?['experience']),
-          // _buildInfoTile('Mô tả thêm kinh nghiệm', technician?['experienceDescription']),
-          // _buildInfoTile('Mô tả cá nhân', technician?['bio']),
-          // _buildInfoTile('Trạng thái phê duyệt', technician?['isApproved'] == true ? 'Đã duyệt' : 'Chưa duyệt'),
-
-          const SizedBox(height: 16),
-          if (images.isNotEmpty) ...[
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Hình ảnh đính kèm',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 120,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: images.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final imageUrl = FormatHelper.formatNetworkImageUrl(images[index]['url']);
-                  return GestureDetector(
-                    onTap: () => _showFullScreenImages(context, technician['images'], index),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        imageUrl,
-                        height: 100,
-                        width: 100,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => _showLogoutDialog(context),
-              child: const Text('Đăng xuất'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColorConfig.secondary,
-                foregroundColor: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            ElevatedButton.icon(
-              onPressed: () => _showRoleSwitchDialog(context),
-              icon: const Icon(
-                Icons.swap_horiz,
-                color: Colors.white,
-                size: 20,
-              ),
-              label: const Text(
-                "Chuyển vai trò khách hàng",
-                style: TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColorConfig.secondary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
                 ),
-                elevation: 0,
+                child: SafeArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Spacer(),
+                      // Avatar
+                      GestureDetector(
+                        onTap: () {
+                          if (avatarUrl != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => FullScreenSingleImageViewer(
+                                  imageUrl: FormatHelper.formatNetworkImageUrl(avatarUrl),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 3,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.white,
+                            backgroundImage: avatarUrl != null
+                                ? NetworkImage(FormatHelper.formatNetworkImageUrl(avatarUrl))
+                                : null,
+                            child: avatarUrl == null
+                                ? Icon(
+                              Icons.person,
+                              size: 50,
+                              color: ColorConfig.secondary.withOpacity(0.5),
+                            )
+                                : null,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Tên kỹ thuật viên
+                      Text(
+                        'KTV: ${technician?['fullName'] ?? '---'}' ,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Số điện thoại
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          user?['phone'] ?? 'Chưa có số điện thoại',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                    ],
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+          ),
 
-            Divider(height: 10,),
-            const SizedBox(height: 16),
+          // Nội dung chính
+          SliverPadding(
+            padding: const EdgeInsets.all(20),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // Thông tin chi tiết
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      _buildInfoRow('Họ và tên', technician?['fullName']),
+                      const Divider(height: 1),
+                      _buildInfoRow('Số điện thoại', user?['phone']),
+                      // const Divider(height: 1),
+                      // _buildInfoRow('Email', technician?['email']),
+                      // const Divider(height: 1),
+                      // _buildInfoRow('Địa chỉ', technician?['address']),
+                    ],
+                  ),
+                ),
 
-            Text("Về Serene Spa", style:  TextStyle(fontSize: 18, fontWeight: FontWeight.bold),),
-            const SizedBox(height: 16),
-            _buildMenuTile(
-              Icons.help_outline,
-              "Trung tâm hỗ trợ",
-              "",
-              color: ColorConfig.secondary,
+                const SizedBox(height: 20),
+
+                Column(
+                  children: [
+                    _buildActionButton(
+                      icon: Icons.edit_outlined,
+                      label: 'Cập nhật thông tin',
+                      onTap: () {
+                        context.push('/home-technician/update-profile');
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildActionButton(
+                      icon: Icons.spa_outlined,
+                      label: 'Các dịch vụ cung cấp',
+                      onTap: () {
+                        context.go('/home-technician/technician-update-service');
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildActionButton(
+                      icon: Icons.bar_chart,
+                      label: 'Thống kê doanh thu',
+                      onTap: () {
+                        context.go('/home-technician/technician-update-service');
+                      },
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // Các nút hành động
+                Container(
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      _buildMenuItem(
+                        icon: Icons.swap_horiz,
+                        label: 'Chuyển vai trò khách hàng',
+                        onTap: () => _showRoleSwitchDialog(context),
+                      ),
+                      const Divider(height: 1, indent: 52),
+                      _buildMenuItem(
+                        icon: Icons.logout,
+                        label: 'Đăng xuất',
+                        onTap: () => _showLogoutDialog(context),
+                        iconColor: Colors.red,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Về Serene Spa
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Về Serene Spa',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildMenuItem(
+                        icon: Icons.help_outline,
+                        label: 'Trung tâm hỗ trợ',
+                        onTap: () {
+                          // TODO: Chuyển đến trung tâm hỗ trợ
+                        },
+                      ),
+                      _buildMenuItem(
+                        icon: Icons.privacy_tip_outlined,
+                        label: 'Chính sách bảo mật',
+                        onTap: () {
+                          // TODO: Chuyển đến chính sách bảo mật
+                        },
+                      ),
+                      _buildMenuItem(
+                        icon: Icons.description_outlined,
+                        label: 'Điều khoản dịch vụ',
+                        onTap: () {
+                          // TODO: Chuyển đến điều khoản dịch vụ
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+              ]),
             ),
-            _buildMenuTile(
-              Icons.privacy_tip_outlined,
-              "Chính sách bảo mật",
-              "",
-              color: ColorConfig.secondary,
-            ),
-            _buildMenuTile(
-              Icons.description_outlined,
-              "Điều khoản dịch vụ",
-              "",
-              color: ColorConfig.secondary,
-            ),
-          ],
+          ),
         ],
       ),
     );

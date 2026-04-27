@@ -6,4 +6,7 @@ class OrderApiRoutes {
   static const String list = '${AppConfig.apiUrlPrivate}/order/list';
   static const String details = '${AppConfig.apiUrlPrivate}/order';
   static const String updateStatus = '${AppConfig.apiUrlPrivate}/order/update-status';
+
+  //Technician
+  static const String listRequestOrder = '${AppConfig.apiUrlPrivate}/order';
 }

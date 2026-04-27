@@ -20,6 +20,7 @@ def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "
 android {
     namespace = "com.example.spa_app"
     compileSdkVersion 35
+//    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {

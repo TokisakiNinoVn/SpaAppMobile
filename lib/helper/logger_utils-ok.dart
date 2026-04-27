@@ -6,7 +6,7 @@ import '../config/app_config.dart';
 
 void appLog(String message, {Object? data}) {
   // Chỉ in log khi không phải môi trường production
-  if (AppConfig.isProduction) return;
+  // if (AppConfig.isProduction) return;
 
   // Lấy StackTrace để biết file + dòng đang gọi log
   final stackTrace = StackTrace.current.toString().split('\n')[1];

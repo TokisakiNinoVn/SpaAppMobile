@@ -53,13 +53,13 @@ class _DiscountManagementState extends State<DiscountManagement> {
         setState(() {
           isLoading = false;
         });
-        SnackbarHelper.showError(context, response['message'] ?? 'Không thể tải danh sách khuyến mãi');
+        SnackBarHelper.showError(context, response['message'] ?? 'Không thể tải danh sách khuyến mãi');
       }
     } catch (e) {
       setState(() {
         isLoading = false;
       });
-      SnackbarHelper.showError(context, 'Đã xảy ra lỗi khi tải dữ liệu');
+      SnackBarHelper.showError(context, 'Đã xảy ra lỗi khi tải dữ liệu');
     }
   }
 
@@ -131,13 +131,13 @@ class _DiscountManagementState extends State<DiscountManagement> {
       try {
         final response = await discountService.deleteDiscount(id);
         if (response['success'] == true) {
-          SnackbarHelper.showSuccess(context, 'Xóa mã khuyến mãi thành công');
+          SnackBarHelper.showSuccess(context, 'Xóa mã khuyến mãi thành công');
           fetchDiscounts(); // Refresh list
         } else {
-          SnackbarHelper.showError(context, response['message'] ?? 'Xóa thất bại');
+          SnackBarHelper.showError(context, response['message'] ?? 'Xóa thất bại');
         }
       } catch (e) {
-        SnackbarHelper.showError(context, 'Đã xảy ra lỗi khi xóa');
+        SnackBarHelper.showError(context, 'Đã xảy ra lỗi khi xóa');
       }
     }
   }
@@ -636,12 +636,12 @@ class _DiscountManagementState extends State<DiscountManagement> {
                 )
                     : null,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(40),
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
                 fillColor: Colors.grey[100],
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
               ),
               onChanged: (value) {
                 setState(() {
@@ -876,7 +876,7 @@ class _DiscountManagementState extends State<DiscountManagement> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      isActive ? 'Hoạt động' : 'Vô hiệu',
+                      isActive ? 'Hoạt động' : 'Không hoạt động',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,

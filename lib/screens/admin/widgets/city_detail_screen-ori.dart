@@ -120,10 +120,10 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
           filteredProvinces.insert(0, {'name': 'Tất cả'});
         });
       } else {
-        SnackbarHelper.showError(context,'Không thể tải danh sách tỉnh thành');
+        SnackBarHelper.showError(context,'Không thể tải danh sách tỉnh thành');
       }
     } catch (e) {
-      SnackbarHelper.showError(context,'Lỗi tải tỉnh thành: $e');
+      SnackBarHelper.showError(context,'Lỗi tải tỉnh thành: $e');
     } finally {
       setState(() => isProvincesLoading = false);
     }

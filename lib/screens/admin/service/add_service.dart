@@ -39,13 +39,13 @@ class _AddServiceState extends State<AddService> {
       });
 
       if (res['success'] == true) {
-        SnackbarHelper.showSuccess(context, 'Tạo dịch vụ thành công');
+        SnackBarHelper.showSuccess(context, 'Tạo dịch vụ thành công');
         context.pop(true);
       } else {
-        SnackbarHelper.showError(context, 'Lỗi khi tạo dịch vụ');
+        SnackBarHelper.showError(context, 'Lỗi khi tạo dịch vụ');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Có điều gì không đúng');
+      SnackBarHelper.showError(context, 'Có điều gì không đúng');
     } finally {
       setState(() => _isLoading = false);
     }

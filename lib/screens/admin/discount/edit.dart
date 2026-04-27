@@ -93,17 +93,17 @@ class _EditDiscountScreenState extends State<EditDiscountScreen> {
 
     // Validate dates
     if (_startDate == null) {
-      SnackbarHelper.showError(context, 'Vui lòng chọn ngày bắt đầu');
+      SnackBarHelper.showError(context, 'Vui lòng chọn ngày bắt đầu');
       return;
     }
 
     if (_expiresAt == null) {
-      SnackbarHelper.showError(context, 'Vui lòng chọn ngày kết thúc');
+      SnackBarHelper.showError(context, 'Vui lòng chọn ngày kết thúc');
       return;
     }
 
     if (_expiresAt!.isBefore(_startDate!)) {
-      SnackbarHelper.showError(context, 'Ngày kết thúc phải sau ngày bắt đầu');
+      SnackBarHelper.showError(context, 'Ngày kết thúc phải sau ngày bắt đầu');
       return;
     }
 
@@ -137,13 +137,13 @@ class _EditDiscountScreenState extends State<EditDiscountScreen> {
       }
 
       if (response['success'] == true) {
-        SnackbarHelper.showSuccess(context, 'Cập nhật mã giảm giá thành công');
+        SnackBarHelper.showSuccess(context, 'Cập nhật mã giảm giá thành công');
         context.pop(true);
       } else {
         throw Exception(response['message'] ?? 'Không thể cập nhật mã giảm giá');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Lỗi: $e');
+      SnackBarHelper.showError(context, 'Lỗi: $e');
     } finally {
       setState(() => _isLoading = false);
     }

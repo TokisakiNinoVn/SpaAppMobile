@@ -6,7 +6,6 @@ import '../helper/logger_utils.dart';
 
 class ServiceService {
   Future<Map<String, dynamic>> technicianAddService(Map<String, dynamic> data) async {
-    print("List id service: $data");
     return await ApiMethodsPrivate.postRequest(ServiceApiRoutes.technicianAddService, data);
   }
 
@@ -15,7 +14,7 @@ class ServiceService {
   }
 
   Future<Map<String, dynamic>> listBaseService() async {
-    return await ApiMethodsPrivate.getRequest(ServiceApiRoutes.listBaseService);
+    return await ApiMethodsPublic.getRequest(ServiceApiRoutes.listBaseService);
   }
 
   Future<Map<String, dynamic>> addTimePriceService(String serviceId, Map<String, dynamic> data) async {

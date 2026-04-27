@@ -69,13 +69,13 @@ class _ApproveTabState extends State<ApproveTab> {
           _applyFilter();
           isLoading = false;
         });
-        SnackbarHelper.showSuccess(context, 'Yêu cầu đã được phê duyệt thành công');
+        SnackBarHelper.showSuccess(context, 'Yêu cầu đã được phê duyệt thành công');
       } else {
         throw Exception("Phê duyệt thất bại hoặc không thành công.");
       }
     } catch (e) {
       setState(() => isLoading = false);
-      SnackbarHelper.showError(context, 'Phê duyệt yêu cầu thất bại: $e');
+      SnackBarHelper.showError(context, 'Phê duyệt yêu cầu thất bại: $e');
       print('Phê duyệt yêu cầu thất bại: $e');
     }
   }

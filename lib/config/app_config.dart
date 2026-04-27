@@ -1,5 +1,9 @@
 // lib/config/app_config.dart
 class AppConfig {
+  static const String appName = "Zen Home";
+  static const String appNameUpperCase = "ZEN HOME";
+  static const String emailAppSupport = "zenhome.spa.support@gmail.com";
+  static const String logoAppUrl = "lib/assets/images/zen-hone-circle-logo.png";
 
   static const List<int> time = [60, 90, 120];
   static final bool isProduction = true;
@@ -9,7 +13,7 @@ class AppConfig {
 
   // dev
   static const String ip = "10.16.23.104";
-  // static const String apiWebsocket = "ws://apispa.tokisakinino.xyz/api/private/ws/account-status";
+  // static const String apiWebsocket = "ws://apispa.tokisakinino.xyz/api/private/ws/realtime";
   // static const String domain = "http://${ip}:5001";
   // static const String apiUrl = "http://${ip}:5001";
   // static const String apiWebsocketUrl = "ws://${ip}:5001";
@@ -22,7 +26,7 @@ class AppConfig {
   // production
   // static const String ip = "192.168.1.70";
 
-  static const String apiWebsocket = "wss://apispa.tokisakinino.xyz/api/private/ws/account-status";
+  static const String apiWebsocket = "wss://apispa.tokisakinino.xyz/api/private/ws/realtime";
   static const String domain = "https://apispa.tokisakinino.xyz";
   static const String apiUrl = "https://apispa.tokisakinino.xyz";
   static const String apiWebsocketUrl = "ws://apispa.tokisakinino.xyz";
