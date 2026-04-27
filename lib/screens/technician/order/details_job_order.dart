@@ -5,18 +5,18 @@ import 'package:spa_app/services/order_service.dart';
 import '../../../helper/format_helper.dart';
 import 'dart:async';
 
-class NewOrderScreen extends StatefulWidget {
+class DetailsNewOrderScreen extends StatefulWidget {
   final String orderId;
-  const NewOrderScreen({
+  const DetailsNewOrderScreen({
     super.key,
     required this.orderId,
   });
 
   @override
-  State<NewOrderScreen> createState() => _NewOrderScreenState();
+  State<DetailsNewOrderScreen> createState() => _DetailsNewOrderScreenState();
 }
 
-class _NewOrderScreenState extends State<NewOrderScreen> {
+class _DetailsNewOrderScreenState extends State<DetailsNewOrderScreen> {
   final OrderService _orderService = OrderService();
   Map<String, dynamic>? orderDetail;
   bool isLoading = true;
@@ -45,7 +45,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
   Future<void> loadDetailOrder() async {
     try {
       final response = await _orderService.detailOrder(widget.orderId);
-      appLog("Load chi tiết đơn: $response");
+      appLog("Chi tiết đơn mới: ${response}");
       if (response['success'] == true) {
         setState(() {
           orderDetail = response['data'];
