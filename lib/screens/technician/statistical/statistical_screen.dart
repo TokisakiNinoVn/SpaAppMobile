@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/services/user_discount_service.dart';
 
-class ListDiscountScreen extends StatefulWidget {
+class StatisticalScreen extends StatefulWidget {
 
-  const ListDiscountScreen({
+  const StatisticalScreen({
     super.key,
   });
 
   @override
-  State<ListDiscountScreen> createState() =>  _ListDiscountScreenState();
+  State<StatisticalScreen> createState() =>  _StatisticalScreenState();
 }
 
-class _ListDiscountScreenState extends State<ListDiscountScreen> {
+class _StatisticalScreenState extends State<StatisticalScreen> {
   final UserDiscountService _userDiscountService = UserDiscountService();
 
   void initState() {
@@ -28,20 +28,25 @@ class _ListDiscountScreenState extends State<ListDiscountScreen> {
         elevation: 0,
         title: Row(
           children: [
-            // Nút back custom
             InkWell(
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
+              borderRadius: BorderRadius.circular(40),
               child: Container(
-                padding: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  shape: BoxShape.circle,
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(40),
                 ),
-                child: const Icon(Icons.arrow_back, color: Colors.black87),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Color(0xFF1A1A1A),
+                ),
               ),
             ),
             const SizedBox(width: 12),
-            const Text("Yêu thích"),
+            const Text("Thống kê doanh thu"),
           ],
         ),
       ),
@@ -49,7 +54,7 @@ class _ListDiscountScreenState extends State<ListDiscountScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Danh sách Kỹ thuật viên yêu thích!")
+          Center(child: Text("Chức năng đang được pha triển!"))
         ],
       ),
     );

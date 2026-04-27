@@ -101,6 +101,144 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
     }
   }
 
+  // Hiển thị popup xác nhận hoàn thành đơn
+  Future<void> _showCompleteOrderConfirmation() async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                color: ColorConfig.secondary,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Xác nhận hoàn thành',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Bạn có chắc chắn muốn xác nhận hoàn thành đơn việc này?',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.amber.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Sau khi xác nhận, đơn việc sẽ được đánh dấu là hoàn thành và không thể thay đổi.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.amber.shade800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_orderPrice > 0) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Tổng tiền:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        '${FormatHelper.formatPrice(_orderPrice)}đ',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'Hủy',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await acceptOrder();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ColorConfig.secondary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                elevation: 2,
+              ),
+              child: const Text(
+                'Xác nhận',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _checkApprovalStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final lastCheck = prefs.getInt('lastCheckApproval') ?? 0;
@@ -242,15 +380,16 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   }
 
   Future<void> acceptOrder() async {
+    setState(() => isLoading = true);
+
     try {
       final data = {
         'orderId': idOrderWorking,
         'result': 'done'
       };
       final response = await _orderService.updateStatus(data);
-      appLog("response $response");
+
       if (response['success'] == true) {
-        setState(() => isLoading = false);
         if (!mounted) return;
 
         await SharedPrefs.remove("orderDetail");
@@ -258,13 +397,31 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
         await SharedPrefs.remove("acceptedAt");
         await SharedPrefs.saveValue(PrefType.bool, "isWorking", false);
         await SharedPreferencesHelper.listAllKeyValue();
-        SnackBarHelper.showSuccess(context, "Bạn đã hoàn thành đơn!");
-        isWorking = false;
-      }
 
+        setState(() {
+          isWorking = false;
+          isLoading = false;
+          orderDetail = null;
+          idOrderWorking = "";
+          acceptedAt = null;
+        });
+
+        SnackBarHelper.showSuccess(context, "Bạn đã hoàn thành đơn thành công!");
+
+        // Tự động reload lại trang sau 1 giây
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            _loadUserDetail();
+          }
+        });
+      } else {
+        setState(() => isLoading = false);
+        SnackBarHelper.showError(context, response['message'] ?? "Có lỗi xảy ra khi hoàn thành đơn");
+      }
     } catch (e) {
       debugPrint('Error accepting order: $e');
       setState(() => isLoading = false);
+      SnackBarHelper.showError(context, "Lỗi: $e");
     }
   }
 
@@ -537,8 +694,12 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                           onPressed: isUpdatingLocation
                               ? null
                               : () async {
-                            await _getCurrentLocation();
-                            await _updateLocation();
+                            // Hiển thị dialog xác nhận trước khi cập nhật vị trí
+                            final shouldUpdate = await _showLocationUpdateConfirmation();
+                            if (shouldUpdate == true) {
+                              await _getCurrentLocation();
+                              await _updateLocation();
+                            }
                           },
                           icon: isUpdatingLocation
                               ? const SizedBox(
@@ -598,6 +759,79 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
           ],
         ),
       ),
+    );
+  }
+
+  // Dialog xác nhận cập nhật vị trí
+  Future<bool?> _showLocationUpdateConfirmation() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.my_location,
+                color: ColorConfig.primary,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Xác nhận cập nhật vị trí',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Bạn có muốn cập nhật vị trí hiện tại của mình không?',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: Text(
+                'Hủy',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ColorConfig.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Đồng ý',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -780,11 +1014,11 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Nút xác nhận hoàn thành
+                  // Nút xác nhận hoàn thành - HIỂN THỊ POPUP
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: acceptOrder,
+                      onPressed: _showCompleteOrderConfirmation, // Gọi popup xác nhận
                       icon: const Icon(Icons.check_circle_outline, size: 18),
                       label: const Text('Xác nhận hoàn thành'),
                       style: ElevatedButton.styleFrom(

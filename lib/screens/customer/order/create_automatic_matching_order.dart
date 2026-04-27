@@ -207,8 +207,7 @@ class _CreateAutoMatchingOrderScreenState
     final price = widget.data['timePrice']['price'] as int;
     final data = {
       'typeOrder': 'automatic-matching',
-      // "technicianId": widget.data['technician']['id'],
-      "timePriceId": widget.data['timePrice']['_id'],
+      "serviceTimePriceId": widget.data['timePrice']['_id'],
       "nameService": widget.data['service']['name'],
       "address": _addressController.text.trim(),
       "paymentMethod": _paymentMethod!.name,
@@ -807,34 +806,10 @@ class _CreateAutoMatchingOrderScreenState
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // === Thông tin kỹ thuật viên & dịch vụ ===
+            // === Thông tin dịch vụ ===
             _Section(
               child: Column(
                 children: [
-                  // Row(
-                  //   children: [
-                  //     CircleAvatar(
-                  //       radius: 26,
-                  //       backgroundImage: NetworkImage(
-                  //           FormatHelper.formatNetworkImageUrl(technician['avatar']['url'])),
-                  //     ),
-                  //     const SizedBox(width: 12),
-                  //     Expanded(
-                  //       child: Column(
-                  //         crossAxisAlignment: CrossAxisAlignment.start,
-                  //         children: [
-                  //           Text(
-                  //             FormatHelper.formatNameTechnician(technician['fullName']),
-                  //             style: const TextStyle(fontWeight: FontWeight.w600),
-                  //           ),
-                  //           Text("⭐ ${technician['rate']}"),
-                  //         ],
-                  //       ),
-                  //     ),
-                  //     const Icon(Icons.spa, color: Colors.grey),
-                  //   ],
-                  // ),
-                  // const Divider(height: 24),
                   _InfoRow(
                     "Dịch vụ",
                     widget.data['service']['name'],

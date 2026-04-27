@@ -72,7 +72,8 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
 
     // Tạo Android notification details
     AndroidNotificationDetails androidDetails = const AndroidNotificationDetails(
-      'default_channel',
+      // 'default_channel',
+      'default_channel_v2',
       'General Notifications',
       channelDescription: 'Default notification channel for the app',
       importance: Importance.max,

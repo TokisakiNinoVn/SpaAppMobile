@@ -7,6 +7,8 @@ import 'package:spa_app/services/order_service.dart';
 import 'dart:async';
 import 'package:spa_app/services/realtime_service.dart';
 
+import '../../../storage/index.dart';
+
 class OrderTab extends StatefulWidget {
   const OrderTab({super.key});
 
@@ -21,6 +23,7 @@ class _OrderTabState extends State<OrderTab> {
   int selectedTab = 0;
 
   bool _isLoading = true;
+  bool isWorking = false;
   bool _isLogin = false;
   String _errorMessage = '';
 
@@ -56,29 +59,10 @@ class _OrderTabState extends State<OrderTab> {
     super.dispose();
   }
 
-  // void _handleNewOrder(Map<String, dynamic> order) {
-  //   // 🛡️ fallback nếu BE gửi sai format
-  //   final actualOrder = order['data'] ?? order;
-  //
-  //   final orderId = actualOrder['_id'];
-  //
-  //   final exists = listRequestOrders.any((o) => o['_id'] == orderId);
-  //   if (exists) return;
-  //
-  //   // Sử dụng microtask để đảm bảo mounted vẫn còn valid
-  //   Future.microtask(() {
-  //     if (mounted) {
-  //       setState(() {
-  //         listRequestOrders.insert(0, actualOrder);
-  //       });
-  //
-  //       _startTimersForOrders([actualOrder]);
-  //       _updateFilteredOrders();
-  //     }
-  //   });
-  // }
-
   void _handleNewOrder(Map<String, dynamic> order) {
+    // Nếu đang làm việc thì không xử lý đơn mới
+    if (isWorking) return;
+
     final actualOrder = order['data'] ?? order;
     final orderId = actualOrder['_id'];
 
@@ -175,6 +159,9 @@ class _OrderTabState extends State<OrderTab> {
   }
 
   void _handleOrderExpired(String orderId) {
+    // Nếu đang làm việc thì không xử lý
+    if (isWorking) return;
+
     // ❌ cancel timer
     _timers[orderId]?.cancel();
     _timers.remove(orderId);
@@ -191,66 +178,65 @@ class _OrderTabState extends State<OrderTab> {
     });
   }
 
+  // ⭐ Gộp chung load 1 lần cả 2 loại orders
   Future<void> _loadData() async {
-    if (selectedTab == 0) {
-      await _loadRequestOrders();
-    } else {
-      await _loadBookOrders();
-    }
-  }
-
-  Future<void> _loadRequestOrders() async {
     try {
       setState(() {
         _isLoading = true;
         _errorMessage = '';
       });
 
-      final response = await _orderService.listRequestOrder();
-      if (response['success'] == true) {
-        final newOrders = response['data'] ?? [];
-        setState(() {
-          listRequestOrders = newOrders;
-          _isLoading = false;
-        });
-        _startTimersForOrders(newOrders);
+      // Load isWorking trước
+      isWorking = await SharedPrefs.getValue(PrefType.bool, "isWorking") ?? false;
+
+      // Gọi song song cả 2 API để tăng performance
+      final results = await Future.wait([
+        _orderService.listRequestOrder(),
+        _orderService.listApprovedBookOrder(),
+      ]);
+
+      final requestResponse = results[0];
+      final bookResponse = results[1];
+
+      // Xử lý request orders - chỉ load nếu không đang làm việc
+      if (!isWorking) {
+        if (requestResponse['success'] == true) {
+          final newOrders = requestResponse['data'] ?? [];
+          setState(() {
+            listRequestOrders = newOrders;
+          });
+          _startTimersForOrders(newOrders);
+        } else {
+          throw Exception(requestResponse['message'] ?? 'Không thể tải danh sách đơn hàng');
+        }
       } else {
-        throw Exception(response['message'] ?? 'Không thể tải danh sách đơn hàng');
+        // Nếu đang làm việc thì clear list request orders
+        setState(() {
+          listRequestOrders = [];
+          filteredRequestOrders = [];
+        });
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
-      print('Error loading request orders: $e');
-    }
-  }
 
-  Future<void> _loadBookOrders() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = '';
-      });
-
-      final response = await _orderService.listApprovedBookOrder();
-
-      if (response['success'] == true) {
-        final newOrders = response['data'] ?? [];
+      // Xử lý book orders - luôn load
+      if (bookResponse['success'] == true) {
+        final newOrders = bookResponse['data'] ?? [];
         setState(() {
           listBookOrders = newOrders;
           filteredBookOrders = List.from(newOrders);
-          _isLoading = false;
         });
       } else {
-        throw Exception(response['message'] ?? 'Không thể tải danh sách đơn đặt trước');
+        throw Exception(bookResponse['message'] ?? 'Không thể tải danh sách đơn đặt trước');
       }
+
+      setState(() {
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
       });
-      print('Error loading book orders: $e');
+      print('Error loading data: $e');
     }
   }
 
@@ -291,7 +277,7 @@ class _OrderTabState extends State<OrderTab> {
               timer.cancel();
               _timers.remove(orderId);
               // Chỉ xóa đối với tab "Yêu cầu đơn mới"
-              if (selectedTab == 0) {
+              if (selectedTab == 0 && !isWorking) {
                 _removeExpiredOrder(orderId);
               }
               if (mounted) {
@@ -312,7 +298,7 @@ class _OrderTabState extends State<OrderTab> {
         } else {
           _remainingTimes[orderId] = Duration.zero;
           // Chỉ xóa đối với tab "Yêu cầu đơn mới"
-          if (selectedTab == 0) {
+          if (selectedTab == 0 && !isWorking) {
             _removeExpiredOrder(orderId);
           }
         }
@@ -333,26 +319,6 @@ class _OrderTabState extends State<OrderTab> {
 
     _updateFilteredOrders();
   }
-
-  // // Thêm phương thức này để lấy số lượng
-  // int _getOrderCount() {
-  //   if (selectedTab == 0) {
-  //     return filteredRequestOrders.length;
-  //   } else {
-  //     return listBookOrders.length;
-  //   }
-  // }
-
-  // void _updateFilteredOrders() {
-  //   // Request orders: lọc bỏ các order đã hết hạn
-  //   filteredRequestOrders = listRequestOrders.where((order) {
-  //     final remaining = _remainingTimes[order['_id']];
-  //     return remaining != null && !remaining.isNegative && remaining.inSeconds > 0;
-  //   }).toList();
-  //
-  //   // Book orders: hiển thị TẤT CẢ (không lọc)
-  //   filteredBookOrders = List.from(listBookOrders); // Sửa dòng này
-  // }
 
   void _updateFilteredOrders() {
     // Request orders: lọc bỏ các order đã hết hạn
@@ -437,8 +403,6 @@ class _OrderTabState extends State<OrderTab> {
 
   @override
   Widget build(BuildContext context) {
-    // final orders = selectedTab == 0 ? listRequestOrders : listBookOrders;
-    final orders = selectedTab == 0 ? filteredRequestOrders : filteredBookOrders;
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -469,7 +433,7 @@ class _OrderTabState extends State<OrderTab> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _onRefresh,
-                child: _buildOrdersList(orders),
+                child: _buildContent(),
               ),
             ),
           ],
@@ -478,8 +442,11 @@ class _OrderTabState extends State<OrderTab> {
     );
   }
 
-  Widget _buildOrdersList(List<dynamic> orders) {
-    if (_isLoading && orders.isEmpty) {
+  // ⭐ Tách riêng logic hiển thị nội dung theo từng tab
+  Widget _buildContent() {
+    if (_isLoading &&
+        ((selectedTab == 0 && filteredRequestOrders.isEmpty) ||
+            (selectedTab == 1 && filteredBookOrders.isEmpty))) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -505,33 +472,106 @@ class _OrderTabState extends State<OrderTab> {
       );
     }
 
-    if (orders.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              selectedTab == 0 ? 'Không có yêu cầu đơn mới' : 'Không có đơn đặt trước',
-              style: TextStyle(color: Colors.grey.shade600),
+    // ⭐ Tab 0 - Yêu cầu đơn mới
+    if (selectedTab == 0) {
+      // Nếu đang làm việc, hiển thị text thông báo
+      if (isWorking) {
+        return Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade200),
             ),
-          ],
-        ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.warning_amber_rounded,
+                    color: Colors.orange.shade700,
+                    size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Bạn đang thực hiện đơn',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'không thể nhận thêm việc mới',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.orange.shade700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Nếu không có đơn
+      if (filteredRequestOrders.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'Không có yêu cầu đơn mới',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // Hiển thị danh sách đơn
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: filteredRequestOrders.length,
+        itemBuilder: (context, index) {
+          final order = filteredRequestOrders[index];
+          return _buildOrderItem(order);
+        },
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: orders.length,
-      itemBuilder: (context, index) {
-        final order = orders[index];
-        return _buildOrderItem(order);
-      },
-    );
+    // ⭐ Tab 1 - Đơn đặt trước (giữ nguyên)
+    else {
+      if (filteredBookOrders.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'Không có đơn đặt trước',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: filteredBookOrders.length,
+        itemBuilder: (context, index) {
+          final order = filteredBookOrders[index];
+          return _buildOrderItem(order);
+        },
+      );
+    }
   }
 
-// Sửa lại _buildTabButton
   Widget _buildTabButton(String title, int index) {
     final isSelected = selectedTab == index;
     final count = index == 0 ? filteredRequestOrders.length : listBookOrders.length;
@@ -555,7 +595,7 @@ class _OrderTabState extends State<OrderTab> {
           ),
           alignment: Alignment.center,
           child: Text(
-            displayTitle, // Sửa thành displayTitle
+            displayTitle,
             style: TextStyle(
               color: isSelected ? Colors.white : Colors.black,
               fontWeight: FontWeight.w500,
