@@ -5,6 +5,7 @@ import 'package:spa_app/screens/technician/order/details_new_order.dart';
 import 'package:spa_app/screens/technician/service/technicianupdate_service.dart';
 import 'package:spa_app/screens/technician/technician/user_edit_technician.dart';
 import '../screens/technician/home_technician_screen.dart';
+import '../screens/technician/statistical/statistical_screen.dart';
 
 final List<GoRoute> technicianRoutes = [
   GoRoute(
@@ -14,6 +15,10 @@ final List<GoRoute> technicianRoutes = [
         GoRoute(
           path: 'technician-update-service',
           builder: (context, state) => const TechnicianUpdateService(),
+        ),
+        GoRoute(
+          path: 'statistical',
+          builder: (context, state) => const StatisticalScreen(),
         ),
         GoRoute(
           path: 'add-technician',

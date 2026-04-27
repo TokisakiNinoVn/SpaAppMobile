@@ -5,7 +5,9 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/services/file_service.dart';
+import 'package:spa_app/services/service_service.dart';
 import 'package:spa_app/services/technician_service.dart';
 import 'package:spa_app/services/tinhthanh_service_v2.dart';
 import 'package:spa_app/services/upload_service.dart';
@@ -23,25 +25,31 @@ class UserEditTechnicianScreen extends StatefulWidget {
 
 class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   final UserService userService = UserService();
+  final ServiceService _serviceService = ServiceService();
+
   final fullnameController = TextEditingController();
   final addressController = TextEditingController();
-  // final bioController = TextEditingController();
   final technicianService = TechnicianService();
   final tinhThanhService = TinhThanhService();
+  final _serviceSearchController = TextEditingController();
 
   bool isLoading = false;
   List<dynamic> provinces = [];
   List<dynamic> districts = [];
-  List<dynamic> filteredProvinces = [];
-  List<dynamic> filteredDistricts = [];
   List<dynamic> selectedDistricts = [];
   dynamic selectedProvince;
-  dynamic selectedDistrict;
   String? experience;
   List<Map<String, dynamic>> images = [];
   Map<String, dynamic>? avatarImage;
   Map<String, dynamic>? dataUser;
   Map<String, dynamic>? technicianData;
+  String selectedGender = 'female';
+  final genders = ['male', 'female', 'other'];
+  final Map<String, String> genderLabels = {
+    'male': 'Nam',
+    'female': 'Nữ',
+    'other': 'Khác'
+  };
 
   bool isProvincesLoading = false;
   bool isDistrictsLoading = false;
@@ -50,20 +58,14 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   late List<String> originalDistricts;
   late String originalAddress;
 
-  List<String> services = [];
-  List<String> availableServices = ['Đá nóng', 'Giác hơi', 'Cạo gió'];
-  final experiences = [
-    '1 năm',
-    '2 năm',
-    '3 năm',
-    '4 năm',
-    '5 năm',
-    '6 năm',
-    '7 năm',
-    '8 năm',
-    '9 năm',
-    '10 năm',
-  ];
+  final experiences = ['1 năm', '2 năm', '3 năm', '4 năm', '5 năm', '6 năm', '7 năm'];
+
+  List<dynamic> selectedServiceIds = [];
+  List<dynamic>? allServices = [];
+  List<dynamic> filteredServices = [];
+
+  // Store existing service IDs from API
+  List<String> _existingServiceIds = [];
 
   // Danh sách năm sinh từ 1950 đến năm hiện tại - 18
   List<int> get birthYears {
@@ -79,10 +81,34 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     _loadUserDetail();
   }
 
+  Future<void> _loadAllServices() async {
+    try {
+      final response = await _serviceService.listService();
+      if (response['success'] == true && response['data'] != null) {
+        setState(() {
+          allServices = response['data'];
+          filteredServices = List.from(allServices ?? []);
+
+          // Khớp các service ID cũ với object service từ API
+          if (_existingServiceIds.isNotEmpty && allServices != null) {
+            selectedServiceIds = allServices!.where((service) {
+              return _existingServiceIds.contains(service['_id']);
+            }).toList();
+          }
+        });
+      }
+    } catch (e) {
+      appLog("Error loading services: $e");
+      SnackBarHelper.showError(context, 'Không thể tải danh sách dịch vụ');
+    }
+  }
+
   Future<void> _loadUserDetail() async {
     setState(() => isLoading = true);
     try {
       final response = await userService.loadDetailUserService();
+      appLog("User detail response: $response");
+
       if (response['success'] == true) {
         setState(() {
           dataUser = response['data'];
@@ -90,10 +116,12 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
           _initializeData();
         });
         await _loadProvinces();
+        await _loadAllServices();
       } else {
-        _showSnack('Không thể tải thông tin người dùng');
+        _showSnack(response['message'] ?? 'Không thể tải thông tin người dùng');
       }
     } catch (e) {
+      appLog("Error loading user detail: $e");
       _showSnack('Lỗi tải thông tin: $e');
     } finally {
       setState(() => isLoading = false);
@@ -105,28 +133,38 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
 
     fullnameController.text = technicianData?['fullName'] ?? '';
     addressController.text = technicianData?['address'] ?? '';
-    // bioController.text = technicianData?['bio'] ?? '';
     experience = technicianData?['experience'] ?? '1 năm';
     yearOfBirth = technicianData?['yearOfBirth'];
-    services = List<String>.from(technicianData?['services'] ?? []);
+
+    // Parse gender from technician data or user data
+    if (technicianData?['gender'] != null) {
+      selectedGender = technicianData!['gender'];
+    }
 
     originalProvince = technicianData?['province'] ?? '';
     originalDistricts = List<String>.from(technicianData?['districts'] ?? []);
     originalAddress = technicianData?['address'] ?? '';
 
-    if (technicianData?['avatar'] != null) {
+    // Parse existing service IDs
+    if (technicianData?['serviceIds'] != null) {
+      _existingServiceIds = List<String>.from(technicianData!['serviceIds']);
+    }
+
+    // Parse avatar
+    if (technicianData?['avatar'] != null && technicianData!['avatar']['url'] != null) {
       avatarImage = {
-        '_id': technicianData!['avatar']['_id'],
+        '_id': technicianData!['avatar']['_id'] ?? '',
         'url': technicianData!['avatar']['url'],
-        'createdAt': technicianData!['avatar']['uploadedAt'] ?? technicianData!['avatar']['createdAt']
+        'uploadedAt': technicianData!['avatar']['uploadedAt'] ?? DateTime.now().toIso8601String()
       };
     }
 
+    // Parse images
     if (technicianData?['images'] != null && technicianData!['images'].isNotEmpty) {
       images = List<Map<String, dynamic>>.from(technicianData!['images'].map((img) => {
-        '_id': img['_id'],
+        '_id': img['_id'] ?? '',
         'url': img['url'],
-        'createdAt': img['uploadedAt'] ?? img['createdAt']
+        'uploadedAt': img['uploadedAt'] ?? img['createdAt'] ?? DateTime.now().toIso8601String()
       })).toList();
     }
   }
@@ -140,15 +178,18 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       } else {
         setState(() {
           provinces = listTinhThanh;
-          filteredProvinces = provinces;
 
           // Tìm tỉnh hiện tại từ dữ liệu người dùng
-          if (technicianData?['province'] != null) {
-            selectedProvince = provinces.firstWhere(
-                  (prov) => prov['name'] == technicianData!['province'],
-            );
-            if (selectedProvince != null) {
-              _loadDistricts(selectedProvince['id']);
+          if (technicianData?['province'] != null && technicianData!['province'].isNotEmpty) {
+            try {
+              selectedProvince = provinces.firstWhere(
+                    (prov) => prov['name'] == technicianData!['province'],
+              );
+              if (selectedProvince != null) {
+                _loadDistricts(selectedProvince['id']);
+              }
+            } catch (e) {
+              appLog("Province not found: ${technicianData!['province']}");
             }
           }
         });
@@ -165,11 +206,10 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     try {
       final listQuanHuyen = await tinhThanhService.getHuyenByTinh(idProvince);
       if (listQuanHuyen.isEmpty) {
-        SnackBarHelper.showError(context, 'Không thể tải danh sách huyện');
+        SnackBarHelper.showError(context, 'Không thể tải danh sách quận/huyện');
       } else {
         setState(() {
           districts = listQuanHuyen;
-          filteredDistricts = districts;
 
           if (technicianData?['districts'] != null && technicianData!['districts'].isNotEmpty) {
             selectedDistricts = districts.where((district) =>
@@ -179,7 +219,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
         });
       }
     } catch (e) {
-      SnackBarHelper.showError(context, 'Lỗi tải huyện: $e');
+      SnackBarHelper.showError(context, 'Lỗi tải quận/huyện: $e');
     } finally {
       setState(() => isDistrictsLoading = false);
     }
@@ -190,8 +230,8 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
 
     final fullname = fullnameController.text.trim();
     final address = addressController.text.trim();
-    // final bio = bioController.text.trim();
 
+    // Validation
     if (fullname.isEmpty) {
       _showSnack('Vui lòng nhập họ tên');
       return;
@@ -212,6 +252,10 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       _showSnack('Vui lòng tải lên ít nhất 3 hình ảnh');
       return;
     }
+    if (yearOfBirth == null) {
+      _showSnack('Vui lòng chọn năm sinh');
+      return;
+    }
 
     setState(() => isLoading = true);
 
@@ -221,28 +265,43 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
           ? selectedDistricts.map((d) => d['name']).toList()
           : originalDistricts;
 
+      // Extract service IDs from selected services
+      final serviceIdList = selectedServiceIds.map((service) => service['_id']).toList();
+
       final data = {
-        'avatar': avatarImage != null ? avatarImage : null,
         'fullName': fullname,
         'province': province,
         'districts': districtsList,
         'address': address,
         'experience': experience,
-        'images': images.toList(),
-        // 'bio': bio,
-        'services': services,
+        'gender': selectedGender,
         'yearOfBirth': yearOfBirth,
+        // 'serviceIds': serviceIdList,
       };
 
+      // Only include avatar if it exists and has an ID or is new
+      if (avatarImage != null && avatarImage!['url'] != null) {
+        data['avatar'] = avatarImage;
+      }
+
+      // Only include images if they exist
+      if (images.isNotEmpty) {
+        data['images'] = images;
+      }
+
+      appLog("Updating technician with data: $data");
+
       final response = await technicianService.updateTechnicianService(technicianData!['_id'], data);
-      debugPrint("response: $response");
+      appLog("Update response: $response");
+
       if (response['success'] == true) {
-        _showSnack('Cập nhật hồ sơ kĩ thuật viên thành công', isError: false);
+        _showSnack('Cập nhật hồ sơ thành công', isError: false);
         context.pop(true);
       } else {
         _showSnack(response['message'] ?? 'Có lỗi xảy ra khi cập nhật hồ sơ');
       }
     } catch (e) {
+      appLog("Error updating technician: $e");
       _showSnack('Lỗi hệ thống: $e');
     } finally {
       setState(() => isLoading = false);
@@ -253,20 +312,30 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     try {
       final uploadService = UploadService();
       final response = await uploadService.uploadSingleFileService(filePath);
-      final imageData = response['data'];
 
-      if (imageData != null) {
+      if (response['success'] == true && response['data'] != null) {
+        final imageData = response['data'];
         setState(() {
           if (isAvatar) {
-            avatarImage = imageData;
+            avatarImage = {
+              '_id': imageData['_id'],
+              'url': imageData['url'],
+              'uploadedAt': imageData['uploadedAt'] ?? DateTime.now().toIso8601String()
+            };
           } else {
-            images.add(imageData);
+            images.add({
+              '_id': imageData['_id'],
+              'url': imageData['url'],
+              'uploadedAt': imageData['uploadedAt'] ?? DateTime.now().toIso8601String()
+            });
           }
         });
+        _showSnack('Tải ảnh lên thành công', isError: false);
       } else {
-        _showSnack('Không thể tải lên hình ảnh');
+        _showSnack(response['message'] ?? 'Không thể tải lên hình ảnh');
       }
     } catch (e) {
+      appLog("Error uploading image: $e");
       _showSnack('Lỗi tải lên hình ảnh: $e');
     }
   }
@@ -276,7 +345,6 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      // Luôn cắt ảnh dù là avatar hay ảnh thường
       await _cropImage(File(pickedFile.path), isAvatar: isAvatar);
     }
   }
@@ -313,13 +381,36 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       final response = await fileService.deleteFileService(idImage);
 
       if (response['status'] == 'success') {
+        setState(() {
+          images.removeWhere((img) => img['_id'] == idImage);
+        });
         _showSnack('Hình ảnh đã được xóa', isError: false);
-        setState(() => images.removeWhere((img) => img['_id'] == idImage));
       } else {
         _showSnack('Không thể xóa hình ảnh');
       }
     } catch (e) {
+      appLog("Error deleting image: $e");
       _showSnack('Lỗi xóa hình ảnh: $e');
+    }
+  }
+
+  Future<void> deleteAvatar() async {
+    if (avatarImage != null && avatarImage!['_id'] != null) {
+      try {
+        final fileService = FileService();
+        await fileService.deleteFileService(avatarImage!['_id']);
+        setState(() {
+          avatarImage = null;
+        });
+        _showSnack('Ảnh đại diện đã được xóa', isError: false);
+      } catch (e) {
+        appLog("Error deleting avatar: $e");
+        _showSnack('Lỗi xóa ảnh đại diện: $e');
+      }
+    } else {
+      setState(() {
+        avatarImage = null;
+      });
     }
   }
 
@@ -330,9 +421,13 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
         child: Stack(
           children: [
             Center(
-              child: Image.network(
-                FormatHelper.formatImageUrl(imageUrl),
-                fit: BoxFit.contain,
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  FormatHelper.formatNetworkImageUrl(imageUrl),
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
             Positioned(
@@ -352,7 +447,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   void _showSnack(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: TextStyle(color: Colors.white)),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: isError ? Colors.redAccent : Colors.green,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -362,16 +457,9 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
 
   String _getDistrictsDisplayText() {
     if (selectedDistricts.isEmpty) return 'Chọn quận/huyện';
-
     final districtNames = selectedDistricts.map((d) => d['name']).toList();
     final displayText = districtNames.join(', ');
-
-    // Giới hạn độ dài hiển thị
-    if (displayText.length > 30) {
-      return '${displayText.substring(0, 27)}...';
-    }
-
-    return displayText;
+    return displayText.length > 30 ? '${displayText.substring(0, 27)}...' : displayText;
   }
 
   String _getProvinceDisplayText() {
@@ -380,13 +468,21 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   }
 
   String _getYearOfBirthDisplayText() {
-    if (yearOfBirth == null) return 'Năm sinh';
+    if (yearOfBirth == null) return 'Chọn năm sinh';
     return yearOfBirth.toString();
   }
 
   String _getExperienceDisplayText() {
-    if (experience == null) return 'Kinh nghiệm';
+    if (experience == null) return 'Chọn kinh nghiệm';
     return experience!;
+  }
+
+  String _getServicesDisplayText() {
+    if (selectedServiceIds.isEmpty) return 'Chọn dịch vụ';
+    if (selectedServiceIds.length == 1) {
+      return selectedServiceIds[0]['name'];
+    }
+    return '${selectedServiceIds.length} dịch vụ';
   }
 
   Widget _buildSelectionField({
@@ -434,39 +530,52 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   void _showProvinceBottomSheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (BuildContext context) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "Chọn Tỉnh/Thành",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: provinces.length,
-                itemBuilder: (context, index) {
-                  final province = provinces[index];
-                  final isSelected = selectedProvince != null && selectedProvince['id'] == province['id'];
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildBottomSheetHandle(),
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text(
+                      "Chọn Tỉnh/Thành",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: provinces.length,
+                      itemBuilder: (context, index) {
+                        final province = provinces[index];
+                        final isSelected = selectedProvince != null && selectedProvince['id'] == province['id'];
 
-                  return ListTile(
-                    title: Text(province['name']),
-                    trailing: isSelected ? const Icon(Icons.check, color: Color(0xFF8B5E3C)) : null,
-                    onTap: () {
-                      setState(() {
-                        selectedProvince = province;
-                        selectedDistricts.clear();
-                        _loadDistricts(province['id']);
-                      });
-                      Navigator.pop(context);
-                    },
-                  );
-                },
+                        return ListTile(
+                          title: Text(province['name']),
+                          trailing: isSelected ? const Icon(Icons.check, color: Color(0xFF8B5E3C)) : null,
+                          onTap: () {
+                            setState(() {
+                              selectedProvince = province;
+                              selectedDistricts.clear();
+                              _loadDistricts(province['id']);
+                            });
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -480,56 +589,73 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    "Chọn Quận/Huyện",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: districts.length,
-                    itemBuilder: (context, index) {
-                      final district = districts[index];
-                      final isSelected = selectedDistricts.any((d) => d['id'] == district['id']);
-
-                      return CheckboxListTile(
-                        title: Text(district['name']),
-                        value: isSelected,
-                        onChanged: (bool? value) {
-                          setModalState(() {
-                            if (value == true) {
-                              selectedDistricts.add(district);
-                            } else {
-                              selectedDistricts.removeWhere((d) => d['id'] == district['id']);
-                            }
-                          });
-                        },
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFFFFF),
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 50),
+            return Container(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildBottomSheetHandle(),
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text(
+                      "Chọn Quận/Huyện",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    child: const Text('Xác nhận'),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: districts.length,
+                      itemBuilder: (context, index) {
+                        final district = districts[index];
+                        final isSelected = selectedDistricts.any((d) => d['id'] == district['id']);
+
+                        return CheckboxListTile(
+                          title: Text(district['name']),
+                          value: isSelected,
+                          activeColor: const Color(0xFF8B5E3C),
+                          onChanged: (bool? value) {
+                            setModalState(() {
+                              if (value == true) {
+                                selectedDistricts.add(district);
+                              } else {
+                                selectedDistricts.removeWhere((d) => d['id'] == district['id']);
+                              }
+                            });
+                            setState(() {});
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF8B5E3C),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(40),
+                          ),
+                        ),
+                        child: const Text('Xác nhận', style: TextStyle(fontSize: 16)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         );
@@ -538,139 +664,260 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   }
 
   void _showYearOfBirthBottomSheet() {
+    final currentYear = DateTime.now().year;
+    final years = List.generate(60, (index) => currentYear - index - 18);
+
     showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "Chọn Năm Sinh",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildBottomSheetHandle(),
+              const SizedBox(height: 20),
+              const Text(
+                'Chọn năm sinh',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: birthYears.length,
-                itemBuilder: (context, index) {
-                  final year = birthYears[index];
-                  final isSelected = yearOfBirth == year;
-
-                  return ListTile(
-                    title: Text(year.toString()),
-                    trailing: isSelected ? const Icon(Icons.check, color: Color(0xFF8B5E3C)) : null,
-                    onTap: () {
-                      setState(() {
-                        yearOfBirth = year;
-                      });
-                      Navigator.pop(context);
-                    },
-                  );
-                },
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: years.length,
+                  separatorBuilder: (_, __) => const Divider(height: 0),
+                  itemBuilder: (context, index) {
+                    final year = years[index];
+                    return ListTile(
+                      title: Text(year.toString(), style: const TextStyle(fontSize: 16)),
+                      onTap: () {
+                        setState(() => yearOfBirth = year);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   void _showExperienceBottomSheet() {
     showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "Chọn Kinh Nghiệm",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildBottomSheetHandle(),
+              const SizedBox(height: 20),
+              const Text(
+                'Chọn kinh nghiệm',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: experiences.length,
-                itemBuilder: (context, index) {
-                  final exp = experiences[index];
-                  final isSelected = experience == exp;
-
-                  return ListTile(
-                    title: Text(exp),
-                    trailing: isSelected ? const Icon(Icons.check, color: Color(0xFF8B5E3C)) : null,
-                    onTap: () {
-                      setState(() {
-                        experience = exp;
-                      });
-                      Navigator.pop(context);
-                    },
-                  );
-                },
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: experiences.length,
+                  separatorBuilder: (_, __) => const Divider(height: 0),
+                  itemBuilder: (context, index) {
+                    final exp = experiences[index];
+                    return ListTile(
+                      title: Text(exp, style: const TextStyle(fontSize: 16)),
+                      onTap: () {
+                        setState(() => experience = exp);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildServicesMultiSelect() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+  void _showServicesBottomSheet() {
+    if (allServices == null || allServices!.isEmpty) {
+      _showSnack('Đang tải danh sách dịch vụ...');
+      return;
+    }
+
+    _serviceSearchController.clear();
+    setState(() {
+      filteredServices = List.from(allServices!);
+    });
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Dịch vụ cung cấp',
-            style: const TextStyle(
-              color: Color(0xFF8B5E3C),
-              fontSize: 16,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 20,
+              right: 20,
+              top: 20,
             ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: availableServices.map((service) {
-              final isSelected = services.contains(service);
-              return FilterChip(
-                label: Text(
-                  service,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : const Color(0xFF8B5E3C),
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildBottomSheetHandle(),
+                const SizedBox(height: 20),
+                const Text(
+                  'Chọn dịch vụ',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Chọn các dịch vụ kỹ thuật viên có thể cung cấp',
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _serviceSearchController,
+                  onChanged: (value) {
+                    setModalState(() {
+                      filteredServices = allServices!.where((service) {
+                        return service['name']
+                            .toLowerCase()
+                            .contains(value.toLowerCase());
+                      }).toList();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Tìm kiếm dịch vụ',
+                    prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(40),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() {
-                    if (selected) {
-                      services.add(service);
-                    } else {
-                      services.remove(service);
-                    }
-                  });
-                },
-                selectedColor: const Color(0xFFD4A373),
-                checkmarkColor: Colors.white,
-                backgroundColor: Colors.white,
-                side: BorderSide(
-                  color: isSelected ? const Color(0xFFD4A373) : Colors.grey[300]!,
+                const SizedBox(height: 16),
+                Flexible(
+                  child: filteredServices.isEmpty
+                      ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.inbox, size: 48, color: Colors.grey[400]),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Không tìm thấy dịch vụ',
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
+                  )
+                      : ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: filteredServices.length,
+                    separatorBuilder: (_, __) => const Divider(height: 0),
+                    itemBuilder: (context, index) {
+                      final service = filteredServices[index];
+                      final isSelected = selectedServiceIds.any(
+                              (s) => s['_id'] == service['_id']
+                      );
+                      return CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          service['name'],
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            color: isSelected ? ColorConfig.textBlack : Colors.grey[700],
+                          ),
+                        ),
+                        subtitle: service['description'] != null
+                            ? Text(
+                          service['description'],
+                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                            : null,
+                        value: isSelected,
+                        activeColor: ColorConfig.primary,
+                        onChanged: (bool? value) {
+                          setModalState(() {
+                            if (value == true) {
+                              selectedServiceIds.add(service);
+                            } else {
+                              selectedServiceIds.removeWhere(
+                                      (s) => s['_id'] == service['_id']
+                              );
+                            }
+                          });
+                          setState(() {});
+                        },
+                      );
+                    },
+                  ),
                 ),
-              );
-            }).toList(),
-          ),
-        ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ColorConfig.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(40),
+                      ),
+                    ),
+                    child: const Text('Xác nhận', style: TextStyle(fontSize: 16)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
+  Widget _buildBottomSheetHandle() {
+    return Container(
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
 
   Widget _buildImageGrid() {
     return GridView.builder(
@@ -686,7 +933,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       itemBuilder: (context, index) {
         if (index == images.length) {
           return GestureDetector(
-            onTap: () => _pickImage(),
+            onTap: () => _pickImage(isAvatar: false),
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.grey[200],
@@ -705,7 +952,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.network(
-                  FormatHelper.formatImageUrl(image['url']),
+                  FormatHelper.formatNetworkImageUrl(image['url']),
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, progress) {
                     return progress == null
@@ -713,6 +960,12 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                         : Container(
                       color: Colors.grey[200],
                       child: const Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.error, color: Colors.red),
                     );
                   },
                 ),
@@ -756,12 +1009,12 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFD4A373), width: 2),
+                  border: Border.all(color: ColorConfig.primary, width: 2),
                 ),
                 child: ClipOval(
-                  child: avatarImage != null
+                  child: avatarImage != null && avatarImage!['url'] != null
                       ? Image.network(
-                    FormatHelper.formatImageUrl(avatarImage!['url']),
+                    FormatHelper.formatNetworkImageUrl(avatarImage!['url']),
                     fit: BoxFit.cover,
                     width: 90,
                     height: 90,
@@ -769,6 +1022,9 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                       return progress == null
                           ? child
                           : const Center(child: CircularProgressIndicator());
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.person, size: 50, color: Colors.grey);
                     },
                   )
                       : const Icon(Icons.person, size: 50, color: Colors.grey),
@@ -779,11 +1035,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                   bottom: 0,
                   right: 0,
                   child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        avatarImage = null;
-                      });
-                    },
+                    onTap: deleteAvatar,
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(
@@ -803,7 +1055,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
           icon: const Icon(Icons.camera_alt, size: 18),
           label: const Text('Chọn ảnh đại diện', style: TextStyle(fontSize: 14)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFD4A373),
+            backgroundColor: ColorConfig.primary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -818,44 +1070,38 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
+    if (isLoading && technicianData == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-        // appBar: AppBar(
-        //   backgroundColor: Colors.white,
-        //   elevation: 0,
-        //   leading: IconButton(
-        //     icon: const Icon(Icons.arrow_back, color: Colors.black),
-        //     onPressed: () => context.pop(),
-        //   ),
-        //   title: const Text(
-        //     "Cập nhật hồ sơ",
-        //     style: TextStyle(),
-        //   ),
-        // ),
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
+        backgroundColor: ColorConfig.white,
         elevation: 0,
         title: Row(
           children: [
             InkWell(
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
+              borderRadius: BorderRadius.circular(40),
               child: Container(
-                padding: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: ColorConfig.secondary,
-                  shape: BoxShape.circle,
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(40),
                 ),
-                child: Icon(Icons.arrow_back, color: Colors.white),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Color(0xFF1A1A1A),
+                ),
               ),
             ),
             const SizedBox(width: 12),
-            Text(
+            const Text(
               "Cập nhật hồ sơ",
               style: TextStyle(
                 fontSize: 18,
@@ -868,15 +1114,9 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       ),
       resizeToAvoidBottomInset: true,
       body: Container(
+        color: ColorConfig.white,
         width: double.infinity,
         height: double.infinity,
-        // decoration: const BoxDecoration(
-        //   gradient: LinearGradient(
-        //     begin: Alignment.topCenter,
-        //     end: Alignment.bottomCenter,
-        //     colors: [Color(0xFFF8F4E9), Color(0xFFE9D8C8)],
-        //   ),
-        // ),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -889,64 +1129,10 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                 _buildTextField(
                   controller: fullnameController,
                   label: 'Họ và tên',
-                  icon: Icons.person,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Tỉnh/Thành',
-                            style: ThemeConfig.appTextStyle(
-                              color: ColorConfig.textPrimary,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          _buildSelectionField(
-                            label: 'Chọn tỉnh/thành',
-                            value: _getProvinceDisplayText(),
-                            onTap: _showProvinceBottomSheet,
-                            isLoading: isProvincesLoading,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Quận/Huyện',
-                            style: ThemeConfig.appTextStyle(
-                              color: ColorConfig.textPrimary,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          _buildSelectionField(
-                            label: 'Chọn quận/huyện',
-                            value: _getDistrictsDisplayText(),
-                            onTap: _showDistrictBottomSheet,
-                            isLoading: isDistrictsLoading,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
                 const SizedBox(height: 16),
 
-                // Địa chỉ cụ thể
-                _buildTextField(
-                  controller: addressController,
-                  label: 'Địa chỉ cụ thể',
-                  icon: Icons.location_on,
-                ),
+                _buildGenderSection(),
                 const SizedBox(height: 16),
 
                 Row(
@@ -957,14 +1143,14 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                         children: [
                           Text(
                             'Năm sinh',
-                            style: ThemeConfig.appTextStyle(
-                              color: ColorConfig.textPrimary,
+                            style: TextStyle(
+                              color: ColorConfig.textBlack,
                               fontSize: 14,
                             ),
                           ),
                           const SizedBox(height: 4),
                           _buildSelectionField(
-                            label: 'Năm sinh',
+                            label: 'Chọn năm sinh',
                             value: _getYearOfBirthDisplayText(),
                             onTap: _showYearOfBirthBottomSheet,
                           ),
@@ -978,14 +1164,14 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                         children: [
                           Text(
                             'Kinh nghiệm',
-                            style: ThemeConfig.appTextStyle(
-                              color: ColorConfig.textPrimary,
+                            style: TextStyle(
+                              color: ColorConfig.textBlack,
                               fontSize: 14,
                             ),
                           ),
                           const SizedBox(height: 4),
                           _buildSelectionField(
-                            label: 'Kinh nghiệm',
+                            label: 'Chọn kinh nghiệm',
                             value: _getExperienceDisplayText(),
                             onTap: _showExperienceBottomSheet,
                           ),
@@ -994,27 +1180,104 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                     ),
                   ],
                 ),
-                // const SizedBox(height: 16),
-
-                // Dịch vụ
-                // _buildServicesMultiSelect(),
-                // const SizedBox(height: 16),
-
-                // Giới thiệu bản thân
-                // _buildTextField(
-                //   controller: bioController,
-                //   label: 'Giới thiệu bản thân (tối đa 100 ký tự)',
-                //   icon: Icons.info,
-                //   maxLines: 3,
-                //   maxLength: 100,
-                // ),
                 const SizedBox(height: 16),
 
+                Row(
+                  children: [
+                    // Expanded(
+                    //   child: Column(
+                    //     crossAxisAlignment: CrossAxisAlignment.start,
+                    //     children: [
+                    //       const Text(
+                    //         'Kinh nghiệm',
+                    //         style: TextStyle(
+                    //           color: Color(0xFF333333),
+                    //           fontSize: 14,
+                    //           fontWeight: FontWeight.w500,
+                    //         ),
+                    //       ),
+                    //       const SizedBox(height: 8),
+                    //       _buildSelectableField(
+                    //         label: 'Chọn kinh nghiệm',
+                    //         value: experience,
+                    //         onTap: _showExperienceBottomSheet,
+                    //         icon: Icons.work,
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                    // const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildDropdown(
+                        label: 'Tỉnh/Thành phố',
+                        value: selectedProvince,
+                        items: provinces,
+                        onChanged: (value) {
+                          setState(() {
+                            selectedProvince = value;
+                            selectedDistricts.clear();
+                          });
+                          _loadDistricts(value['id']);
+                        },
+                        isLoading: isProvincesLoading,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Quận/Huyện',
+                      style: TextStyle(
+                        color: Color(0xFF333333),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildLocationField(
+                      label: 'Chọn quận/huyện',
+                      value: selectedDistricts.isEmpty
+                          ? null
+                          : '${selectedDistricts.length} đã chọn',
+                      onTap: _showDistrictBottomSheet,
+                      isLoading: isDistrictsLoading,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Địa chỉ cụ thể
+                // _buildTextField(
+                //   controller: addressController,
+                //   label: 'Địa chỉ cụ thể',
+                //   icon: Icons.location_on,
+                // ),
+
+                _buildTextField(
+                  controller: addressController,
+                  label: 'Địa chỉ cụ thể *',
+                  hint: 'Số nhà, tên đường, thôn/xóm...',
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 24),
+
+                // _buildSectionTitle('Dịch vụ cung cấp'),
+                // _buildSelectionField(
+                //   label: 'Chọn dịch vụ',
+                //   value: _getServicesDisplayText(),
+                //   onTap: _showServicesBottomSheet,
+                // ),
+                // const SizedBox(height: 16),
+
                 // Hình ảnh
-                Text('Hình ảnh (tối đa 5 ảnh, tối thiểu 3 ảnh)',
+                const Text('Hình ảnh (3-5 ảnh)',
                   style: TextStyle(
                     fontSize: 16,
-                    color: const Color(0xFF8B5E3C),
+                    color: Color(0xFF8B5E3C),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1032,9 +1295,9 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           backgroundColor: Colors.grey[400],
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
                         ),
-                        child: Text('Hủy bỏ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                        child: const Text('Hủy bỏ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1043,13 +1306,13 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                         onPressed: isLoading ? null : handleUpdateTechnician,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: const Color(0xFFD4A373),
+                          backgroundColor: ColorConfig.primary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
                         ),
                         child: isLoading
                             ? const CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                            : Text('Cập nhật', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                            : const Text('Cập nhật', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ],
@@ -1062,36 +1325,224 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     );
   }
 
+  Widget _buildLocationField({
+    required String label,
+    required String? value,
+    required VoidCallback onTap,
+    bool isLoading = false,
+  }) {
+    return GestureDetector(
+      onTap: isLoading ? null : onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                value ?? label,
+                style: TextStyle(
+                  color: value != null ? const Color(0xFF333333) : Colors.grey[500],
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            if (isLoading)
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8B5E3C)),
+                ),
+              )
+            else
+              Icon(Icons.arrow_drop_down, color: Colors.grey[400]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required dynamic value,
+    required List<dynamic> items,
+    required Function(dynamic) onChanged,
+    bool isLoading = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF333333),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: DropdownButton<dynamic>(
+            value: value,
+            isExpanded: true,
+            underline: const SizedBox(),
+            hint: Text(
+              label,
+              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            ),
+            items: items.map((item) {
+              return DropdownMenuItem(
+                value: item,
+                child: Text(item['name'], style: const TextStyle(fontSize: 14)),
+              );
+            }).toList(),
+            onChanged: isLoading ? null : onChanged,
+            icon: Icon(Icons.arrow_drop_down, color: Colors.grey[400]),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
-    required IconData icon,
+    String? hint,
     int maxLines = 1,
     int? maxLength,
-    Function(String)? onChanged,
   }) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      maxLength: maxLength,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF8B5E3C)),
-        labelStyle: TextStyle(color: const Color(0xFF8B5E3C), fontSize: 16),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF333333),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFD4A373), width: 2),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          maxLength: maxLength,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 14,
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF8B5E3C), width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: 16,
+            ),
+          ),
         ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      ],
+    );
+  }
+
+  Widget _buildGenderSection() {
+    final genderOptions = [
+      {'value': 'male', 'label': 'Nam', 'icon': Icons.male},
+      {'value': 'female', 'label': 'Nữ', 'icon': Icons.female},
+      {'value': 'other', 'label': 'Khác', 'icon': Icons.person},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+         Text(
+          'Giới tính',
+          style: TextStyle(fontSize: 14, color: ColorConfig.textBlack),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: genderOptions.map((option) {
+            final isSelected = selectedGender == option['value'];
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => selectedGender = option['value'] as String),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: EdgeInsets.only(
+                    right: option['value'] != 'other' ? 10 : 0,
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  decoration: BoxDecoration(
+                    color: isSelected ? ColorConfig.primary : const Color(0xFFF8F8F8),
+                    borderRadius: BorderRadius.circular(40),
+                    border: Border.all(
+                      color: isSelected ? ColorConfig.primary : const Color(0xFFE8E8E8),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        option['icon'] as IconData,
+                        size: 18,
+                        color: isSelected ? Colors.white : const Color(0xFF888888),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        option['label'] as String,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                          color: isSelected ? Colors.white : const Color(0xFF666666),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF333333),
+        ),
       ),
-      style: TextStyle(color: Colors.black87, fontSize: 16),
     );
   }
 
@@ -1099,7 +1550,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   void dispose() {
     fullnameController.dispose();
     addressController.dispose();
-    // bioController.dispose();
+    _serviceSearchController.dispose();
     super.dispose();
   }
 }

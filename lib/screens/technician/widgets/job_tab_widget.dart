@@ -288,13 +288,6 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    // Text(
-                    //   'Có $_totalJobs đơn việc đang chờ xử lý',
-                    //   style: TextStyle(
-                    //     fontSize: 13,
-                    //     color: Colors.grey.shade600,
-                    //   ),
-                    // ),
                   ],
                 ),
               ),
@@ -706,7 +699,7 @@ class JobCard extends StatelessWidget {
                               ),
                               if (job['deposit'] != null && job['deposit'] > 0)
                                 Text(
-                                  'Cọc: ${FormatHelper.formatPrice(job['deposit'])}',
+                                  'Đã cọc trước: ${FormatHelper.formatPrice(job['deposit'])}',
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: Colors.grey.shade600,

@@ -124,7 +124,7 @@ class RealtimeService {
       _channel = IOWebSocketChannel(socket);
 
       // reset delay khi connect thành công
-      _reconnectDelay = 2000;
+      _reconnectDelay = 5000;
 
       _channel.stream.listen(
         _handleEvent,

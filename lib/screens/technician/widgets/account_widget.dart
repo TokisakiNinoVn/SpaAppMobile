@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/routes/config/technician_router_config.dart';
 import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/helper/full_screen_list_image.dart';
 import 'package:spa_app/services/auth_service.dart';
@@ -499,7 +500,7 @@ class _AccountTabState extends State<AccountTab> {
                       icon: Icons.bar_chart,
                       label: 'Thống kê doanh thu',
                       onTap: () {
-                        context.go('/home-technician/technician-update-service');
+                        context.go(TechnicianRouterConfig.statistical);
                       },
                     ),
                   ],

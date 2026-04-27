@@ -104,10 +104,12 @@ class _DetailsNewOrderScreenState extends State<DetailsNewOrderScreen> {
     try {
       final data = {
         'orderId': widget.orderId,
-        'result': 'accept',
+        'result': 'approved',
         'noteTechnician': note,
       };
       final response = await _orderService.updateStatus(data);
+      // appLog('response : $response');
+
       if (response['success'] == true) {
         setState(() => isLoading = false);
         if (!mounted) return;
