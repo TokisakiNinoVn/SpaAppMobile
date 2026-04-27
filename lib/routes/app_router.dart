@@ -24,7 +24,7 @@ import 'package:spa_app/screens/auth/forgetpasword/reset_password.dart';
 import 'package:spa_app/screens/technician/add_technician_screen.dart';
 import 'package:spa_app/screens/technician/edit_add_technician.dart';
 import 'package:spa_app/screens/technician/home_technician_screen.dart';
-import 'package:spa_app/screens/technician/order/new_order.dart';
+import 'package:spa_app/screens/technician/order/details_new_order.dart';
 import 'package:spa_app/screens/technician/service/technicianupdate_service.dart';
 import 'package:spa_app/screens/technician/technician/user_edit_technician.dart';
 

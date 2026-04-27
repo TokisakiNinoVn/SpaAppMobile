@@ -3,6 +3,7 @@ import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/screens/customer/address/add.dart';
 import 'package:spa_app/screens/customer/address/edit.dart';
 import 'package:spa_app/screens/customer/address/list.dart';
+import 'package:spa_app/screens/customer/order/create_automatic_matching_order.dart';
 import 'package:spa_app/screens/customer/order/create_book_order.dart';
 import 'package:spa_app/screens/customer/order/create_order_customer.dart';
 import 'package:spa_app/screens/customer/deposit/choose_package.dart';
@@ -132,8 +133,22 @@ final List<GoRoute> customerRoutes = [
         ),
 
         GoRoute(
-            path: 'automatic-matching',
-            builder: (context, state) => AutomaticMatchingScreen(),
+          path: 'automatic-matching',
+          builder: (context, state) => AutomaticMatchingScreen(),
+          routes: [
+            GoRoute(
+              redirect: (context, state) async {
+                final loggedIn = await CheckLoginHelper.isLoggedIn();
+                if (!loggedIn) return '/login-otp';
+                return null;
+              },
+              path: 'create-order',
+              builder: (context, state) {
+                final data = state.extra as Map<String, dynamic>;
+                return CreateAutoMatchingOrderScreen(data: data);
+              },
+            ),
+          ]
         ),
 
         GoRoute(

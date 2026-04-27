@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/services/user_discount_service.dart';
@@ -24,21 +25,21 @@ enum PaymentMethod {
   const PaymentMethod(this.label, this.name);
 }
 
-class CreateOrderTechnicianScreen extends StatefulWidget {
+class CreateAutoMatchingOrderScreen extends StatefulWidget {
   final dynamic data;
 
-  const CreateOrderTechnicianScreen({
+  const CreateAutoMatchingOrderScreen({
     super.key,
     required this.data,
   });
 
   @override
-  State<CreateOrderTechnicianScreen> createState() =>
-      _CreateOrderTechnicianScreenState();
+  State<CreateAutoMatchingOrderScreen> createState() =>
+      _CreateAutoMatchingOrderScreenState();
 }
 
-class _CreateOrderTechnicianScreenState
-    extends State<CreateOrderTechnicianScreen> {
+class _CreateAutoMatchingOrderScreenState
+    extends State<CreateAutoMatchingOrderScreen> {
   final OrderService _orderService = OrderService();
   final DiscountService _discountService = DiscountService();
   final UserDiscountService _userDiscountService = UserDiscountService();
@@ -75,6 +76,7 @@ class _CreateOrderTechnicianScreenState
   @override
   void initState() {
     super.initState();
+    appLog("Data widget: ${widget.data}");
     _paymentMethod = PaymentMethod.zenhome;
     _loadCustomerProfile();
     _loadSavedDiscounts();
@@ -96,7 +98,7 @@ class _CreateOrderTechnicianScreenState
 
   int get _extraFee => int.tryParse(_moneyPrioritizeController.text.trim()) ?? 0;
 
-  int get _totalBeforeDiscount => (widget.data['serviceTimePrice']['price'] as int) + _extraFee;
+  int get _totalBeforeDiscount => (widget.data['timePrice']['price'] as int) + _extraFee;
 
   int get _finalTotal {
     if (_discountData != null) {
@@ -143,7 +145,7 @@ class _CreateOrderTechnicianScreenState
       date.year, date.month, date.day, time.hour, time.minute,
     );
 
-    if (selectedDateTime.isBefore(DateTime.now().add(const Duration(minutes: 20)))) {
+    if (selectedDateTime.isBefore(DateTime.now())) {
       if (mounted) {
         showDialog(
           context: context,
@@ -202,12 +204,12 @@ class _CreateOrderTechnicianScreenState
   Future<void> _createOrder() async {
     final moneyPrioritizeRaw = _moneyPrioritizeController.text.trim();
     final moneyPrioritize = moneyPrioritizeRaw.isEmpty ? 0 : int.tryParse(moneyPrioritizeRaw) ?? 0;
-    final price = widget.data['serviceTimePrice']['price'] as int;
+    final price = widget.data['timePrice']['price'] as int;
     final data = {
-      'typeOrder': 'order-now',
-      "technicianId": widget.data['technician']['id'],
-      "serviceTimePriceId": widget.data['serviceTimePrice']['_id'],
-      "nameService": widget.data['nameService'],
+      'typeOrder': 'automatic-matching',
+      // "technicianId": widget.data['technician']['id'],
+      "timePriceId": widget.data['timePrice']['_id'],
+      "nameService": widget.data['service']['name'],
       "address": _addressController.text.trim(),
       "paymentMethod": _paymentMethod!.name,
       "noteCustomer": _noteController.text.trim(),
@@ -262,7 +264,7 @@ class _CreateOrderTechnicianScreenState
     try {
       balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
       final rawProfile = await SharedPrefs.getValue(PrefType.string, "customerProfile");
-      appLog("data Profile: $rawProfile");
+      // appLog("data Profile: $rawProfile");
       if (rawProfile != null) {
         final profile = jsonDecode( rawProfile);
         // Lấy danh sách địa chỉ
@@ -298,7 +300,7 @@ class _CreateOrderTechnicianScreenState
           _discounts = response['data']['discounts'] ?? [];
           _isLoading = false;
         });
-      appLog("list discount: $_discounts");
+      // appLog("list discount: $_discounts");
       } else {
         setState(() {
           _errorMessage = response['message'] ?? 'Không thể tải danh sách mã giảm giá';
@@ -472,7 +474,7 @@ class _CreateOrderTechnicianScreenState
                             });
 
                             final price = (widget.data[
-                            'serviceTimePrice']['price'] as int);
+                            'timePrice']['price'] as int);
 
                             try {
                               final response =
@@ -668,7 +670,7 @@ class _CreateOrderTechnicianScreenState
   @override
   Widget build(BuildContext context) {
     final technician = widget.data['technician'];
-    final service = widget.data['serviceTimePrice'];
+    final service = widget.data['timePrice'];
     final workingHours = _formatWorkingHours(_selectedDateTime);
     final totalOrderValue = _totalBeforeDiscount;
 
@@ -717,7 +719,8 @@ class _CreateOrderTechnicianScreenState
                   ),
                 ),
 
-              if (_selectedDateTime.isBefore(DateTime.now().add(const Duration(minutes: 20))))
+              // if (_selectedDateTime.isBefore(DateTime.now().add(const Duration(minutes: 20))))
+              if (_selectedDateTime.isBefore(DateTime.now()))
                 const Text(
                   "Thời gian phải sau thời điểm hiện tại ít nhất 20 phút",
                   style: TextStyle(color: Colors.red, fontSize: 12),
@@ -786,8 +789,8 @@ class _CreateOrderTechnicianScreenState
                     onPressed: _canSubmit ? _createOrder : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                      _canSubmit ? Colors.amber : Colors.grey,
-                      foregroundColor: Colors.black,
+                      _canSubmit ? ColorConfig.primary : Colors.grey,
+                      foregroundColor: ColorConfig.textWhite,
                     ),
                     child: const Text("Đặt ngay"),
                   ),
@@ -808,40 +811,40 @@ class _CreateOrderTechnicianScreenState
             _Section(
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 26,
-                        backgroundImage: NetworkImage(
-                            FormatHelper.formatNetworkImageUrl(technician['avatar']['url'])),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              FormatHelper.formatNameTechnician(technician['fullName']),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            Text("⭐ ${technician['rate']}"),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.spa, color: Colors.grey),
-                    ],
-                  ),
-                  const Divider(height: 24),
+                  // Row(
+                  //   children: [
+                  //     CircleAvatar(
+                  //       radius: 26,
+                  //       backgroundImage: NetworkImage(
+                  //           FormatHelper.formatNetworkImageUrl(technician['avatar']['url'])),
+                  //     ),
+                  //     const SizedBox(width: 12),
+                  //     Expanded(
+                  //       child: Column(
+                  //         crossAxisAlignment: CrossAxisAlignment.start,
+                  //         children: [
+                  //           Text(
+                  //             FormatHelper.formatNameTechnician(technician['fullName']),
+                  //             style: const TextStyle(fontWeight: FontWeight.w600),
+                  //           ),
+                  //           Text("⭐ ${technician['rate']}"),
+                  //         ],
+                  //       ),
+                  //     ),
+                  //     const Icon(Icons.spa, color: Colors.grey),
+                  //   ],
+                  // ),
+                  // const Divider(height: 24),
                   _InfoRow(
                     "Dịch vụ",
-                    widget.data['nameService'],
+                    widget.data['service']['name'],
                     valueStyle: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
-                  _InfoRow("Thời gian", "${service['duration']} phút"),
-                  _InfoRow("Giá", "${FormatHelper.formatPrice(widget.data['serviceTimePrice']['price'])} đ"),
+                  _InfoRow("Thời gian", "${widget.data['timePrice']['duration']} phút"),
+                  _InfoRow("Giá", "${FormatHelper.formatPrice(widget.data['timePrice']['price'])} đ"),
                 ],
               ),
             ),
@@ -884,20 +887,20 @@ class _CreateOrderTechnicianScreenState
                       ),
                     ),
                   ),
-                  if (_selectedDateTime.isBefore(DateTime.now().add(const Duration(minutes: 20))))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.warning, color: Colors.red, size: 16),
-                          SizedBox(width: 4),
-                          Text(
-                            "Thời gian này đã qua, vui lòng chọn thời gian khác",
-                            style: TextStyle(color: Colors.red, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
+                  // if (_selectedDateTime.isBefore(DateTime.now().add(const Duration(minutes: 20))))
+                  //   Padding(
+                  //     padding: const EdgeInsets.only(top: 8.0),
+                  //     child: Row(
+                  //       children: const [
+                  //         Icon(Icons.warning, color: Colors.red, size: 16),
+                  //         SizedBox(width: 4),
+                  //         Text(
+                  //           "Thời gian này đã qua, vui lòng chọn thời gian khác",
+                  //           style: TextStyle(color: Colors.red, fontSize: 12),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
                 ],
               ),
             ),
@@ -947,15 +950,27 @@ class _CreateOrderTechnicianScreenState
                             'Số dư ví: ${FormatHelper.formatPrice(balance)} đ',
                             style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
-                          TextButton(
-                            onPressed: () {
+                          InkWell(
+                            borderRadius: BorderRadius.circular(40),
+                            onTap: () {
                               context.push(CustomerRouterConfig.choosePackage);
                             },
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.amber,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: ColorConfig.primary,
+                                borderRadius: BorderRadius.circular(40),
+                              ),
+                              child: const Text(
+                                'Nạp tiền',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                ),
+                              ),
                             ),
-                            child: const Text('Nạp tiền'),
                           ),
+
                         ],
                       ),
                     ),
@@ -1075,7 +1090,7 @@ class _CreateOrderTechnicianScreenState
                 children: [
                   _InfoRow(
                     "Giá dịch vụ",
-                    "${FormatHelper.formatPrice(widget.data['serviceTimePrice']['price'])} đ",
+                    "${FormatHelper.formatPrice(widget.data['timePrice']['price'])} đ",
                   ),
                   if (_extraFee > 0)
                     _InfoRow(

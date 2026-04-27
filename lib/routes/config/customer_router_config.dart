@@ -20,7 +20,6 @@ class CustomerRouterConfig {
   static String editAddress = "/home-customer/list-address/edit-address";
 
   static String orderNow = "/home-customer/order-now";
-  static String automaticMatching = "/home-customer/automatic-matching";
 
   static String createReqWithdraw = "/home-customer/withdraw";
   static String confirmWithdraw = "/home-customer/withdraw/confirm";
@@ -33,5 +32,9 @@ class CustomerRouterConfig {
   static String listBookTechnician = "/home-customer/book";
   static String detailBookTechnician = "/home-customer/book/detail";
   static String createBookOrder = "/home-customer/book/create-order";
+
+  // Auto Matching Order
+  static String automaticMatching = "/home-customer/automatic-matching";
+  static String createAutomaticMatchingOrder = "/home-customer/automatic-matching/create-order";
 
 }

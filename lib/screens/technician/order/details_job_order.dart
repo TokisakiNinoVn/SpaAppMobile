@@ -5,18 +5,18 @@ import 'package:spa_app/services/order_service.dart';
 import '../../../helper/format_helper.dart';
 import 'dart:async';
 
-class DetailsNewOrderScreen extends StatefulWidget {
+class DetailsJobOrderScreen extends StatefulWidget {
   final String orderId;
-  const DetailsNewOrderScreen({
+  const DetailsJobOrderScreen({
     super.key,
     required this.orderId,
   });
 
   @override
-  State<DetailsNewOrderScreen> createState() => _DetailsNewOrderScreenState();
+  State<DetailsJobOrderScreen> createState() => _DetailsJobOrderScreenState();
 }
 
-class _DetailsNewOrderScreenState extends State<DetailsNewOrderScreen> {
+class _DetailsJobOrderScreenState extends State<DetailsJobOrderScreen> {
   final OrderService _orderService = OrderService();
   Map<String, dynamic>? orderDetail;
   bool isLoading = true;

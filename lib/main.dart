@@ -163,44 +163,55 @@ void _onNotificationTapBackground(NotificationResponse response) {
 }
 
 /// Hàm xử lý chung khi click notification
-void _handleNotificationTap(String? payload) {
+Future<void> _handleNotificationTap(String? payload) async {
   appLog("🚀 Handling notification tap with payload: $payload");
 
-  if (payload != null && payload.startsWith('order_')) {
-    final orderId = payload.substring(6);
-    appLog("🚀 Navigate to order from notification: $orderId");
+  final isLogin = await SharedPrefs.getValue(PrefType.bool, 'isLogin');
+  final roleLogin = await SharedPrefs.getValue(PrefType.string, 'role');
+  // appLog("🚀 [FOREGROUND] Processing message directly: type=$type, orderId=$orderId");
+  if (isLogin == true && roleLogin?.replaceAll('"', '').trim() == 'ktv') {
 
-    // Sử dụng WidgetsBinding để đảm bảo điều hướng sau khi build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      try {
-        appRouter.go('/home-technician/orders/$orderId');
-        appLog("✅ Navigation successful to order: $orderId");
-      } catch (e) {
-        appLog("❌ Navigation failed: $e");
-        // Thử lại sau 1 giây
-        Future.delayed(const Duration(seconds: 1), () {
+    if (payload != null && payload.startsWith('order_')) {
+      final orderId = payload.substring(6);
+      appLog("🚀 Navigate to order from notification: $orderId");
+
+      // Sử dụng WidgetsBinding để đảm bảo điều hướng sau khi build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
           appRouter.go('/home-technician/orders/$orderId');
-        });
-      }
-    });
-  } else {
-    appLog("⚠️ Invalid or missing payload: $payload");
+          appLog("✅ Navigation successful to order: $orderId");
+        } catch (e) {
+          appLog("❌ Navigation failed: $e");
+          // Thử lại sau 1 giây
+          Future.delayed(const Duration(seconds: 1), () {
+            appRouter.go('/home-technician/orders/$orderId');
+          });
+        }
+      });
+    } else {
+      appLog("⚠️ Invalid or missing payload: $payload");
+    }
   }
+
 }
 
 /// Hàm xử lý trực tiếp khi nhận được message ở foreground (không cần click notification)
-void _handleForegroundMessage(RemoteMessage message) {
+Future<void> _handleForegroundMessage(RemoteMessage message) async {
   final data = message.data;
   final type = data['type'];
   final orderId = data['orderId'];
 
-  // appLog("🚀 [FOREGROUND] Processing message directly: type=$type, orderId=$orderId");
 
-  if (type == 'order' && orderId != null) {
+  final isLogin = await SharedPrefs.getValue(PrefType.bool, 'isLogin');
+  final roleLogin = await SharedPrefs.getValue(PrefType.string, 'role');
+  // appLog("🚀 [FOREGROUND] Processing message directly: type=$type, orderId=$orderId");
+  if (isLogin == true && roleLogin?.replaceAll('"', '').trim() == 'ktv') {
+
+  // if (type == 'order' && orderId != null) {
     // Hiển thị dialog hỏi người dùng có muốn xem chi tiết không
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showOrderDialog(orderId);
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _showOrderDialog(orderId);
+    // });
   }
 }
 
@@ -259,17 +270,17 @@ Future<void> main() async {
   // appLog("🔔 Local notifications initialized");
 
   /// Request permission
-  // final settings = await FirebaseMessaging.instance.requestPermission(
-  //   alert: true,
-  //   badge: true,
-  //   sound: true,
-  //   provisional: false,
-  // );
-  // // appLog("🔐 Permission status: ${settings.authorizationStatus}");
-  //
-  // /// Lấy FCM token
-  // final token = await FirebaseMessaging.instance.getToken();
-  // appLog("📱 FCM Token: $token");
+  final settings = await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+    provisional: false,
+  );
+  // appLog("🔐 Permission status: ${settings.authorizationStatus}");
+
+  /// Lấy FCM token
+  final token = await FirebaseMessaging.instance.getToken();
+  appLog("📱 FCM Token: $token");
 
   /// Realtime service
   final realtimeService = RealtimeService();
@@ -299,7 +310,7 @@ Future<void> main() async {
   });
 
   /// Click notification khi app đang ở background (do FCM gửi trực tiếp)
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
     final data = message.data;
     final type = data['type'];
     final orderId = data['orderId'];
@@ -307,14 +318,22 @@ Future<void> main() async {
     appLog("🔘 [FCM - OPENED] Notification clicked from background");
     appLog("📦 Data: $data");
 
-    if (type == 'order' && orderId != null) {
-      appLog("🚀 Navigate to order from FCM: $orderId");
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        appRouter.go('/home-technician/orders/$orderId');
-      });
+    final isLogin = await SharedPrefs.getValue(PrefType.bool, 'isLogin');
+    final roleLogin = await SharedPrefs.getValue(PrefType.string, 'role');
+    // appLog("🚀 [FOREGROUND] Processing message directly: type=$type, orderId=$orderId");
+    if (isLogin == true && roleLogin?.replaceAll('"', '').trim() == 'ktv') {
+      if (type == 'order' && orderId != null) {
+        appLog("🚀 Navigate to order from FCM: $orderId");
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          appRouter.go('/home-technician/orders/$orderId');
+        });
+      } else {
+        appLog("⚠️ Invalid navigation data from FCM");
+      }
     } else {
-      appLog("⚠️ Invalid navigation data from FCM");
+      appLog("$isLogin - $roleLogin");
     }
+
   });
 
   /// App killed -> open from notification

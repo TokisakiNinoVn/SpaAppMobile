@@ -21,61 +21,144 @@ class RealtimeService {
   late WebSocketChannel _channel;
   final BuildContext? context;
   final void Function(Map<String, dynamic>)? onUserStatusUpdate;
+  final void Function(Map<String, dynamic>)? onNewOrder;
+  final void Function(String orderId)? onOrderExpired;
+  bool _isDisposed = false;
 
   // RealtimeService(this.context, {this.onUserStatusUpdate});
-  RealtimeService({this.context, this.onUserStatusUpdate}) {
-    // ⚡ Đây là vị trí đúng cho đoạn kiểm tra môi trường
-    if (AppConfig.isProduction) {
-      // Cậu có thể thêm logic đặc biệt cho production ở đây
-    }
+  // RealtimeService({this.context, this.onUserStatusUpdate}) {
+  //   // ⚡ Đây là vị trí đúng cho đoạn kiểm tra môi trường
+  //   if (AppConfig.isProduction) {
+  //     // Cậu có thể thêm logic đặc biệt cho production ở đây
+  //   }
+  // }
+
+  RealtimeService({
+    this.context,
+    this.onUserStatusUpdate,
+    this.onNewOrder,
+    this.onOrderExpired,
+  });
+
+  void dispose() {
+    _isDisposed = true;
+    // Hủy subscription...
   }
 
+  int _reconnectDelay = 2000; // bắt đầu 2s
+  final int _maxReconnectDelay = 30000;
+
   // Dùng cái này khi AppConfig.isProduction == true
+  // Future<void> connect() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final token = prefs.getString('token');
+  //
+  //   // 🚧 Tránh kết nối khi chưa có token — tránh crash WebSocket
+  //   if (token == null || token.isEmpty) {
+  //     appLog("[RealtimeService] ❌ Không tìm thấy token để kết nối WebSocket");
+  //     return;
+  //   }
+  //
+  //   // ⚙️ Tự động chọn link websocket dựa vào environment
+  //   final uri = AppConfig.isProduction
+  //       ? Uri.parse(AppConfig.apiWebsocket)
+  //       : Uri(
+  //     scheme: 'ws',
+  //     host: AppConfig.ip,
+  //     port: 5001,
+  //     path: '/api/private/ws/realtime',
+  //   );
+  //
+  //   try {
+  //     final socket = await WebSocket.connect(
+  //       uri.toString(),
+  //       headers: {
+  //         'Authorization': 'Bearer $token',
+  //       },
+  //     );
+  //
+  //     _channel = IOWebSocketChannel(socket);
+  //
+  //     _channel.stream.listen(
+  //       _handleEvent,
+  //       onError: (error) {
+  //         appLog('[RealtimeService] ❌ Lỗi WebSocket: $error');
+  //       },
+  //       onDone: () {
+  //         appLog('[RealtimeService] 🔴 WebSocket đã đóng');
+  //       },
+  //     );
+  //   } catch (e) {
+  //     appLog('[RealtimeService] ❌ Không thể kết nối WebSocket: $e');
+  //   }
+  // }
+
   Future<void> connect() async {
+    if (_isDisposed) return;
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
-    // 🚧 Tránh kết nối khi chưa có token — tránh crash WebSocket
     if (token == null || token.isEmpty) {
-      debugPrint("[RealtimeService] ❌ Không tìm thấy token để kết nối WebSocket");
+      appLog("[RealtimeService] ❌ Không có token");
       return;
     }
 
-    // ⚙️ Tự động chọn link websocket dựa vào environment
     final uri = AppConfig.isProduction
-        ? Uri.parse(AppConfig.apiWebsocket) // production
+        ? Uri.parse(AppConfig.apiWebsocket)
         : Uri(
-      scheme: 'ws',                      // dev/test
+      scheme: 'ws',
       host: AppConfig.ip,
       port: 5001,
-      path: '/api/private/ws/account-status',
+      path: '/api/private/ws/realtime',
     );
 
     try {
+      appLog('[RealtimeService] 🔌 Connecting...');
+
       final socket = await WebSocket.connect(
         uri.toString(),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
-      appLog("infor socket: ${socket.toString()}");
-
       _channel = IOWebSocketChannel(socket);
+
+      // reset delay khi connect thành công
+      _reconnectDelay = 2000;
 
       _channel.stream.listen(
         _handleEvent,
         onError: (error) {
-          debugPrint('[RealtimeService] ❌ Lỗi WebSocket: $error');
+          appLog('[RealtimeService] ❌ Error: $error');
+          _reconnect();
         },
         onDone: () {
-          debugPrint('[RealtimeService] 🔴 WebSocket đã đóng');
+          appLog('[RealtimeService] 🔴 Closed');
+          _reconnect();
         },
+        cancelOnError: true,
       );
     } catch (e) {
-      debugPrint('[RealtimeService] ❌ Không thể kết nối WebSocket: $e');
+      appLog('[RealtimeService] ❌ Connect fail: $e');
+      _reconnect();
     }
   }
+
+  void _reconnect() {
+    if (_isDisposed) return;
+
+    appLog('[RealtimeService] 🔄 Reconnecting in ${_reconnectDelay / 1000}s');
+
+    Future.delayed(Duration(milliseconds: _reconnectDelay), () {
+      if (_isDisposed) return;
+
+      connect();
+
+      // exponential backoff
+      _reconnectDelay = (_reconnectDelay * 2).clamp(2000, _maxReconnectDelay);
+    });
+  }
+
 
   Future<void> _handleEvent(dynamic event) async {
     try {
@@ -98,7 +181,8 @@ class RealtimeService {
 
         onUserStatusUpdate?.call(data);
 
-      } else if (data is Map<String, dynamic> &&
+      }
+      else if (data is Map<String, dynamic> &&
           data['type'] == 'notification_from_admin') {
         final prefs = await SharedPreferences.getInstance();
         final String role =
@@ -112,8 +196,26 @@ class RealtimeService {
           );
         }
       }
+      else if (data['type'] == 'NEW_ORDER') {
+        final order = data['data'];
+
+        onNewOrder?.call(order);
+
+        // 🔔 optional: show local notification nếu muốn
+        // _showNotification(
+        //   title: 'Đơn mới',
+        //   body: 'Bạn có một đơn việc mới',
+        // );
+      }
+
+      else if (data['type'] == 'ORDER_EXPIRED') {
+        final orderId = data['orderId'];
+
+        onOrderExpired?.call(orderId);
+      }
+
     } catch (e) {
-      debugPrint('[RealtimeService] ❌ Lỗi khi decode dữ liệu: $e');
+      appLog('[RealtimeService] ❌ Lỗi khi decode dữ liệu: $e');
     }
   }
 
@@ -160,7 +262,7 @@ class RealtimeService {
         notificationDetails,
       );
     } else {
-      debugPrint("🛑 Không có quyền hiển thị thông báo");
+      appLog("🛑 Không có quyền hiển thị thông báo");
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final scaffoldMessenger = ScaffoldMessenger.maybeOf(context!);
@@ -178,7 +280,7 @@ class RealtimeService {
             ),
           );
         } else {
-          debugPrint("⚠️ ScaffoldMessenger chưa sẵn sàng.");
+          appLog("⚠️ ScaffoldMessenger chưa sẵn sàng.");
         }
       });
     }
@@ -186,6 +288,6 @@ class RealtimeService {
 
   void disconnect() {
     _channel.sink.close(status.goingAway);
-    print('[RealtimeService] 🔌 Ngắt kết nối WebSocket');
+    appLog('[RealtimeService] 🔌 Ngắt kết nối WebSocket');
   }
 }

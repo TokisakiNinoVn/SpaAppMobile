@@ -28,4 +28,17 @@ class OrderService {
   // Future<Map<String, dynamic>> deleteService(String serviceId) async {
   //   return await ApiMethodsPrivate.deleteRequest('${ServiceApiRoutes.deleteService}/$serviceId');
   // }
+
+  // Technician
+  Future<Map<String, dynamic>> listRequestOrder() async {
+    return await ApiMethodsPrivate.getRequest('${OrderApiRoutes.listRequestOrder}?status=pending&typeOrder=order-now,book&timeRange=2h');
+  }
+
+  Future<Map<String, dynamic>> listApprovedBookOrder() async {
+    return await ApiMethodsPrivate.getRequest('${OrderApiRoutes.listRequestOrder}?status=approved&typeOrder=book&timeRange=7d');
+  }
+
+  Future<Map<String, dynamic>> listFilterOrder(String queryParams) async {
+    return await ApiMethodsPrivate.getRequest('${OrderApiRoutes.listRequestOrder}?$queryParams');
+  }
 }
