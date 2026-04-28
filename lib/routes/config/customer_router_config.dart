@@ -26,11 +26,13 @@ class CustomerRouterConfig {
   static String historyWithdraw = "/home-customer/withdraw/history";
 
   // Order Now
-  static String createOrderNow = "/home-customer/list-technician/create-order-technician";
+  static String listOrderNowTechnician = "/home-customer/order-now";
+  static String detailOrderNowTechnician = "/home-customer/order-now/details";
+  static String createOrderNow = "/home-customer/order-now/create-order";
 
   // Book Order
   static String listBookTechnician = "/home-customer/book";
-  static String detailBookTechnician = "/home-customer/book/detail";
+  static String detailBookTechnician = "/home-customer/book/details";
   static String createBookOrder = "/home-customer/book/create-order";
 
   // Auto Matching Order

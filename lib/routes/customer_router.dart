@@ -50,12 +50,12 @@ final List<GoRoute> customerRoutes = [
                 builder: (context, state) => const ListLikeTechnicianScreen(),
               ),
               GoRoute(
-                  path: 'detail-technician/:id',
-                  redirect: (context, state) async {
-                    final loggedIn = await CheckLoginHelper.isLoggedIn();
-                    if (!loggedIn) return '/login-otp';
-                    return null;
-                  },
+                  path: 'details/:id',
+                  // redirect: (context, state) async {
+                  //   final loggedIn = await CheckLoginHelper.isLoggedIn();
+                  //   if (!loggedIn) return '/login-otp';
+                  //   return null;
+                  // },
                   builder: (context, state) {
                     final id = state.pathParameters['id']!;
                     final type = state.extra as String?;
@@ -77,7 +77,7 @@ final List<GoRoute> customerRoutes = [
                   // ]
               ),
               GoRoute(
-                path: 'create-order-technician',
+                path: 'create-order',
                 // builder: (context, state) => const CreateOrderTechnicianScreen(),
                 // path: 'service/edit',
                 builder: (context, state) {
@@ -98,12 +98,12 @@ final List<GoRoute> customerRoutes = [
           builder: (context, state) => ListTechnicianOrderBook(),
           routes: [
             GoRoute(
-                path: 'detail/:id',
-                redirect: (context, state) async {
-                  final loggedIn = await CheckLoginHelper.isLoggedIn();
-                  if (!loggedIn) return '/login-otp';
-                  return null;
-                },
+                path: 'details/:id',
+                // redirect: (context, state) async {
+                //   final loggedIn = await CheckLoginHelper.isLoggedIn();
+                //   if (!loggedIn) return '/login-otp';
+                //   return null;
+                // },
                 builder: (context, state) {
                   final id = state.pathParameters['id']!;
                   final type = state.extra as String?;
@@ -222,52 +222,52 @@ final List<GoRoute> customerRoutes = [
 
           ]
         ),
-        GoRoute(
-          path: 'list-technician',
-          builder: (context, state) => const ListTechnicianScreen(),
-          routes: [
-            GoRoute(
-              path: 'list-like-technician',
-              builder: (context, state) => const ListLikeTechnicianScreen(),
-            ),
-            GoRoute(
-                path: 'detail-technician/:id',
-                redirect: (context, state) async {
-                  final loggedIn = await CheckLoginHelper.isLoggedIn();
-                  if (!loggedIn) return '/login-otp';
-                  return null;
-                },
-                builder: (context, state) {
-                  final id = state.pathParameters['id']!;
-                  final type = state.extra as String?;
-                  return DetailsTechnicianScreen(
-                    id: id,
-                    type: type ?? '',
-                  );
-                },
-                routes: [
-                  // GoRoute(
-                  //   path: 'create-order-technician',
-                  //   // builder: (context, state) => const CreateOrderTechnicianScreen(),
-                  //   // path: 'service/edit',
-                  //   builder: (context, state) {
-                  //     final data = state.extra as Map<String, dynamic>;
-                  //     return CreateOrderTechnicianScreen(data: data);
-                  //   },
-                  // ),
-                ]
-            ),
-            // GoRoute(
-            //   path: 'create-order-technician',
-            //   // builder: (context, state) => const CreateOrderTechnicianScreen(),
-            //   // path: 'service/edit',
-            //   builder: (context, state) {
-            //     final data = state.extra as Map<String, dynamic>;
-            //     return CreateOrderTechnicianScreen(data: data);
-            //   },
-            // ),
-          ]
-        ),
+        // GoRoute(
+        //   path: 'order-now',
+        //   builder: (context, state) => const ListTechnicianScreen(),
+        //   routes: [
+        //     GoRoute(
+        //       path: 'list-like-technician',
+        //       builder: (context, state) => const ListLikeTechnicianScreen(),
+        //     ),
+        //     GoRoute(
+        //         path: 'detail/:id',
+        //         // redirect: (context, state) async {
+        //         //   final loggedIn = await CheckLoginHelper.isLoggedIn();
+        //         //   if (!loggedIn) return '/login-otp';
+        //         //   return null;
+        //         // },
+        //         builder: (context, state) {
+        //           final id = state.pathParameters['id']!;
+        //           final type = state.extra as String?;
+        //           return DetailsTechnicianScreen(
+        //             id: id,
+        //             type: type ?? '',
+        //           );
+        //         },
+        //         routes: [
+        //           // GoRoute(
+        //           //   path: 'create-order-technician',
+        //           //   // builder: (context, state) => const CreateOrderTechnicianScreen(),
+        //           //   // path: 'service/edit',
+        //           //   builder: (context, state) {
+        //           //     final data = state.extra as Map<String, dynamic>;
+        //           //     return CreateOrderTechnicianScreen(data: data);
+        //           //   },
+        //           // ),
+        //         ]
+        //     ),
+        //     // GoRoute(
+        //     //   path: 'create-order-technician',
+        //     //   // builder: (context, state) => const CreateOrderTechnicianScreen(),
+        //     //   // path: 'service/edit',
+        //     //   builder: (context, state) {
+        //     //     final data = state.extra as Map<String, dynamic>;
+        //     //     return CreateOrderTechnicianScreen(data: data);
+        //     //   },
+        //     // ),
+        //   ]
+        // ),
         GoRoute(
           path: 'history-order',
           builder: (context, state) => const HistoryOrderScreen(),
