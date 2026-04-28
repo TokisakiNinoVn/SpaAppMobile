@@ -745,7 +745,7 @@ class _ListTechnicianOrderBookState extends State<ListTechnicianOrderBook> {
 
                       GestureDetector(
                         onTap: () {
-                          context.go(CustomerRouterConfig.listLike);
+                          context.push(CustomerRouterConfig.listLike);
                         },
                         child: Container(
                           width: 40,
@@ -890,7 +890,7 @@ class _ListTechnicianOrderBookState extends State<ListTechnicianOrderBook> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Không có kỹ thuật viên nào', // Đã sửa theo yêu cầu
+              'Không có kỹ thuật viên nào',
               style: TextStyle(
                 color: ColorConfig.textBlack,
                 fontSize: 16,
@@ -1057,7 +1057,8 @@ class _ListTechnicianOrderBookState extends State<ListTechnicianOrderBook> {
                     BorderRadius.circular(20),
                     onTap: () {
                       context.go(
-                        '/home-customer/list-technician/detail-technician/${tech['_id']}',
+                        '${CustomerRouterConfig.detailBookTechnician}/${tech['_id']}',
+                        extra: 'book',
                       );
                     },
                     child: Container(

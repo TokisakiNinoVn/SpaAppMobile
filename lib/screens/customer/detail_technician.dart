@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/check_login_helper.dart';
+import 'package:spa_app/routes/config/global_router_config.dart';
 
 import 'package:spa_app/services/like_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -36,12 +38,22 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
   // State management
   Map<String, dynamic>? _technicianDetails;
   bool _isLoading = true;
+  bool isLogin = false;
   String _errorMessage = '';
 
   @override
   void initState() {
     super.initState();
-    _loadTechnicianDetails();
+    checkLogin();
+  }
+
+  Future<void> checkLogin() async {
+    final loggedIn = await CheckLoginHelper.isLoggedIn();
+    if (loggedIn) {
+      isLogin = true;
+      _loadTechnicianDetails();
+    } else
+      context.go(GlobalRouterConfig.loginOTP);
   }
 
   Future<void> _loadTechnicianDetails() async {

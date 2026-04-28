@@ -927,8 +927,12 @@ class _ListTechnicianOrderNowState extends State<ListTechnicianOrderNow> {
           return InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () {
-              context.go(
-                '/home-customer/list-technician/detail-technician/${tech['_id']}',
+              // context.go(
+              //   '/home-customer/list-technician/detail-technician/${tech['_id']}',
+              // );
+              context.push(
+                '${CustomerRouterConfig.detailOrderNowTechnician}/${tech['_id']}',
+                extra: 'now',
               );
             },
             child: Container(
@@ -1056,8 +1060,9 @@ class _ListTechnicianOrderNowState extends State<ListTechnicianOrderNow> {
                     borderRadius:
                     BorderRadius.circular(20),
                     onTap: () {
-                      context.go(
-                        '/home-customer/list-technician/detail-technician/${tech['_id']}',
+                      context.push(
+                        '${CustomerRouterConfig.detailOrderNowTechnician}/${tech['_id']}',
+                        extra: 'now',
                       );
                     },
                     child: Container(
