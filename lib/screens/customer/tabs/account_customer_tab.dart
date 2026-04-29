@@ -249,7 +249,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _kWhite,
+      backgroundColor: ColorConfig.primaryBackground,
       body: RefreshIndicator(
         key: _refreshIndicatorKey,
         onRefresh: _onRefresh,
@@ -466,7 +466,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
   Widget _buildMenuSection() {
     final items = [
       MenuEntry(icon: Icons.person_outline_rounded, label: 'Thông tin cá nhân', route: CustomerRouterConfig.updateProfile),
-      MenuEntry(icon: Icons.favorite_border_rounded, label: 'Kỹ thuật viên yêu thích', route: CustomerRouterConfig.listLike),
+      // MenuEntry(icon: Icons.favorite_border_rounded, label: 'Kỹ thuật viên yêu thích', route: CustomerRouterConfig.listLike),
       MenuEntry(icon: Icons.discount_outlined, label: 'Mã giảm giá', route: CustomerRouterConfig.listDiscountScreen),
       MenuEntry(icon: Icons.location_on_outlined, label: 'Địa chỉ của tôi', route: CustomerRouterConfig.listAddress),
     ];

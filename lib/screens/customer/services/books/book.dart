@@ -650,12 +650,12 @@ class _ListTechnicianOrderBookState extends State<ListTechnicianOrderBook> {
     }
 
     return Scaffold(
-      backgroundColor: ColorConfig.greyListTechnician,
+      backgroundColor: ColorConfig.primaryBackground,
       appBar: PreferredSize(
         preferredSize: const ui.Size.fromHeight(110),
         child: AppBar(
           automaticallyImplyLeading: false,
-          backgroundColor: ColorConfig.greyListTechnician,
+          backgroundColor: ColorConfig.primaryBackground,
           elevation: 0,
           flexibleSpace: SafeArea(
             child: Padding(

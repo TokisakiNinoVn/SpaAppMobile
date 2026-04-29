@@ -167,7 +167,7 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPLoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ColorConfig.primaryBackground,
       body: FadeTransition(
         opacity: _fadeAnim,
         child: SafeArea(

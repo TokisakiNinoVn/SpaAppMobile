@@ -87,7 +87,7 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorConfig.white,
+      backgroundColor: ColorConfig.primaryBackground,
       body: Column(
         children: [
           /// ─── HEADER ───────────────────────────────────────────
@@ -170,16 +170,7 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
                     ),
                   ),
                 ],
-              ),
-              // const SizedBox(height: 12),
-              // Text(
-              //   "Kỹ thuật viên phù hợp nhất ngẫu nhiên — nhanh, chính xác, tận tâm.",
-              //   style: TextStyle(
-              //     fontSize: 14,
-              //     color: Colors.grey.shade600,
-              //     height: 1.55,
-              //   ),
-              // ),
+              )
             ],
           ),
         ),
@@ -196,7 +187,11 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(.2),
+          // color: Colors.grey.withOpacity(.2),
+          border: Border.all(
+            color: Colors.black26,
+            width: .4,
+          ),
           borderRadius: BorderRadius.circular(40),
           boxShadow: [
             BoxShadow(
@@ -213,7 +208,7 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
             hintText: "Tìm kiếm dịch vụ...",
             hintStyle: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade400,
+              color: ColorConfig.textBlack.withOpacity(.7),
             ),
             prefixIcon: Icon(Icons.search_rounded,
                 size: 20, color: ColorConfig.primary),
@@ -235,14 +230,10 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
     );
   }
 
-  // ──────────────────────────────────────────────────────────────────
-  // SERVICE TILE
-  // ──────────────────────────────────────────────────────────────────
   Widget _buildServiceTile(BuildContext context, int index) {
     final service = filteredServices[index];
     final timePrices = service['timePrices'] as List;
 
-    // Find actual index in allServices for selection tracking
     final globalIndex = allServices.indexOf(service);
     final isSelected = _selectedServiceIndex == globalIndex;
 
@@ -250,190 +241,163 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
         ? timePrices[_selectedTimeIndex!]
         : timePrices.first;
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedServiceIndex = globalIndex;
-          _selectedTimeIndex = 0;
-          _selectedService = service;
-          _selectedTimePrice = timePrices[0];
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.black12.withOpacity(.05),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? ColorConfig.primary : Colors.transparent,
-            width: 1.5,
-          ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isSelected ? ColorConfig.primary : Colors.transparent,
+          width: 1.5,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// Name + duration tag
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          service['name'],
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected ? ColorConfig.textPrimary : ColorConfig.textBlack,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  /// Selected checkmark
-                  if (isSelected)
-                    Container(
-                      width: 26,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: ColorConfig.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.check_rounded,
-                          size: 15, color: Colors.white),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              /// Duration chips
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: List.generate(timePrices.length, (i) {
-                    final item = timePrices[i];
-                    final isTimeSelected = isSelected && _selectedTimeIndex == i;
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedServiceIndex = globalIndex;
-                          _selectedTimeIndex = i;
-                          _selectedService = service;
-                          _selectedTimePrice = item;
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: isTimeSelected
-                              ? ColorConfig.primary
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: Colors.black26,
-                            width: .4,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            // Icon(
-                            //   Icons.access_time_rounded,
-                            //   size: 12,
-                            //   color: isTimeSelected
-                            //       ? Colors.white
-                            //       : Colors.grey.shade500,
-                            // ),
-                            // const SizedBox(width: 4),
-                            Text(
-                              '${item['duration']} phút',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: isTimeSelected
-                                    ? Colors.white
-                                    : Colors.grey.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              /// Price row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// ===== HÀNG 1 =====
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                /// Tên + Giá
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(width: 4),
+                      Text(
+                        service['name'],
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: ColorConfig.textBlack
+                        ),
+                      ),
+                      const SizedBox(height: 4),
                       Text(
                         formatPrice(currentTimePrice['price']),
                         style: TextStyle(
-                          fontSize: 20,
-                          height: 1,
+                          fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: isSelected ? ColorConfig.textPrimary : ColorConfig.textBlack,
-                          letterSpacing: -0.5,
+                          color: ColorConfig.textBlack,
                         ),
                       ),
                     ],
                   ),
+                ),
 
-                  if (!isSelected)
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedServiceIndex = globalIndex;
-                          _selectedTimeIndex = 0;
-                          _selectedService = service;
-                          _selectedTimePrice = timePrices[0];
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: ColorConfig.primary,
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: const Text(
-                          "Chọn",
-                          style: TextStyle(
+                /// Nút Đặt / Đã đặt
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedServiceIndex = globalIndex;
+                      _selectedTimeIndex = 0;
+                      _selectedService = service;
+                      _selectedTimePrice = timePrices[0];
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      // color: isSelected
+                      //     ? Colors.green
+                      //     : ColorConfig.primary,
+                      color: ColorConfig.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          isSelected ? "Đã đặt" : "Đặt",
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
                         ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          isSelected ? Icons.check : Icons.add,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            /// ===== DIVIDER =====
+            Container(
+              height: 1,
+              width: double.infinity,
+              color: Colors.grey.shade200,
+            ),
+
+            const SizedBox(height: 12),
+
+            /// ===== HÀNG 2: DURATION =====
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(timePrices.length, (i) {
+                  final item = timePrices[i];
+                  final isTimeSelected =
+                      isSelected && _selectedTimeIndex == i;
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedServiceIndex = globalIndex;
+                        _selectedTimeIndex = i;
+                        _selectedService = service;
+                        _selectedTimePrice = item;
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 13, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: isTimeSelected
+                            ? ColorConfig.primary
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: Colors.black26,
+                          width: .4,
+                        ),
+                      ),
+                      child: Text(
+                        '${item['duration']} phút',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: isTimeSelected
+                              ? Colors.white
+                              : Colors.grey.shade700,
+                        ),
                       ),
                     ),
-                ],
+                  );
+                }),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
+
 
   // ──────────────────────────────────────────────────────────────────
   // EMPTY STATE

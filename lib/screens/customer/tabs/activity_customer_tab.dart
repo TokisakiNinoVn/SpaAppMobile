@@ -122,7 +122,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorConfig.white,
+      backgroundColor: ColorConfig.primaryBackground,
       body: _isLogin ? _buildLoggedInView() : _buildGuestView(),
     );
   }
