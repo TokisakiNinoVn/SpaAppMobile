@@ -1,25 +1,3 @@
-// import 'package:firebase_messaging/firebase_messaging.dart';
-// import 'package:flutter/material.dart';
-// import 'package:firebase_core/firebase_core.dart';
-// import 'package:spa_app/config/app_config.dart';
-// import 'package:spa_app/routes/app_router.dart';
-// import 'handlers/background_handler.dart';
-// import 'services/notification_app_service.dart';
-// import 'services/fcm_service.dart';
-//
-// Future<void> main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//
-//   await Firebase.initializeApp();
-//
-//   FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
-//
-//   await NotificationAppService.init();
-//   await FCMService.init();
-//
-//   runApp(const MyApp());
-// }
-
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -30,6 +8,7 @@ import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/routes/app_router.dart';
 import 'package:spa_app/services/realtime_service.dart';
 import 'package:spa_app/storage/index.dart';
+import 'package:flutter/services.dart';
 
 /// Background handler
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
@@ -358,6 +337,13 @@ Future<void> main() async {
   } else {
     // appLog("ℹ️ No initial message");
   }
+
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarBrightness: Brightness.light, // iOS
+      statusBarIconBrightness: Brightness.light, // Android
+    ),
+  );
 
   runApp(const MyApp());
 }

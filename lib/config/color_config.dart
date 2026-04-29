@@ -7,7 +7,7 @@ class ColorConfig {
 
   static final Color primary = Color(0xFF6B9171);
   static final Color secondary = Color(0xFF517A57);
-  static final Color primaryBackground = Color(0xFFFFFFFF);
+  static final Color primaryBackground = Color(0xFFEFEFE3);
 
   static final Color textPrimary = Color(0xFF6B9171);
   static final Color textSecondary = Color(0xFFD4A373);

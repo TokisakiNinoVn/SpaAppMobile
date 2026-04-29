@@ -132,7 +132,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: ColorConfig.primaryBackground,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -152,13 +152,13 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ColorConfig.primaryBackground,
       appBar: _buildAppBar(),
       body: SafeArea(
         child: Stack(
           children: [
             SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
               physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,7 +207,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       automaticallyImplyLeading: false,
-      backgroundColor: ColorConfig.white,
+      backgroundColor: ColorConfig.primaryBackground,
       elevation: 0.5,
       shadowColor: Colors.black12,
       title: Row(

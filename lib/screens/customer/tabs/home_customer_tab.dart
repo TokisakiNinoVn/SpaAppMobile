@@ -846,10 +846,10 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      backgroundColor: ColorConfig.white,
+      backgroundColor: ColorConfig.primaryBackground,
       body: RefreshIndicator(
         onRefresh: _onRefresh,
-        color: const Color(0xFFD4845A),
+        color: ColorConfig.primary,
         child: Stack(
           children: [
             CustomScrollView(

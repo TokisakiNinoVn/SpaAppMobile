@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart';
 
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/check_login_helper.dart';
@@ -78,42 +79,45 @@ class _HomeCustomerScreenState extends State<HomeCustomerScreen> {
     }
 
     return ExitAppWrapper(
-      child: Scaffold(
-        body: SafeArea(
-          child: IndexedStack(
-            index: _selectedIndex,
-            children: List.generate(3, (index) => _getPage(index)),
-          ),
-        ),
-        bottomNavigationBar: Container(
-          decoration: const BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: Color(0x2C000000),
-                width: 0.3,
-              ),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.dark,
+        child: Scaffold(
+          body: SafeArea(
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: List.generate(3, (index) => _getPage(index)),
             ),
           ),
-          child: BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: _onItemTapped,
-            selectedItemColor: ColorConfig.primary,
-            unselectedItemColor: ColorConfig.unselectedItemColor,
-            type: BottomNavigationBarType.fixed,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home),
-                label: 'Khám phá',
+          bottomNavigationBar: Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: Color(0x2C000000),
+                  width: 0.3,
+                ),
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.calendar_today),
-                label: 'Hoạt động',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.account_circle),
-                label: 'Tài khoản',
-              ),
-            ],
+            ),
+            child: BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: _onItemTapped,
+              selectedItemColor: ColorConfig.primary,
+              unselectedItemColor: ColorConfig.unselectedItemColor,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home),
+                  label: 'Khám phá',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.calendar_today),
+                  label: 'Hoạt động',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.account_circle),
+                  label: 'Tài khoản',
+                ),
+              ],
+            ),
           ),
         ),
       ),

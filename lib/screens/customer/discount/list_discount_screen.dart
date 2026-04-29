@@ -368,10 +368,10 @@ class _ListDiscountScreenState extends State<ListDiscountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorConfig.white,
+      backgroundColor: ColorConfig.primaryBackground,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
+        backgroundColor: ColorConfig.primaryBackground,
         elevation: 0,
         title: Row(
           children: [
@@ -437,8 +437,8 @@ class _ListDiscountScreenState extends State<ListDiscountScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.local_offer_outlined, size: 64, color: const Color(0xFF666666)),
-            const SizedBox(height: 16),
+            // Icon(Icons.local_offer_outlined, size: 64, color: const Color(0xFF666666)),
+            // const SizedBox(height: 16),
             const Text(
               'Chưa có mã giảm giá nào',
               style: TextStyle(fontSize: 16, color: Color(0xFF666666)),
@@ -480,20 +480,20 @@ class _ListDiscountScreenState extends State<ListDiscountScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF5F5F5),
-                            borderRadius: BorderRadius.circular(40),
-                          ),
-                          child: Icon(
-                            Icons.local_offer_outlined,
-                            size: 24,
-                            color: isExpired ? const Color(0xFF666666) : const Color(0xFF1A1A1A),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
+                        // Container(
+                        //   width: 50,
+                        //   height: 50,
+                        //   decoration: BoxDecoration(
+                        //     color: const Color(0xFFF5F5F5),
+                        //     borderRadius: BorderRadius.circular(40),
+                        //   ),
+                        //   child: Icon(
+                        //     Icons.local_offer_outlined,
+                        //     size: 24,
+                        //     color: isExpired ? const Color(0xFF666666) : const Color(0xFF1A1A1A),
+                        //   ),
+                        // ),
+                        // const SizedBox(width: 12),
 
                         Expanded(
                           child: Column(
@@ -529,7 +529,7 @@ class _ListDiscountScreenState extends State<ListDiscountScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                _getDiscountDisplayValue(discount),
+                                "Giảm: ${_getDiscountDisplayValue(discount)}",
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
