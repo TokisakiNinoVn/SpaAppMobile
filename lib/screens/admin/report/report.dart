@@ -1,24 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/services/user_discount_service.dart';
 
-import 'package:spa_app/config/color_config.dart';
-import 'package:spa_app/services/user_service.dart';
-import '../../../../helper/snackbar_helper.dart';
+class ListReportScreen extends StatefulWidget {
 
-class StatisticalScreen extends StatefulWidget {
-  const StatisticalScreen({super.key});
+  const ListReportScreen({
+    super.key,
+  });
+
   @override
-  _StatisticalScreenState createState() => _StatisticalScreenState();
+  State<ListReportScreen> createState() =>  _ListReportScreenState();
 }
 
-class _StatisticalScreenState extends State<StatisticalScreen> {
-  final UserService userService = UserService();
+class _ListReportScreenState extends State<ListReportScreen> {
+  final UserDiscountService _userDiscountService = UserDiscountService();
 
-  List<Map<String, dynamic>> banner = [];
-  bool isLoading = true;
-
-  @override
   void initState() {
     super.initState();
   }
@@ -50,7 +46,7 @@ class _StatisticalScreenState extends State<StatisticalScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Text("Thống kê hệ thống"),
+            const Text("Các báo cáo"),
           ],
         ),
       ),
@@ -62,10 +58,5 @@ class _StatisticalScreenState extends State<StatisticalScreen> {
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }

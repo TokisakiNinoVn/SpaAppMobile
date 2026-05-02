@@ -9,6 +9,7 @@ import 'package:spa_app/services/upload_service.dart';
 import '../../../helper/snackbar_helper.dart';
 import '../../../services/banner_service.dart';
 import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/utils/file_util.dart';
 
 class CreateBannerScreen extends StatefulWidget {
   const CreateBannerScreen({super.key});
@@ -23,6 +24,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
   final BannerService bannerService = BannerService();
   final UploadService uploadService = UploadService();
   final ImagePicker _picker = ImagePicker();
+  final FileUtils _fileUtils = FileUtils();
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
@@ -60,6 +62,23 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
     _animController.forward();
   }
 
+  // Future<void> _pickImage(ImageSource source) async {
+  //   try {
+  //     final XFile? pickedFile = await _picker.pickImage(
+  //       source: source,
+  //       maxWidth: 1920,
+  //       maxHeight: 1080,
+  //       imageQuality: 85,
+  //     );
+  //     if (pickedFile != null) {
+  //       setState(() => _selectedImage = File(pickedFile.path));
+  //       await _uploadImage();
+  //     }
+  //   } catch (e) {
+  //     SnackBarHelper.showError(context, 'Lỗi khi chọn ảnh: $e');
+  //   }
+  // }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
@@ -69,8 +88,19 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
         imageQuality: 85,
       );
       if (pickedFile != null) {
-        setState(() => _selectedImage = File(pickedFile.path));
-        await _uploadImage();
+        final File? croppedImage = await _fileUtils.cropImage(
+            File(pickedFile.path),
+            16.0,
+            9.0
+        );
+
+        if (croppedImage != null) {
+          setState(() => _selectedImage = croppedImage);
+          await _uploadImage();
+        } else {
+          // Nếu người dùng hủy cắt, không upload ảnh
+          SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
+        }
       }
     } catch (e) {
       SnackBarHelper.showError(context, 'Lỗi khi chọn ảnh: $e');
@@ -248,6 +278,26 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
     );
   }
 
+  // Thêm phương thức này nếu bạn muốn cho phép cắt lại ảnh đã chọn
+  Future<void> _recropImage() async {
+    if (_selectedImage == null) return;
+
+    try {
+      final File? croppedImage = await _fileUtils.cropImage(
+          _selectedImage!,
+          16.0,
+          9.0
+      );
+
+      if (croppedImage != null) {
+        setState(() => _selectedImage = croppedImage);
+        await _uploadImage(); // Upload lại ảnh mới sau khi cắt
+      }
+    } catch (e) {
+      SnackBarHelper.showError(context, 'Lỗi khi cắt lại ảnh: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -365,13 +415,55 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
             ),
           ),
         ),
+        // if (_uploadedImageUrl != null) ...[
+        //   const SizedBox(height: 10),
+        //   Row(
+        //     children: [
+        //       Container(
+        //         padding:
+        //         const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        //         decoration: BoxDecoration(
+        //           color: _successLight,
+        //           borderRadius: BorderRadius.circular(20),
+        //         ),
+        //         child: const Row(
+        //           mainAxisSize: MainAxisSize.min,
+        //           children: [
+        //             Icon(Icons.check_circle_rounded,
+        //                 size: 14, color: _success),
+        //             SizedBox(width: 5),
+        //             Text(
+        //               'Đã tải lên thành công',
+        //               style: TextStyle(
+        //                   fontSize: 12,
+        //                   color: _success,
+        //                   fontWeight: FontWeight.w500),
+        //             ),
+        //           ],
+        //         ),
+        //       ),
+        //       const Spacer(),
+        //       TextButton.icon(
+        //         onPressed: _showImagePickerDialog,
+        //         icon: const Icon(Icons.edit_rounded, size: 14),
+        //         label: const Text('Thay ảnh'),
+        //         style: TextButton.styleFrom(
+        //           foregroundColor: _primary,
+        //           textStyle: const TextStyle(
+        //               fontSize: 12, fontWeight: FontWeight.w500),
+        //           padding:
+        //           const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ],
         if (_uploadedImageUrl != null) ...[
           const SizedBox(height: 10),
           Row(
             children: [
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: _successLight,
                   borderRadius: BorderRadius.circular(20),
@@ -379,30 +471,36 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle_rounded,
-                        size: 14, color: _success),
+                    Icon(Icons.check_circle_rounded, size: 14, color: _success),
                     SizedBox(width: 5),
                     Text(
                       'Đã tải lên thành công',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: _success,
-                          fontWeight: FontWeight.w500),
+                      style: TextStyle(fontSize: 12, color: _success, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
               ),
               const Spacer(),
+              // Thêm nút cắt lại ảnh
+              TextButton.icon(
+                onPressed: _recropImage, // Sử dụng phương thức đã thêm ở trên
+                icon: const Icon(Icons.crop_rounded, size: 14),
+                label: const Text('Cắt lại'),
+                style: TextButton.styleFrom(
+                  foregroundColor: _primary,
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+              ),
+              const SizedBox(width: 8),
               TextButton.icon(
                 onPressed: _showImagePickerDialog,
                 icon: const Icon(Icons.edit_rounded, size: 14),
                 label: const Text('Thay ảnh'),
                 style: TextButton.styleFrom(
                   foregroundColor: _primary,
-                  textStyle: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w500),
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 ),
               ),
             ],

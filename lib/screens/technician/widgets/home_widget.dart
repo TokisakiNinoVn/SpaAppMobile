@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -53,12 +54,24 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   Timer? _timer;
   int _remainingSeconds = 0;
 
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _loadUserDetail();
+  //   loadServiceInfor();
+  //   _getCurrentLocation();
+  // }
+
   @override
   void initState() {
     super.initState();
     _loadUserDetail();
     loadServiceInfor();
-    _getCurrentLocation();
+    // Không gọi _getCurrentLocation trực tiếp ở đây nữa
+    // Mà dùng WidgetsBinding để gọi sau khi build
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _getCurrentLocation(context);
+    // });
   }
 
   @override
@@ -67,14 +80,62 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
     super.dispose();
   }
 
-  Future<void> _getCurrentLocation() async {
-    final location = await LocationHelper.getCurrentLocation();
+// Sửa _getCurrentLocation thành:
+  Future<void> _getCurrentLocation(BuildContext context) async {
+    // Kiểm tra xem dịch vụ vị trí có bật không
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Yêu cầu bật GPS
+      final bool? shouldOpenSettings = await _showEnableGPSSettingsDialog();
+      if (shouldOpenSettings == true) {
+        await Geolocator.openLocationSettings();
+      }
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission != LocationPermission.whileInUse && permission != LocationPermission.always) {
+        // Không có quyền
+        SnackBarHelper.showError(context, "Không có quyền truy cập vị trí");
+        return;
+      }
+    }
+
+    final location = await LocationHelper.getCurrentLocation(); // giả sử method này dùng geolocator
     if (location != null) {
       setState(() {
         currentLat = location.latitude;
         currentLng = location.longitude;
       });
+    } else {
+      SnackBarHelper.showError(context, "Không thể lấy vị trí hiện tại");
     }
+  }
+
+// Thêm method mới:
+  Future<bool?> _showEnableGPSSettingsDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Bật GPS'),
+          content: const Text('Vui lòng bật GPS để cập nhật vị trí của bạn.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Mở cài đặt'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _updateLocation() async {
@@ -691,13 +752,23 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                           ],
                         ),
                         child: IconButton(
+                          // onPressed: isUpdatingLocation
+                          //     ? null
+                          //     : () async {
+                          //   // Hiển thị dialog xác nhận trước khi cập nhật vị trí
+                          //   final shouldUpdate = await _showLocationUpdateConfirmation();
+                          //   if (shouldUpdate == true) {
+                          //     await _getCurrentLocation(context);
+                          //     await _updateLocation();
+                          //   }
+                          // },
+                          // Đoạn code cũ trong onPressed của IconButton:
                           onPressed: isUpdatingLocation
                               ? null
                               : () async {
-                            // Hiển thị dialog xác nhận trước khi cập nhật vị trí
                             final shouldUpdate = await _showLocationUpdateConfirmation();
                             if (shouldUpdate == true) {
-                              await _getCurrentLocation();
+                              await _getCurrentLocation(context);   // ← gọi ở đây
                               await _updateLocation();
                             }
                           },

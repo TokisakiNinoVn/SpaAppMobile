@@ -232,20 +232,20 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: Colors.white,
+      backgroundColor: ColorConfig.primaryBackground,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
 
               Image.asset(
                 'lib/assets/images/zen-hone-circle-logo.png',
                 height: 100,
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
 
               Text(
                 AppConfig.appNameUpperCase,
@@ -268,7 +268,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              const SizedBox(height: 48),
+              const SizedBox(height: 20),
 
               // Phone field
               _buildTextField(

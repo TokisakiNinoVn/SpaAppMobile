@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:spa_app/config/color_config.dart';
-import 'package:spa_app/helper/permission_helper.dart';
+import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/utils/image_download_util.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -41,9 +41,10 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
 
   Future<void> _downloadImage(String imageUrl) async {
     setState(() => _isDownloading = true);
-
+    final linkImageUrl = FormatHelper.formatNetworkImageUrl(imageUrl);
     await ImageDownloadUtil.downloadImage(
-      imageUrl: imageUrl,
+      imageUrl: linkImageUrl,
+      // imageUrl: imageUrl,
       context: context,
       onComplete: (_) {
         setState(() => _isDownloading = false);
@@ -71,7 +72,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
               setState(() => _currentIndex = index);
             },
             itemBuilder: (context, index) {
-              final imageUrl = FormatHelper.formatImageUrl(widget.images[index]['url']);
+              final imageUrl = FormatHelper.formatNetworkImageUrl(widget.images[index]['url']);
               return InteractiveViewer(
                 maxScale: 4.0,
                 minScale: 1.0,
@@ -82,7 +83,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                   height: double.infinity,
                   placeholder: (context, url) => Center(
                     child: CircularProgressIndicator(
-                      color: const Color(0xFFD4A373),
+                      color: ColorConfig.primary,
                     ),
                   ),
                   errorWidget: (context, url, error) => const Icon(

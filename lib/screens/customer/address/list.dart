@@ -228,10 +228,10 @@ class _ListAddressScreenState extends State<ListAddressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ColorConfig.primaryBackground,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
+        backgroundColor: ColorConfig.primaryBackground,
         elevation: 0,
         title: Row(
           children: [

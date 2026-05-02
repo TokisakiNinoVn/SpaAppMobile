@@ -40,7 +40,7 @@ class LocationBarWidget extends StatelessWidget {
         : [const Color(0xFF43A047), const Color(0xFF00897B)];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: GestureDetector(
         onTap: locationLoading ? null : onLocationTap,
         child: AnimatedContainer(

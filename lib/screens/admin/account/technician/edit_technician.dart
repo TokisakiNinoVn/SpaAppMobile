@@ -222,7 +222,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
         'experience': experience,
         'gender': gender,
         'images': images,
-        'serviceIds': selectedServiceIds.map((s) => s['_id']).toList(), // Dòng này vẫn đúng
+        'serviceIds': selectedServiceIds.map((s) => s['_id']).toList(),
         'yearOfBirth': yearOfBirth,
         if (avatarImage != null) 'avatar': avatarImage,
       };
@@ -295,7 +295,7 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: 'Cắt ảnh',
-          toolbarColor: const Color(0xFF8B5E3C),
+          toolbarColor: ColorConfig.primary,
           toolbarWidgetColor: Colors.white,
           initAspectRatio: CropAspectRatioPreset.square,
           lockAspectRatio: true,

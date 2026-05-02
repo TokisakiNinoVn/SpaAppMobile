@@ -73,7 +73,7 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
     {
       'icon': Icons.report_gmailerrorred,
       'title': "Báo cáo",
-      'route': AdminRouterConfig.managementBanner,
+      'route': AdminRouterConfig.listReport,
       'color': Colors.red,
       'badge': '',
     },

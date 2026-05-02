@@ -39,6 +39,25 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
     try {
       final response = await _userService.addAddressService(addressData);
 
+      // if (response['success'] == true || response['status'] == 'success') {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Row(
+      //         children: const [
+      //           Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+      //           SizedBox(width: 8),
+      //           Text('Thêm địa chỉ thành công'),
+      //         ],
+      //       ),
+      //       backgroundColor: const Color(0xFF27AE60),
+      //       behavior: SnackBarBehavior.floating,
+      //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+      //       duration: const Duration(seconds: 2),
+      //     ),
+      //   );
+      //
+      //   Navigator.pop(context, true);
+      // }
       if (response['success'] == true || response['status'] == 'success') {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -56,8 +75,14 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
           ),
         );
 
-        Navigator.pop(context, true);
-      } else {
+        // Thêm delay 1 giây trước khi quay lại màn hình trước
+        await Future.delayed(const Duration(seconds: 1));
+
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      }
+      else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response['message'] ?? 'Thêm địa chỉ thất bại'),
@@ -94,10 +119,10 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ColorConfig.primaryBackground,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
+        backgroundColor: ColorConfig.primaryBackground,
         elevation: 0,
         title: Row(
           children: [
@@ -181,7 +206,6 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                       decoration: InputDecoration(
                         hintText: 'Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố',
                         hintStyle: TextStyle(color: const Color(0xFF666666).withOpacity(0.5)),
-                        prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: Color(0xFF666666)),
                         filled: true,
                         fillColor: const Color(0xFFF5F5F5),
                         enabledBorder: OutlineInputBorder(

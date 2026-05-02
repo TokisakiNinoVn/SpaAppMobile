@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 
@@ -92,6 +93,10 @@ class ImageDownloadUtil {
         imageUrl,
         options: Options(responseType: ResponseType.bytes),
       );
+
+      // imageUrl = FormatHelper.formatNetworkImageUrl(imageUrl);
+      // appLog("$imageUrl");
+
       final Uint8List bytes = Uint8List.fromList(response.data);
 
       final tempDir = await getTemporaryDirectory();
@@ -123,6 +128,7 @@ class ImageDownloadUtil {
       appLog("🛑 Lỗi lưu ảnh: $e");
       if (context != null) {
         SnackBarHelper.showError(context, "Lỗi khi lưu ảnh: ${e.toString()}");
+        appLog("Lỗi khi lưu ảnh: ${e.toString()}");
       }
       onComplete?.call(false);
       return false;

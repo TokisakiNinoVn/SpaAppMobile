@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/routes/config/technician_router_config.dart';
 import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/helper/full_screen_list_image.dart';
@@ -195,16 +197,14 @@ class _AccountTabState extends State<AccountTab> {
     final response = await authService.logoutService({});
     try {
       if (response['success'] == true || response['status'] == "success") {
-        context.go('/login');
+        context.go(GlobalRouterConfig.loginOTP);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Đăng xuất thất bại")),
-        );
+        SnackBarHelper.showError(context, "Lỗi đăng xuất");
       }
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
     } catch(e) {
-      print('Error: $e');
+      appLog('Error: $e');
     }
   }
 
@@ -222,7 +222,7 @@ class _AccountTabState extends State<AccountTab> {
           ElevatedButton(
             child: const Text("Đăng xuất", style: TextStyle(color: Colors.white),),
             style: ElevatedButton.styleFrom(
-              backgroundColor: ColorConfig.secondary,
+              backgroundColor: Colors.red,
             ),
             onPressed: () async {
               await _logout();
