@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/routes/config/customer_router_config.dart';
 
 class BannerSectionWidget extends StatelessWidget {
   final bool isBannerLoading;
@@ -164,7 +166,9 @@ class BannerSectionWidget extends StatelessWidget {
                               ),
                               const SizedBox(height: 16),
                               ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  context.push(CustomerRouterConfig.listOrderNowTechnician);
+                                },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
                                   foregroundColor: ColorConfig.textPrimary,

@@ -1,4 +1,3 @@
-// TODO Implement this library.
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/screens/admin/account/technician/management_account_technician.dart';
 import 'package:spa_app/screens/admin/bank/add.dart';
@@ -7,6 +6,7 @@ import 'package:spa_app/screens/admin/bank/management.dart';
 import 'package:spa_app/screens/admin/feature_service/edit.dart';
 import 'package:spa_app/screens/admin/feature_service/list.dart';
 import 'package:spa_app/screens/admin/notification/create_notification_screen.dart';
+import 'package:spa_app/screens/admin/report/report.dart';
 import 'package:spa_app/screens/admin/withdraw/confirm_request_screen.dart';
 import 'package:spa_app/screens/admin/withdraw/detail_request.dart';
 import 'package:spa_app/screens/admin/withdraw/list_request.dart';
@@ -48,6 +48,10 @@ final List<GoRoute> adminRoutes = [
       GoRoute(
         path: 'manage-account-customer',
         builder: (context, state) => const ManagementAccountCustomer(),
+      ),
+      GoRoute(
+        path: 'reports',
+        builder: (context, state) => const ListReportScreen(),
       ),
       GoRoute(
         path: 'manage-bank',

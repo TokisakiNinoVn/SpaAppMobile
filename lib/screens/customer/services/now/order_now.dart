@@ -221,6 +221,73 @@ class _ListTechnicianOrderNowState extends State<ListTechnicianOrderNow> {
     return name;
   }
 
+  /// Xử lý khi nhấn chip "Gần tôi"
+  Future<void> _handleNearMe() async {
+    // 1. Kiểm tra và yêu cầu bật GPS nếu chưa bật
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      final bool? shouldOpen = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Bật GPS'),
+          content: const Text('Vui lòng bật GPS để tìm kỹ thuật viên gần bạn.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Mở cài đặt'),
+            ),
+          ],
+        ),
+      );
+      if (shouldOpen == true) {
+        await Geolocator.openLocationSettings();
+        // Sau khi mở cài đặt, không tự động reload, người dùng cần nhấn lại chip
+      }
+      return;
+    }
+
+    // 2. Kiểm tra và xin quyền truy cập vị trí nếu chưa được cấp
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission != LocationPermission.whileInUse &&
+          permission != LocationPermission.always) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Quyền vị trí bị từ chối')),
+        );
+        return;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Quyền vị trí đã bị từ chối vĩnh viễn, vui lòng vào cài đặt để bật')),
+      );
+      return;
+    }
+
+    // 3. Lấy vị trí hiện tại
+    await _getCurrentLocation();
+
+    if (currentLat != null && currentLng != null) {
+      setState(() {
+        checkPermissionLocation = true;
+      });
+      // 4. Reload danh sách technician theo vị trí mới
+      await _loadListTechnician();
+      // Sau khi reload, áp dụng lại các bộ lọc (nếu có)
+      _applyFilters();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể lấy vị trí hiện tại')),
+      );
+    }
+  }
+
 
   /// Bottom sheet lọc chung (chỉ còn giới tính)
   void _showFilterBottomSheet(BuildContext context) {
@@ -810,11 +877,8 @@ class _ListTechnicianOrderNowState extends State<ListTechnicianOrderNow> {
                       // Gần tôi chip
                       _buildChip(
                         label: "Gần tôi",
-                        icon: Icons.location_on_outlined,
                         isActive: false,
-                        onTap: () {
-                          // xử lý gần tôi
-                        },
+                        onTap: _handleNearMe,
                       ),
 
                       const SizedBox(width: 10),
@@ -845,259 +909,262 @@ class _ListTechnicianOrderNowState extends State<ListTechnicianOrderNow> {
       )
           : (errorMessage != null)
           ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 60,
-              color: Colors.red.withOpacity(0.6),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              errorMessage!,
-              style: TextStyle(
-                color: ColorConfig.textBlack,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                _loadData(); // Thử tải lại
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColorConfig.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 60,
+                  color: Colors.red.withOpacity(0.6),
                 ),
-              ),
-              child: const Text('Thử lại'),
-            ),
-          ],
-        ),
-      )
-          : (filteredTechnicians.isEmpty)
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.people_outline,
-              size: 60,
-              color: ColorConfig.black.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Không có kỹ thuật viên nào', // Đã sửa theo yêu cầu
-              style: TextStyle(
-                color: ColorConfig.textBlack,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm',
-              style: TextStyle(
-                color: ColorConfig.textBlack.withOpacity(0.7),
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      )
-          : ListView.builder(
-        padding: const EdgeInsets.symmetric(
-            vertical: 2, horizontal: 5),
-        itemCount: filteredTechnicians.length,
-        itemBuilder: (context, index) {
-          final tech = filteredTechnicians[index];
-
-          final rate = tech['rate'];
-          final reviewCount = tech['reviewCount'];
-          final hasReview =
-              reviewCount != null && reviewCount > 0;
-          final displayRate = hasReview
-              ? rate?.toStringAsFixed(1) ?? '5.0'
-              : '5.0';
-
-          return InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () {
-              // context.go(
-              //   '/home-customer/list-technician/detail-technician/${tech['_id']}',
-              // );
-              context.push(
-                '${CustomerRouterConfig.detailOrderNowTechnician}/${tech['_id']}',
-                extra: 'now',
-              );
-            },
-            child: Container(
-              margin: const EdgeInsets.symmetric(
-                  vertical: 2, horizontal: 5),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [],
-              ),
-              child: Row(
-                children: [
-                  // Avatar
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      borderRadius:
-                      BorderRadius.circular(10),
-                      border: Border.all(
-                          color: ColorConfig.primary,
-                          width: 0),
-                    ),
-                    child: ClipRRect(
-                      borderRadius:
-                      BorderRadius.circular(8),
-                      child: tech['avatar'] != null &&
-                          tech['avatar']['url'] != null
-                          ? Image.network(
-                        FormatHelper
-                            .formatNetworkImageUrl(
-                            tech['avatar']['url']),
-                        fit: BoxFit.cover,
-                      )
-                          : Container(
-                        color: ColorConfig.primary,
-                        child: Icon(
-                          Icons.person,
-                          color:
-                          ColorConfig.textBlack,
-                          size: 40,
-                        ),
-                      ),
+                const SizedBox(height: 16),
+                Text(
+                  errorMessage!,
+                  style: TextStyle(
+                    color: ColorConfig.textBlack,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    _loadData(); // Thử tải lại
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ColorConfig.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
+                  child: const Text('Thử lại'),
+                ),
+              ],
+            ),
+          )
+          : RefreshIndicator(
+            onRefresh: _loadData,
+            child: filteredTechnicians.isEmpty
+            ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.people_outline,
+                    size: 60,
+                    color: ColorConfig.black.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Không có kỹ thuật viên nào', // Đã sửa theo yêu cầu
+                    style: TextStyle(
+                      color: ColorConfig.textBlack,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm',
+                    style: TextStyle(
+                      color: ColorConfig.textBlack.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            )
+            : ListView.builder(
+              padding: const EdgeInsets.symmetric(
+                  vertical: 2, horizontal: 5),
+              itemCount: filteredTechnicians.length,
+              itemBuilder: (context, index) {
+                final tech = filteredTechnicians[index];
 
-                  const SizedBox(width: 16),
+                final rate = tech['rate'];
+                final reviewCount = tech['reviewCount'];
+                final hasReview =
+                    reviewCount != null && reviewCount > 0;
+                final displayRate = hasReview
+                    ? rate?.toStringAsFixed(1) ?? '5.0'
+                    : '5.0';
 
-                  // Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                return InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    // context.go(
+                    //   '/home-customer/list-technician/detail-technician/${tech['_id']}',
+                    // );
+                    context.push(
+                      '${CustomerRouterConfig.detailOrderNowTechnician}/${tech['_id']}',
+                      extra: 'now',
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(
+                        vertical: 2, horizontal: 5),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [],
+                    ),
+                    child: Row(
                       children: [
-                        Text(
-                          FormatHelper
-                              .formatNameTechnician(
-                              tech['fullName'] ??
-                                  'Không tên'),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: ColorConfig.textBlack,
+                        // Avatar
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            borderRadius:
+                            BorderRadius.circular(10),
+                            border: Border.all(
+                                color: ColorConfig.primary,
+                                width: 0),
+                          ),
+                          child: ClipRRect(
+                            borderRadius:
+                            BorderRadius.circular(8),
+                            child: tech['avatar'] != null &&
+                                tech['avatar']['url'] != null
+                                ? Image.network(
+                              FormatHelper
+                                  .formatNetworkImageUrl(
+                                  tech['avatar']['url']),
+                              fit: BoxFit.cover,
+                            )
+                                : Container(
+                              color: ColorConfig.primary,
+                              child: Icon(
+                                Icons.person,
+                                color:
+                                ColorConfig.textBlack,
+                                size: 40,
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 4),
 
-                        Row(
-                          children: [
-                            FaIcon(
-                              FontAwesomeIcons.solidStar,
-                              size: 14,
-                              color: ColorConfig.yellow
-                                  .withOpacity(0.9),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              hasReview
-                                  ? '$displayRate ($reviewCount đánh giá)'
-                                  : displayRate,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: ColorConfig.textBlack
-                                    .withOpacity(0.6),
-                              ),
-                            ),
-                          ],
-                        ),
+                        const SizedBox(width: 16),
 
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            FaIcon(
-                              FontAwesomeIcons.locationArrow,
-                              size: 16,
-                              color: ColorConfig.black
-                                  .withOpacity(0.4),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                tech['distance'] != null
-                                    ? '${tech['distance']} km'
-                                    : '-- km',
+                        // Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                FormatHelper
+                                    .formatNameTechnician(
+                                    tech['fullName'] ??
+                                        'Không tên'),
                                 style: TextStyle(
-                                  fontSize: 14,
-                                  color: ColorConfig
-                                      .textBlack
-                                      .withOpacity(0.4),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: ColorConfig.textBlack,
                                 ),
-                                overflow:
-                                TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+
+                              Row(
+                                children: [
+                                  FaIcon(
+                                    FontAwesomeIcons.solidStar,
+                                    size: 14,
+                                    color: ColorConfig.yellow
+                                        .withOpacity(0.9),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    hasReview
+                                        ? '$displayRate ($reviewCount đánh giá)'
+                                        : displayRate,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: ColorConfig.textBlack
+                                          .withOpacity(0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  FaIcon(
+                                    FontAwesomeIcons.locationArrow,
+                                    size: 16,
+                                    color: ColorConfig.black
+                                        .withOpacity(0.4),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      tech['distance'] != null
+                                          ? '${tech['distance']} km'
+                                          : '-- km',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: ColorConfig
+                                            .textBlack
+                                            .withOpacity(0.4),
+                                      ),
+                                      overflow:
+                                      TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+                        InkWell(
+                          borderRadius:
+                          BorderRadius.circular(20),
+                          onTap: () {
+                            context.push(
+                              '${CustomerRouterConfig.detailOrderNowTechnician}/${tech['_id']}',
+                              extra: 'now',
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: ColorConfig.primary,
+                              borderRadius:
+                              BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              "Đặt",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                                color: Colors.white,
                               ),
                             ),
-                          ],
+                          ),
                         ),
+                        const SizedBox(width: 18),
                       ],
                     ),
                   ),
-
-                  const SizedBox(width: 12),
-                  InkWell(
-                    borderRadius:
-                    BorderRadius.circular(20),
-                    onTap: () {
-                      context.push(
-                        '${CustomerRouterConfig.detailOrderNowTechnician}/${tech['_id']}',
-                        extra: 'now',
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: ColorConfig.primary,
-                        borderRadius:
-                        BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        "Đặt",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 18),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
       ),
     );
   }
 
   Widget _buildChip({
     required String label,
-    required IconData icon,
+     IconData? icon,
     required VoidCallback onTap,
     bool isActive = false,
   }) {
@@ -1127,12 +1194,15 @@ class _ListTechnicianOrderNowState extends State<ListTechnicianOrderNow> {
                     : ColorConfig.black,
               ),
             ),
+
             const SizedBox(width: 6),
-            Icon(icon,
-                size: 16,
-                color: isActive
-                    ? ColorConfig.primary
-                    : ColorConfig.black),
+            if(icon != null)...[
+              Icon(icon,
+                  size: 16,
+                  color: isActive
+                      ? ColorConfig.primary
+                      : ColorConfig.black)
+            ],
           ],
         ),
       ),

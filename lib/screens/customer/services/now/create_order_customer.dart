@@ -1,17 +1,21 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
+import 'package:spa_app/screens/customer/services/widgets/info_row.dart';
+import 'package:spa_app/screens/customer/services/widgets/input_box.dart';
+import 'package:spa_app/screens/customer/services/widgets/section.dart';
 import 'package:spa_app/services/user_discount_service.dart';
+import 'package:spa_app/services/user_service.dart';
 
 import '../../../../helper/format_helper.dart';
 import '../../../../helper/logger_utils.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'package:spa_app/services/discount_service.dart';
 import '../../../../storage/index.dart';
+import '../widgets/address_picker_widget.dart';
 
 enum PaymentMethod {
   zenhome('Ví Zen Home', 'zenhome'),
@@ -41,11 +45,13 @@ class _CreateOrderNowScreenState
   final OrderService _orderService = OrderService();
   final DiscountService _discountService = DiscountService();
   final UserDiscountService _userDiscountService = UserDiscountService();
+  final UserService _userService = UserService();
 
   bool _loading = true;
   bool _isLoading = true;
   String? _errorMessage;
   bool _isRefreshingDiscount = false;
+  // bool _isLoadingAddress = false;
 
   List<Map<String, dynamic>> _addresses = [];
   List<dynamic> _discounts = [];
@@ -99,6 +105,7 @@ class _CreateOrderNowScreenState
     _paymentMethod = PaymentMethod.zenhome;
     _loadCustomerProfile();
     _loadSavedDiscounts();
+    _loadAddresses();
     _noteFocusNode.addListener(_onFocusChange);
     _moneyPrioritizeController.addListener(_formatExtraFeeOnChange);
   }
@@ -137,6 +144,67 @@ class _CreateOrderNowScreenState
     }
     // Cập nhật lại discount nếu có mã áp dụng
     if (_appliedDiscountCode != null) _refreshDiscount();
+  }
+
+  Future<void> _loadAddresses() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await _userService.listAddress();
+
+      if (response['success'] == true || response['status'] == 'success') {
+        appLog("List address: ${response['data']}");
+
+        List<dynamic> addressList = response['data'] ?? [];
+        setState(() {
+          _addresses = addressList.map((addr) => Map<String, dynamic>.from(addr)).toList();
+          appLog("List address2: $_addresses");
+
+          // THÊM: Tự động chọn địa chỉ mặc định nếu có
+          _selectDefaultAddress();
+
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = response['message'] ?? 'Không thể tải danh sách địa chỉ';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi kết nối: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _selectDefaultAddress() {
+    if (_addresses.isEmpty) return;
+
+    // Tìm địa chỉ mặc định
+    final defaultAddress = _addresses.firstWhere(
+          (addr) => addr['isDefault'] == true,
+      orElse: () => _addresses.first,
+    );
+
+    // Cập nhật controller
+    if (defaultAddress['address'] != null && defaultAddress['address'].toString().isNotEmpty) {
+      _addressController.text = defaultAddress['address'];
+      appLog("Selected default address: ${_addressController.text}");
+    } else {
+      // Fallback: chọn địa chỉ đầu tiên có address
+      final firstValidAddress = _addresses.firstWhere(
+            (addr) => addr['address'] != null && addr['address'].toString().isNotEmpty,
+        orElse: () => {},
+      );
+      if (firstValidAddress.isNotEmpty) {
+        _addressController.text = firstValidAddress['address'];
+      }
+    }
   }
 
   Future<void> _refreshDiscount() async {
@@ -221,23 +289,6 @@ class _CreateOrderNowScreenState
   Future<void> _loadCustomerProfile() async {
     try {
       balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
-      final rawProfile = await SharedPrefs.getValue(PrefType.string, "customerProfile");
-      appLog("data Profile: $rawProfile");
-      if (rawProfile != null) {
-        final profile = jsonDecode(rawProfile);
-        List<dynamic> addressList = profile['address'] ?? [];
-        _addresses = addressList.map((addr) => Map<String, dynamic>.from(addr)).toList();
-
-        final defaultAddress = _addresses.firstWhere(
-              (addr) => addr['isDefault'] == true,
-          orElse: () => _addresses.isNotEmpty ? _addresses.first : {},
-        );
-        if (defaultAddress.isNotEmpty) {
-          _addressController.text = defaultAddress['address'] ?? '';
-        } else if (_addresses.isNotEmpty) {
-          _addressController.text = _addresses.first['address'] ?? '';
-        }
-      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -256,7 +307,7 @@ class _CreateOrderNowScreenState
           _discounts = response['data']['discounts'] ?? [];
           _isLoading = false;
         });
-        appLog("list discount: $_discounts");
+        // appLog("list discount: $_discounts");
       } else {
         setState(() {
           _errorMessage = response['message'] ?? 'Không thể tải danh sách mã giảm giá';
@@ -271,174 +322,218 @@ class _CreateOrderNowScreenState
     }
   }
 
-  // Mở bottom sheet chọn địa chỉ
-  void _showAddressPicker() {
-    showModalBottomSheet(
+  // void _showAddressPicker() {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     backgroundColor: Colors.transparent,
+  //     builder: (context) {
+  //       final height = MediaQuery.of(context).size.height * 0.7;
+  //
+  //       return StatefulBuilder(
+  //         builder: (context, setSheetState) {
+  //           return Container(
+  //             height: height,
+  //             decoration: const BoxDecoration(
+  //               color: Colors.white,
+  //               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+  //             ),
+  //             child: Column(
+  //               children: [
+  //                 const SizedBox(height: 10),
+  //                 Container(
+  //                   width: 40,
+  //                   height: 4,
+  //                   decoration: BoxDecoration(
+  //                     color: Colors.grey.shade300,
+  //                     borderRadius: BorderRadius.circular(10),
+  //                   ),
+  //                 ),
+  //                 Padding(
+  //                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+  //                   child: Row(
+  //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                     children: [
+  //                       const Text(
+  //                         'Chọn địa chỉ',
+  //                         style: TextStyle(
+  //                           fontSize: 20,
+  //                           fontWeight: FontWeight.w700,
+  //                         ),
+  //                       ),
+  //                       Row(
+  //                         children: [
+  //                           IconButton(
+  //                             onPressed: () async {
+  //                               setSheetState(() {
+  //                                 _isLoading = true;
+  //                               });
+  //                               await _loadAddresses();
+  //                               setSheetState(() {
+  //                                 _isLoading = false;
+  //                               });
+  //                             },
+  //                             icon: Icon(Icons.refresh, color: ColorConfig.primary),
+  //                             tooltip: 'Cập nhật danh sách địa chỉ',
+  //                           ),
+  //
+  //                           IconButton(
+  //                             onPressed: () async {
+  //                               context.push(CustomerRouterConfig.listAddress);
+  //                             },
+  //                             icon: Icon(Icons.settings, color: ColorConfig.primary),
+  //                             tooltip: 'Danh sách địa chỉ',
+  //                           ),
+  //                         ],
+  //                       )
+  //                     ],
+  //                   ),
+  //                 ),
+  //                 Expanded(
+  //                   child: _isLoading
+  //                       ? const Center(child: CircularProgressIndicator())
+  //                       : (_addresses.isEmpty)
+  //                       ? const Center(
+  //                     child: Text(
+  //                       'Chưa có địa chỉ nào',
+  //                       style: TextStyle(color: Colors.grey),
+  //                     ),
+  //                   )
+  //                       : ListView.builder(
+  //                     padding: const EdgeInsets.symmetric(horizontal: 16),
+  //                     itemCount: _addresses.length,
+  //                     itemBuilder: (context, index) {
+  //                       final addr = _addresses[index];
+  //                       final isDefault = addr['isDefault'] == true;
+  //                       final addressText = addr['address'] ?? 'Địa chỉ không xác định';
+  //                       final isSelected = _addressController.text == addressText;
+  //
+  //                       return AnimatedContainer(
+  //                         duration: const Duration(milliseconds: 200),
+  //                         margin: const EdgeInsets.only(bottom: 12),
+  //                         padding: const EdgeInsets.all(14),
+  //                         decoration: BoxDecoration(
+  //                           color: isSelected
+  //                               ? Colors.blue.withOpacity(0.08)
+  //                               : Colors.grey.shade50,
+  //                           borderRadius: BorderRadius.circular(16),
+  //                           border: Border.all(
+  //                             color: isSelected
+  //                                 ? ColorConfig.primary
+  //                                 : Colors.grey.shade200,
+  //                             width: isSelected ? 1.5 : 1,
+  //                           ),
+  //                         ),
+  //                         child: InkWell(
+  //                           borderRadius: BorderRadius.circular(16),
+  //                           onTap: () {
+  //                             setState(() {
+  //                               _addressController.text = addr['address'];
+  //                             });
+  //                             Navigator.pop(context);
+  //                           },
+  //                           child: Row(
+  //                             children: [
+  //                               Container(
+  //                                 padding: const EdgeInsets.all(10),
+  //                                 decoration: BoxDecoration(
+  //                                   color: isDefault
+  //                                       ? Colors.blue.withOpacity(0.1)
+  //                                       : Colors.grey.withOpacity(0.1),
+  //                                   shape: BoxShape.circle,
+  //                                 ),
+  //                                 child: Icon(
+  //                                   isDefault
+  //                                       ? Icons.home_rounded
+  //                                       : Icons.location_on_rounded,
+  //                                   color: isDefault
+  //                                       ? ColorConfig.primary
+  //                                       : Colors.grey,
+  //                                 ),
+  //                               ),
+  //                               const SizedBox(width: 12),
+  //                               Expanded(
+  //                                 child: Column(
+  //                                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                                   children: [
+  //                                     Text(
+  //                                       addressText,
+  //                                       style: const TextStyle(
+  //                                         fontSize: 15,
+  //                                         fontWeight: FontWeight.w500,
+  //                                       ),
+  //                                     ),
+  //                                     if (isDefault)
+  //                                       Padding(
+  //                                         padding: const EdgeInsets.only(top: 4),
+  //                                         child: Text(
+  //                                           'Mặc định',
+  //                                           style: TextStyle(
+  //                                             fontSize: 12,
+  //                                             color: ColorConfig.textPrimary,
+  //                                           ),
+  //                                         ),
+  //                                       ),
+  //                                   ],
+  //                                 ),
+  //                               ),
+  //                               if (isSelected)
+  //                                 Icon(
+  //                                   Icons.check_circle,
+  //                                   color: ColorConfig.primary,
+  //                                 ),
+  //                             ],
+  //                           ),
+  //                         ),
+  //                       );
+  //                     },
+  //                   ),
+  //                 ),
+  //
+  //                 if(_addresses.length < 3)...[
+  //                   SafeArea(
+  //                     child: Padding(
+  //                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+  //                       child: ElevatedButton.icon(
+  //                         onPressed: () {
+  //                           context.push(CustomerRouterConfig.addAddress).then((_) {
+  //                             _loadAddresses();
+  //                           });
+  //                         },
+  //                         icon: Icon(Icons.add, color: ColorConfig.white),
+  //                         label: Text('Thêm địa chỉ mới', style: TextStyle(color: ColorConfig.textWhite)),
+  //                         style: ElevatedButton.styleFrom(
+  //                           minimumSize: const Size.fromHeight(52),
+  //                           elevation: 0,
+  //                           backgroundColor: ColorConfig.primary,
+  //                           shape: RoundedRectangleBorder(
+  //                             borderRadius: BorderRadius.circular(14),
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ],
+  //
+  //               ],
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
+
+  void _showAddressPicker() async {
+    final selectedAddress = await showAddressPickerSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final height = MediaQuery.of(context).size.height * 0.7;
-
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Container(
-              height: height,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Row(
-                      children: [
-                        Text(
-                          'Chọn địa chỉ',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: (_addresses.isEmpty)
-                        ? const Center(
-                      child: Text(
-                        'Chưa có địa chỉ nào',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
-                        : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _addresses.length,
-                      itemBuilder: (context, index) {
-                        final addr = _addresses[index];
-                        final isDefault = addr['isDefault'] == true;
-                        final isSelected =
-                            _addressController.text == addr['address'];
-
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? Colors.blue.withOpacity(0.08)
-                                : Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isSelected
-                                  ? ColorConfig.primary
-                                  : Colors.grey.shade200,
-                              width: isSelected ? 1.5 : 1,
-                            ),
-                          ),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: () {
-                              setState(() {
-                                _addressController.text = addr['address'];
-                              });
-                              Navigator.pop(context);
-                            },
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: isDefault
-                                        ? Colors.blue.withOpacity(0.1)
-                                        : Colors.grey.withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    isDefault
-                                        ? Icons.home_rounded
-                                        : Icons.location_on_rounded,
-                                    color: isDefault
-                                        ? ColorConfig.primary
-                                        : Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        addr['address'],
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      if (isDefault)
-                                        Padding(
-                                          padding: EdgeInsets.only(top: 4),
-                                          child: Text(
-                                            'Mặc định',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: ColorConfig.textPrimary,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                if (isSelected)
-                                  Icon(
-                                    Icons.check_circle,
-                                    color: ColorConfig.primary,
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          context.push(CustomerRouterConfig.addAddress);
-                        },
-                        icon: Icon(Icons.add, color: ColorConfig.white),
-                        label: Text('Thêm địa chỉ mới', style: TextStyle(color: ColorConfig.textWhite)),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(52),
-                          elevation: 0,
-                          backgroundColor: ColorConfig.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      initialAddress: _addressController.text,
     );
+    if (selectedAddress != null && selectedAddress.isNotEmpty) {
+      setState(() {
+        _addressController.text = selectedAddress;
+      });
+    }
   }
 
   void _showDiscountBottomSheet() {
@@ -974,30 +1069,30 @@ class _CreateOrderNowScreenState
             const SizedBox(height: 12),
 
             // Chi tiết thanh toán
-            _Section(
+            Section(
               title: "Chi tiết thanh toán",
               child: Column(
                 children: [
-                  _InfoRow("Giá dịch vụ", "${FormatHelper.formatPrice(widget.data['serviceTimePrice']['price'])} đ"),
+                  InfoRow("Giá dịch vụ", "${FormatHelper.formatPrice(widget.data['serviceTimePrice']['price'])} đ"),
                   if (_extraFee > 0)
-                    _InfoRow("Phí hỗ trợ thêm", "+${FormatHelper.formatPrice(_extraFee)} đ", valueStyle: const TextStyle(color: Colors.green)),
+                    InfoRow("Phí hỗ trợ thêm", "+${FormatHelper.formatPrice(_extraFee)} đ", valueStyle: const TextStyle(color: Colors.green)),
                   if (_discountData != null)
-                    _InfoRow(
+                    InfoRow(
                       "Giảm giá",
                       "- ${_discountData!['typeDiscount'] == 'percentage' ? '${_discountData!['value']}%' : FormatHelper.formatPrice(_discountData!['value'] as int) + ' đ'}",
                       valueStyle: const TextStyle(color: Colors.red),
                     ),
                   const Divider(height: 20),
-                  _InfoRow("Tổng cộng", "${FormatHelper.formatPrice(_finalTotal)} đ", valueStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  InfoRow("Tổng cộng", "${FormatHelper.formatPrice(_finalTotal)} đ", valueStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ],
               ),
             ),
             const SizedBox(height: 12),
 
             // Ghi chú
-            _Section(
+            Section(
               title: "Ghi chú",
-              child: _InputBox(
+              child: InputBox(
                 isFocused: _noteFocusNode.hasFocus,
                 child: TextField(
                   controller: _noteController,
@@ -1067,8 +1162,6 @@ class _CreateOrderNowScreenState
                 ),
               ],
             ),
-
-            // const SizedBox(height: 6),
 
             // ===== HÀNG 2: VALUE =====
             Text(
@@ -1193,95 +1286,6 @@ class _CreateOrderNowScreenState
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-}
-
-// ================= UI COMPONENTS (giữ nguyên) =================
-class _Section extends StatelessWidget {
-  final String? title;
-  final IconData? icon;
-  final Widget child;
-
-  const _Section({this.title, this.icon, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (title != null)
-            Row(
-              children: [
-                if (icon != null) Icon(icon, size: 18, color: Colors.grey),
-                if (icon != null) const SizedBox(width: 6),
-                Text(title!, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-              ],
-            ),
-          if (title != null) const SizedBox(height: 10),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _InputBox extends StatelessWidget {
-  final String? text;
-  final bool isPlaceholder;
-  final Widget? child;
-  final bool isFocused;
-
-  const _InputBox({
-    this.text,
-    this.isPlaceholder = false,
-    this.child,
-    this.isFocused = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: child ?? Text(text ?? '', style: TextStyle(color: isPlaceholder ? Colors.grey : Colors.black)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final TextStyle? valueStyle;
-
-  const _InfoRow(this.label, this.value, {this.valueStyle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          Text(value, style: valueStyle ?? const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),
     );

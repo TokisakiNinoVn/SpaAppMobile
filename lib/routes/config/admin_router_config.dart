@@ -7,6 +7,8 @@ class AdminRouterConfig {
 
   static String customerManagementAccount = "/home-admin/manage-account-customer";
 
+  // Report
+  static String listReport = "/home-admin/reports";
   // Management banner
   static String managementBanner = "/home-admin/manage-banner";
   static String createBanner = "/home-admin/manage-banner/create";

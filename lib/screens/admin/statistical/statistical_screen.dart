@@ -27,10 +27,39 @@ class _StatisticalScreenState extends State<StatisticalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Thống kê"),
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Row(
+          children: [
+            InkWell(
+              onTap: () => context.pop(),
+              borderRadius: BorderRadius.circular(40),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text("Thống kê hệ thống"),
+          ],
+        ),
       ),
+
       body: Column(
-        children: [],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Chức năng đang được phát triển")
+        ],
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
+import 'package:spa_app/screens/customer/services/widgets/address_picker_widget.dart';
 import 'package:spa_app/services/user_discount_service.dart';
 
 import '../../../../helper/format_helper.dart';
@@ -327,185 +328,197 @@ class _CreateAutoMatchingOrderScreenState
   }
 
   // Mở bottom sheet chọn địa chỉ
-  void _showAddressPicker() {
-    showModalBottomSheet(
+  // void _showAddressPicker() {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     backgroundColor: Colors.transparent,
+  //     builder: (context) {
+  //       final height = MediaQuery.of(context).size.height * 0.7;
+  //
+  //       return StatefulBuilder(
+  //         builder: (context, setSheetState) {
+  //           return Container(
+  //             height: height,
+  //             decoration: const BoxDecoration(
+  //               color: Colors.white,
+  //               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+  //             ),
+  //             child: Column(
+  //               children: [
+  //                 const SizedBox(height: 10),
+  //                 Container(
+  //                   width: 40,
+  //                   height: 4,
+  //                   decoration: BoxDecoration(
+  //                     color: Colors.grey.shade300,
+  //                     borderRadius: BorderRadius.circular(10),
+  //                   ),
+  //                 ),
+  //
+  //                 const Padding(
+  //                   padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+  //                   child: Row(
+  //                     children: [
+  //                       Text(
+  //                         'Chọn địa chỉ',
+  //                         style: TextStyle(
+  //                           fontSize: 20,
+  //                           fontWeight: FontWeight.w700,
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //
+  //                 /// 🔥 LIST ĐỊA CHỈ
+  //                 Expanded(
+  //                   child: (_addresses.isEmpty)
+  //                       ? const Center(
+  //                     child: Text(
+  //                       'Chưa có địa chỉ nào',
+  //                       style: TextStyle(color: Colors.grey),
+  //                     ),
+  //                   )
+  //                       : ListView.builder(
+  //                     padding: const EdgeInsets.symmetric(horizontal: 16),
+  //                     itemCount: _addresses.length,
+  //                     itemBuilder: (context, index) {
+  //                       final addr = _addresses[index];
+  //                       final isDefault = addr['isDefault'] == true;
+  //                       final isSelected =
+  //                           _addressController.text == addr['address'];
+  //
+  //                       return AnimatedContainer(
+  //                         duration: const Duration(milliseconds: 200),
+  //                         margin: const EdgeInsets.only(bottom: 12),
+  //                         padding: const EdgeInsets.all(14),
+  //                         decoration: BoxDecoration(
+  //                           color: isSelected
+  //                               ? Colors.blue.withOpacity(0.08)
+  //                               : Colors.grey.shade50,
+  //                           borderRadius: BorderRadius.circular(16),
+  //                           border: Border.all(
+  //                             color: isSelected
+  //                                 ? ColorConfig.primary
+  //                                 : Colors.grey.shade200,
+  //                             width: isSelected ? 1.5 : 1,
+  //                           ),
+  //                         ),
+  //                         child: InkWell(
+  //                           borderRadius: BorderRadius.circular(16),
+  //                           onTap: () {
+  //                             setState(() {
+  //                               _addressController.text =
+  //                               addr['address'];
+  //                             });
+  //                             Navigator.pop(context);
+  //                           },
+  //                           child: Row(
+  //                             children: [
+  //                               Container(
+  //                                 padding: const EdgeInsets.all(10),
+  //                                 decoration: BoxDecoration(
+  //                                   color: isDefault
+  //                                       ? Colors.blue.withOpacity(0.1)
+  //                                       : Colors.grey.withOpacity(0.1),
+  //                                   shape: BoxShape.circle,
+  //                                 ),
+  //                                 child: Icon(
+  //                                   isDefault
+  //                                       ? Icons.home_rounded
+  //                                       : Icons.location_on_rounded,
+  //                                   color: isDefault
+  //                                       ? ColorConfig.primary
+  //                                       : Colors.grey,
+  //                                 ),
+  //                               ),
+  //
+  //                               const SizedBox(width: 12),
+  //
+  //                               /// TEXT
+  //                               Expanded(
+  //                                 child: Column(
+  //                                   crossAxisAlignment:
+  //                                   CrossAxisAlignment.start,
+  //                                   children: [
+  //                                     Text(
+  //                                       addr['address'],
+  //                                       style: const TextStyle(
+  //                                         fontSize: 15,
+  //                                         fontWeight: FontWeight.w500,
+  //                                       ),
+  //                                     ),
+  //                                     if (isDefault)
+  //                                       Padding(
+  //                                         padding:
+  //                                         EdgeInsets.only(top: 4),
+  //                                         child: Text(
+  //                                           'Mặc định',
+  //                                           style: TextStyle(
+  //                                             fontSize: 12,
+  //                                             color: ColorConfig.textPrimary,
+  //                                           ),
+  //                                         ),
+  //                                       ),
+  //                                   ],
+  //                                 ),
+  //                               ),
+  //
+  //                               /// CHECK
+  //                               if (isSelected)
+  //                                 Icon(
+  //                                   Icons.check_circle,
+  //                                   color: ColorConfig.primary,
+  //                                 ),
+  //                             ],
+  //                           ),
+  //                         ),
+  //                       );
+  //                     },
+  //                   ),
+  //                 ),
+  //
+  //                 /// 👇 BUTTON
+  //                 SafeArea(
+  //                   child: Padding(
+  //                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+  //                     child: ElevatedButton.icon(
+  //                       onPressed: () {
+  //                         context.push(CustomerRouterConfig.addAddress);
+  //                       },
+  //                       icon: Icon(Icons.add, color: ColorConfig.white,),
+  //                       label: Text('Thêm địa chỉ mới', style: TextStyle(color: ColorConfig.textWhite),),
+  //                       style: ElevatedButton.styleFrom(
+  //                         minimumSize: const Size.fromHeight(52),
+  //                         elevation: 0,
+  //                         backgroundColor: ColorConfig.primary,
+  //                         shape: RoundedRectangleBorder(
+  //                           borderRadius: BorderRadius.circular(14),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
+
+  void _showAddressPicker() async {
+    final selectedAddress = await showAddressPickerSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final height = MediaQuery.of(context).size.height * 0.7;
-
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Container(
-              height: height,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Row(
-                      children: [
-                        Text(
-                          'Chọn địa chỉ',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  /// 🔥 LIST ĐỊA CHỈ
-                  Expanded(
-                    child: (_addresses.isEmpty)
-                        ? const Center(
-                      child: Text(
-                        'Chưa có địa chỉ nào',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
-                        : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _addresses.length,
-                      itemBuilder: (context, index) {
-                        final addr = _addresses[index];
-                        final isDefault = addr['isDefault'] == true;
-                        final isSelected =
-                            _addressController.text == addr['address'];
-
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? Colors.blue.withOpacity(0.08)
-                                : Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isSelected
-                                  ? ColorConfig.primary
-                                  : Colors.grey.shade200,
-                              width: isSelected ? 1.5 : 1,
-                            ),
-                          ),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: () {
-                              setState(() {
-                                _addressController.text =
-                                addr['address'];
-                              });
-                              Navigator.pop(context);
-                            },
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: isDefault
-                                        ? Colors.blue.withOpacity(0.1)
-                                        : Colors.grey.withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    isDefault
-                                        ? Icons.home_rounded
-                                        : Icons.location_on_rounded,
-                                    color: isDefault
-                                        ? ColorConfig.primary
-                                        : Colors.grey,
-                                  ),
-                                ),
-
-                                const SizedBox(width: 12),
-
-                                /// TEXT
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        addr['address'],
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      if (isDefault)
-                                        Padding(
-                                          padding:
-                                          EdgeInsets.only(top: 4),
-                                          child: Text(
-                                            'Mặc định',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: ColorConfig.textPrimary,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-
-                                /// CHECK
-                                if (isSelected)
-                                  Icon(
-                                    Icons.check_circle,
-                                    color: ColorConfig.primary,
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  /// 👇 BUTTON
-                  SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          context.push(CustomerRouterConfig.addAddress);
-                        },
-                        icon: Icon(Icons.add, color: ColorConfig.white,),
-                        label: Text('Thêm địa chỉ mới', style: TextStyle(color: ColorConfig.textWhite),),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(52),
-                          elevation: 0,
-                          backgroundColor: ColorConfig.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      initialAddress: _addressController.text,
     );
+    if (selectedAddress != null && selectedAddress.isNotEmpty) {
+      setState(() {
+        _addressController.text = selectedAddress;
+      });
+    }
   }
 
   // Mở bottom sheet nhập mã giảm giá

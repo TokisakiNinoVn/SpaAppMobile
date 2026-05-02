@@ -159,43 +159,45 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
     setState(() => _isSwitchingRole = true);
     try {
       final response = await _userService.changeRoleService({});
+      // appLog("$response");
       if (!mounted) return;
       if (response['success'] == true) {
-        _showSnack("Chuyển đổi vai trò thành công", _kBlack);
+        SnackBarHelper.showSuccess(context, "Chuyển đổi vai trò thành công!");
         await SharedPreferencesHelper.logOut();
-        if (mounted) context.go(CustomerRouterConfig.homeCustomer);
+        if (mounted) context.go(GlobalRouterConfig.loginOTP);
       } else {
-        _showSnack("Chuyển đổi thất bại", _kRed);
+        SnackBarHelper.showError(context, "Lỗi chuyển đổi vai trò!");
       }
     } catch (e) {
-      if (mounted) _showSnack("Lỗi: $e", _kRed);
+      if (mounted) SnackBarHelper.showError(context, "Lỗi: $e");
     } finally {
       if (mounted) setState(() => _isSwitchingRole = false);
     }
   }
 
-  void _showSnack(String msg, Color bg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: const TextStyle(color: Colors.white)),
-      backgroundColor: bg,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-    ));
-  }
-
   void _showRoleSwitchDialog() {
-    showDialog(
+    showDialog<bool>(
       context: context,
-      builder: (_) => SpaDialog(
-        // icon: Icons.switch_account_rounded,
-        title: 'Chuyển đổi vai trò',
-        body: 'Bạn muốn chuyển sang vai trò cộng tác viên?',
-        cancelLabel: 'Hủy',
-        confirmLabel: 'Chuyển đổi',
-        confirmColor: ColorConfig.primary,
-        onConfirm: _changeRole,
+      builder: (_) => AlertDialog(
+        title: const Text('Chuyển đổi vai trò'),
+        content: const Text('Bạn muốn chuyển sang vai trò cộng tác viên?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: ColorConfig.primary),
+            child: Text('Chuyển đổi', style: TextStyle(color: ColorConfig.textWhite),),
+          ),
+        ],
       ),
-    );
+    ).then((confirmed) {
+      if (confirmed == true) {
+        _changeRole();
+      }
+    });
   }
 
   Future<void> _showLogoutDialog() async {
@@ -230,7 +232,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
         }
       } catch (e) {
         if (mounted) Navigator.of(context).pop();
-        _showSnack("Lỗi đăng xuất: $e", _kRed);
+        SnackBarHelper.showError(context, "Lỗi đăng xuất: $e");
       }
     }
   }
@@ -263,7 +265,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: Column(
                     children: [
                       if (_isLogin) ...[
@@ -276,7 +278,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
                         _buildAccountActions(),
                       ] else ...[
                         _buildGuestBanner(),
-                        const SizedBox(height: 24),
+                        // const SizedBox(height: 24),
                         _buildActionButton(
                           label: 'Đăng nhập',
                           icon: Icons.login_rounded,
@@ -624,7 +626,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // color: Colors.white,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(

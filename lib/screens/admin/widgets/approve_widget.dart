@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/approval_request_service.dart';
 import 'package:spa_app/helper/format_helper.dart';
@@ -177,7 +178,7 @@ class _ApproveTabState extends State<ApproveTab> {
                   ),
                   Text(
                       isTechnicianRequest ? 'Chi tiết Kỹ thuật viên' : 'Chi tiết Yêu cầu',
-                      style: ThemeConfig.appTextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: ColorConfig.textPrimary)
+                      style: ThemeConfig.appTextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: ColorConfig.textBlack)
                   ),
                   const SizedBox(height: 24),
                   if (isTechnicianRequest) ...[
@@ -229,7 +230,7 @@ class _ApproveTabState extends State<ApproveTab> {
                     ),
                     _buildInfoRow('Địa chỉ chi tiết', '${request['technician']['address'] ?? 'Không có'}'),
                     _buildInfoRow('Kinh nghiệm', request['technician']['experience'] ?? 'Không có'),
-                    _buildInfoRow('Tiểu sử', request['technician']['bio'] ?? 'Không có'),
+                    // _buildInfoRow('Tiểu sử', request['technician']['bio'] ?? 'Không có'),
                   ],
                   if(request['isCreatedForTechnician'] == true) ...[
                     _buildInfoRow('Vai trò', request['role'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'),
@@ -263,9 +264,9 @@ class _ApproveTabState extends State<ApproveTab> {
                           onTap: () => _showFullScreenImages(context, request['technician']['images'], index),
                           child: Card(
                             elevation: 4,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(8),
                               child: CachedNetworkImage(
                                 imageUrl: imageUrl,
                                 fit: BoxFit.cover,
@@ -298,15 +299,38 @@ class _ApproveTabState extends State<ApproveTab> {
                   //     tooltip: 'Phê duyệt',
                   //   ) : const SizedBox.shrink(),
                   // ),
+
+                  // Center(
+                  //   child: request['status'] != 'approved'
+                  //       ? IconButton(
+                  //     onPressed: () => _showApproveConfirmDialog(request['_id']),
+                  //     icon: Icon(Icons.check_circle, size: 40, color: Colors.green),
+                  //     tooltip: 'Phê duyệt',
+                  //   )
+                  //       : const SizedBox.shrink(),
+                  // ),
+
                   Center(
                     child: request['status'] != 'approved'
-                        ? IconButton(
+                        ? TextButton.icon(
                       onPressed: () => _showApproveConfirmDialog(request['_id']),
-                      icon: Icon(Icons.check_circle, size: 40, color: Colors.green),
-                      tooltip: 'Phê duyệt',
+                      icon: const Icon(
+                        Icons.check_circle,
+                        size: 20,
+                      ),
+                      label: const Text('Phê duyệt yêu cầu'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     )
                         : const SizedBox.shrink(),
-                  ),
+                  )
+
                 ],
               ),
             ),
@@ -337,7 +361,7 @@ class _ApproveTabState extends State<ApproveTab> {
             width: 150,
             child: Text(
                 label,
-                style: ThemeConfig.appTextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: ColorConfig.textPrimary)
+                style: ThemeConfig.appTextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: ColorConfig.textBlack)
             ),
           ),
           Expanded(
@@ -406,7 +430,7 @@ class _ApproveTabState extends State<ApproveTab> {
           child: isLoading
               ? Center(
             child: CircularProgressIndicator(
-              color: const Color(0xFFD4A373),
+              color: ColorConfig.primary,
             ),
           )
               : filteredRequests.isEmpty
@@ -446,7 +470,7 @@ class _ApproveTabState extends State<ApproveTab> {
 
                   title: Text(isTechnicianRequest ?
                     request['technician']['fullName'] ?? 'Kỹ thuật viên' : request['user']['fullname'] ?? 'Quản lý',
-                      style: ThemeConfig.appTextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: ColorConfig.textPrimary)
+                      style: ThemeConfig.appTextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: ColorConfig.textBlack)
                   ),
 
                   subtitle: Column(
@@ -455,12 +479,12 @@ class _ApproveTabState extends State<ApproveTab> {
                       if(request['user'] == null) ...[
                         Text(
                             '${request['role'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'}',
-                            style: ThemeConfig.appTextStyle(fontSize: 14, color: ColorConfig.textSecondary)
+                            style: ThemeConfig.appTextStyle(fontSize: 14, color: ColorConfig.textBlack)
                         ),
                       ] else
                         Text(
                             '${request['user']['roles'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'}',
-                            style: ThemeConfig.appTextStyle(fontSize: 14, color: ColorConfig.textSecondary)
+                            style: ThemeConfig.appTextStyle(fontSize: 14, color: ColorConfig.textBlack)
                         ),
                     ],
                   ),

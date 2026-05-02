@@ -7,6 +7,7 @@ import 'package:media_store_plus/media_store_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:spa_app/config/color_config.dart';
 
 class FullScreenSingleImageViewer extends StatefulWidget {
   final String imageUrl;
@@ -76,19 +77,87 @@ class _FullScreenSingleImageViewerState extends State<FullScreenSingleImageViewe
     }
   }
 
+  Future<bool> _requestPhotosPermission() async {
+    final status = await Permission.photos.request();
+    if (status.isGranted) return true;
+    if (status.isPermanentlyDenied) {
+      _showPermissionDeniedDialog();
+      return false;
+    }
+    return false;
+  }
+
+  void _showPermissionDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Cần quyền truy cập', style: TextStyle()),
+        content: Text(
+          'Vui lòng cấp quyền lưu ảnh trong Cài đặt để tải ảnh về máy.',
+          style: TextStyle(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Hủy', style: TextStyle(color: Colors.black)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              openAppSettings();
+            },
+            child: Text('Mở cài đặt', style: TextStyle(color: const Color(0xFFD4A373))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _requestLegacyStoragePermission() async {
+    final status = await Permission.storage.request();
+    if (status.isGranted) return true;
+    if (status.isPermanentlyDenied) {
+      _showPermissionDeniedDialog();
+      return false;
+    }
+    return false;
+  }
+
   Future<void> _downloadImage() async {
     setState(() => _isDownloading = true);
-
     try {
-      final status = await Permission.photos.request();
-      if (!status.isGranted) throw Exception("Không có quyền lưu ảnh");
+      // Yêu cầu quyền phù hợp với phiên bản Android
+      bool permissionGranted;
+      if (Platform.isAndroid) {
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        if (androidInfo.version.sdkInt >= 33) {
+          // Android 13+
+          permissionGranted = await _requestPhotosPermission();
+        } else if (androidInfo.version.sdkInt >= 29) {
+          // Android 10,11,12
+          permissionGranted = await _requestLegacyStoragePermission();
+        } else {
+          // Android 9 trở xuống
+          permissionGranted = await _requestLegacyStoragePermission();
+        }
+      } else {
+        // iOS
+        permissionGranted = await _requestPhotosPermission();
+      }
 
+
+      if (!permissionGranted) {
+        throw Exception("Không có quyền lưu ảnh");
+      }
+
+      // ... phần tải và lưu ảnh giữ nguyên ...
       final response = await Dio().get(
         widget.imageUrl,
         options: Options(responseType: ResponseType.bytes),
       );
 
-      final tempFile = File('${(await Directory.systemTemp.createTemp()).path}/downloaded.jpg');
+      final tempDir = await Directory.systemTemp.createTemp();
+      final tempFile = File('${tempDir.path}/downloaded_${DateTime.now().millisecondsSinceEpoch}.jpg');
       await tempFile.writeAsBytes(response.data);
 
       await MediaStore.ensureInitialized();
@@ -103,16 +172,16 @@ class _FullScreenSingleImageViewerState extends State<FullScreenSingleImageViewe
       if (result != null) {
         await _showNotification();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Tải ảnh thành công', style: GoogleFonts.lora(color: Colors.white)),
+          content: Text('Tải ảnh thành công', style: TextStyle(color: Colors.white)),
           backgroundColor: const Color(0xFFD4A373),
         ));
       } else {
-        throw Exception("Không thể lưu ảnh");
+        throw Exception("Không thể lưu ảnh vào MediaStore");
       }
     } catch (e) {
       debugPrint("🛑 Lỗi tải ảnh: $e");
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('❌ Lỗi khi tải ảnh: ${e.toString()}', style: GoogleFonts.lora(color: Colors.white)),
+        content: Text('❌ Lỗi: ${e.toString()}', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.redAccent,
       ));
     } finally {
@@ -155,7 +224,7 @@ class _FullScreenSingleImageViewerState extends State<FullScreenSingleImageViewe
             bottom: 16,
             right: 16,
             child: FloatingActionButton(
-              backgroundColor: const Color(0xFFD4A373),
+              backgroundColor: ColorConfig.primary,
               onPressed: _isDownloading ? null : _downloadImage,
               child: _isDownloading
                   ? const SizedBox(

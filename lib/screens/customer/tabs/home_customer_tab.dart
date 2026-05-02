@@ -6,8 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/screens/customer/tabs/components/feature_item.dart';
+import 'package:spa_app/screens/customer/tabs/components/feature_section.dart';
+import 'package:spa_app/screens/customer/tabs/components/promo_section.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:spa_app/routes/config/customer_router_config.dart';
@@ -19,10 +23,13 @@ import '../../../services/information_service.dart';
 import 'package:spa_app/helper/location_helper.dart';
 import 'package:spa_app/utils/address_util.dart';
 
+import 'widgets/featured_services_widgetv2.dart';
 import 'widgets/home_header_widget.dart';
+import 'widgets/home_shortcut_item.dart';
 import 'widgets/location_bar_widget.dart';
 import 'widgets/banner_section_widget.dart';
 import 'widgets/featured_services_widget.dart';
+import 'widgets/promo_card.dart';
 
 class HomeCustomerTab extends StatefulWidget {
   const HomeCustomerTab({super.key});
@@ -844,6 +851,19 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
 
   @override
   Widget build(BuildContext context) {
+    String _mapRouter(int index) {
+      switch (index) {
+        case 0:
+          return CustomerRouterConfig.orderNow;
+        case 1:
+          return CustomerRouterConfig.listBookTechnician;
+        case 2:
+          return CustomerRouterConfig.automaticMatching;
+        default:
+          return "";
+      }
+    }
+
     super.build(context);
     return Scaffold(
       backgroundColor: ColorConfig.primaryBackground,
@@ -861,7 +881,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 18),
                       HomeHeaderWidget(
                         isLogin: _isLogin,
                         inforUser: inforUser,
@@ -891,33 +911,132 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                             : SizedBox.shrink(),
                       ),
 
-                      const SizedBox(height: 5),
-                      if(featuredServices.isNotEmpty)...[
-                        FeaturedServicesWidget(
-                          title: featuredServices[0]['title'],
-                          description: featuredServices[0]['description'],
-                          tag: featuredServices[0]['tag'],
-                          imageUrl: featuredServices[0]['image'],
-                          router: CustomerRouterConfig.orderNow,
-                        ),
-                        FeaturedServicesWidget(
-                          title: featuredServices[1]['title'],
-                          description: featuredServices[1]['description'],
-                          tag: featuredServices[1]['tag'],
-                          imageUrl: featuredServices[1]['image'],
-                          router: CustomerRouterConfig.listBookTechnician,
-                        ),
+                      const SizedBox(height: 18),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 0),
+                        child: Column(
+                          children: [
+                            HomeShortcutRow(
+                              items: [
+                                HomeShortcutItem(
+                                  icon: Icons.calendar_today,
+                                  label: "Đặt lịch ngay",
+                                  onTap: () {},
+                                ),
+                                HomeShortcutItem(
+                                  icon: Icons.spa,
+                                  label: "Dịch vụ",
+                                ),
+                                HomeShortcutItem(
+                                  icon: Icons.card_giftcard,
+                                  label: "Ưu đãi",
+                                  isHot: true,
+                                ),
+                                // HomeShortcutItem(
+                                //   icon: Icons.article,
+                                //   label: "Tin tức",
+                                // ),
+                                HomeShortcutItem(
+                                  icon: Icons.headset_mic,
+                                  label: "Hỗ trợ 24/7",
+                                ),
+                              ],
+                            ),
 
-                        FeaturedServicesWidget(
-                          title: featuredServices[2]['title'],
-                          description: featuredServices[2]['description'],
-                          tag: featuredServices[2]['tag'],
-                          imageUrl: featuredServices[2]['image'],
-                          router: CustomerRouterConfig.automaticMatching,
+
+                            if (featuredServices.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Text("Dịch vụ nổi bật", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),),
+
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                                child: Row(
+                                  children: List.generate(featuredServices.length, (index) {
+                                    final item = featuredServices[index];
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 7),
+                                      child: SizedBox(
+                                        width: 140,
+                                        child: FeaturedServicesWidgetV2(
+                                          title: item['title'],
+                                          description: item['description'],
+                                          tag: item['tag'],
+                                          imageUrl: item['image'],
+                                          router: _mapRouter(index),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ),
+                              ),
+                            ] else
+                              const SizedBox(),
+
+                            PromoSection(
+                              onViewAll: () {},
+                              children: [
+                                PromoCard(
+                                  image: "https://picsum.photos/200",
+                                  title: "Combo Thư giãn toàn diện",
+                                  subtitle: "Massage body + Chăm sóc da",
+                                  oldPrice: "700.000đ",
+                                  newPrice: "490.000đ",
+                                  discount: "Giảm 30%",
+                                  showCountdown: true,
+                                  remaining: const Duration(hours: 2, minutes: 18, seconds: 45),
+                                  onTap: () {appLog("Combo Thư giãn toàn diện");},
+                                ),
+                                PromoCard(
+                                  image: "https://picsum.photos/201",
+                                  title: "Chăm sóc da chuyên sâu",
+                                  subtitle: "Dưỡng ẩm – Trẻ hóa làn da",
+                                  oldPrice: "500.000đ",
+                                  newPrice: "400.000đ",
+                                  discount: "Giảm 20%",
+                                  onTap: () {},
+                                ),
+                              ],
+                            )
+
+
+
+                          ],
                         ),
-                      ] else
-                        const Text(""),
-                      const SizedBox(height: 30),
+                      ),
+                      // if(featuredServices.isNotEmpty)...[
+                      //   FeaturedServicesWidget(
+                      //     title: featuredServices[0]['title'],
+                      //     description: featuredServices[0]['description'],
+                      //     tag: featuredServices[0]['tag'],
+                      //     imageUrl: featuredServices[0]['image'],
+                      //     router: CustomerRouterConfig.orderNow,
+                      //   ),
+                      //   FeaturedServicesWidget(
+                      //     title: featuredServices[1]['title'],
+                      //     description: featuredServices[1]['description'],
+                      //     tag: featuredServices[1]['tag'],
+                      //     imageUrl: featuredServices[1]['image'],
+                      //     router: CustomerRouterConfig.listBookTechnician,
+                      //   ),
+                      //
+                      //   FeaturedServicesWidget(
+                      //     title: featuredServices[2]['title'],
+                      //     description: featuredServices[2]['description'],
+                      //     tag: featuredServices[2]['tag'],
+                      //     imageUrl: featuredServices[2]['image'],
+                      //     router: CustomerRouterConfig.automaticMatching,
+                      //   ),
+                      // ] else
+                      //   const Text(""),
+                      const Divider(height: 1, thickness: 0.5, indent: 16, endIndent: 16),
+                      const SizedBox(height: 20),
+                      Center(child: const Text("Về ${AppConfig.appName}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),)),
+                      const SizedBox(height: 10),
+
+                      FeatureSection(),
+                      const SizedBox(height: 70),
                     ],
                   ),
                 ),

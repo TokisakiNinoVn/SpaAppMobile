@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/services/user_discount_service.dart';
 
-class ListDiscountScreen extends StatefulWidget {
+class ListReportScreen extends StatefulWidget {
 
-  const ListDiscountScreen({
+  const ListReportScreen({
     super.key,
   });
 
   @override
-  State<ListDiscountScreen> createState() =>  _ListDiscountScreenState();
+  State<ListReportScreen> createState() =>  _ListReportScreenState();
 }
 
-class _ListDiscountScreenState extends State<ListDiscountScreen> {
+class _ListReportScreenState extends State<ListReportScreen> {
   final UserDiscountService _userDiscountService = UserDiscountService();
 
   void initState() {
@@ -46,7 +46,7 @@ class _ListDiscountScreenState extends State<ListDiscountScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Text("Yêu thích"),
+            const Text("Các báo cáo"),
           ],
         ),
       ),
@@ -54,7 +54,7 @@ class _ListDiscountScreenState extends State<ListDiscountScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Danh sách Kỹ thuật viên yêu thích!")
+          Text("Chức năng đang được phát triển")
         ],
       ),
     );

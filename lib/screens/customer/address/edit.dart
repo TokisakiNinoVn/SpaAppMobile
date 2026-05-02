@@ -346,8 +346,8 @@ class _EditAddressScreenState extends State<EditAddressScreen> {
                           borderSide: BorderSide.none,
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(40),
-                          borderSide: const BorderSide(color: Color(0xFF1A1A1A), width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: ColorConfig.primary, width: 1.5),
                         ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       ),

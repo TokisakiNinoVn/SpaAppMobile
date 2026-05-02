@@ -8,4 +8,10 @@ class FileService {
       '${FileApiRoutes.deleteFile}/$id',
     );
   }
+
+  Future<Map<String, dynamic>> deleteFileService2(String id, data) async {
+    return await ApiMethodsPrivate.postRequest(
+      '${FileApiRoutes.deleteFile}/$id', data,
+    );
+  }
 }

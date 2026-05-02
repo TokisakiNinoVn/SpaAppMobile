@@ -72,6 +72,7 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPLoginScreen>
         'phone': widget.phone,
         'otp': otp,
       });
+      final isHaveTechnician = response['data']?['isHaveTechnician'] ?? false;
 
       final prefs = await SharedPreferences.getInstance();
 
@@ -89,7 +90,28 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPLoginScreen>
           await SharedPrefs.saveValue(PrefType.int, "balance", response['data']?['customerProfile']?['balance'] ?? 0);
 
           context.go(CustomerRouterConfig.homeCustomer);
+        } else if (role == 'ktv') {
+          if (isHaveTechnician) {
+            await prefs.setString('technician', jsonEncode(response['data']?['technicianProfile']));
+            await prefs.setString('serviceIds', jsonEncode(response['data']?['technicianProfile']?['serviceIds'] ?? []));
+            await prefs.setString(
+              'inforService',
+              jsonEncode(response['data']?['inforService'] ?? []),
+            );
+
+            context.go('/home-technician');
+          } else {
+            SnackBarHelper.showWarning(context, "Bạn đã đăng ký tài khoản nhưng chưa tạo hồ sơ!");
+            context.go('/create-technician');
+          }
         }
+        // else if (role == 'quanly') {
+        //   context.go('/home-quanly');
+        // }
+        // else if (role == 'customer') {
+        //   await prefs.setString('customerProfile', jsonEncode(response['data']?['customerProfile']));
+        //   context.go('/home-customer');
+        // }
       } else {
         SnackBarHelper.showError(
             context, response['message'] ?? "Đăng nhập thất bại");

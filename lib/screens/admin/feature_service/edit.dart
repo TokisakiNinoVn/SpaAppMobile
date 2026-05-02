@@ -8,6 +8,7 @@ import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/information_service.dart';
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/file_service.dart';
+import 'package:spa_app/utils/file_util.dart';
 import 'dart:io';
 
 class EditFeatureService extends StatefulWidget {
@@ -26,6 +27,7 @@ class _EditFeatureServiceState extends State<EditFeatureService> {
   final InformationService _informationService = InformationService();
   final UploadService _uploadService = UploadService();
   final FileService _fileService = FileService();
+  final FileUtils _fileUtils = FileUtils(); // THÊM DÒNG NÀY
 
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
@@ -59,27 +61,98 @@ class _EditFeatureServiceState extends State<EditFeatureService> {
     super.dispose();
   }
 
+  // PHƯƠNG THỨC NÀY ĐÃ ĐƯỢC CẬP NHẬT - THÊM BƯỚC CẮT ẢNH
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      final oldImageId = _currentImage?['_id'];
+      // Hiển thị dialog loading trong khi cắt ảnh
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
 
-      setState(() {
-        _newImageFile = File(pickedFile.path);
-        _isImageDeleted = false;
-        _imageError = null;
-      });
+      try {
+        // Cắt ảnh với tỷ lệ phù hợp (ví dụ: 4:3 hoặc 16:9 tùy theo design)
+        final File? croppedImage = await _fileUtils.cropImage(
+          File(pickedFile.path),
+          16,
+          9,
+        );
 
-      if (oldImageId != null) {
-        try {
-          var response = await _fileService.deleteFileService(oldImageId);
-          appLog('Đã xóa ảnh cũ khi đổi ảnh: $oldImageId - $response');
-          // SnackBarHelper.showSuccess(context, )
-        } catch (e) {
-          appLog('Lỗi xóa ảnh cũ khi đổi: $e');
+        // Đóng dialog loading
+        if (context.mounted) Navigator.pop(context);
+
+        if (croppedImage != null) {
+          final oldImageId = _currentImage?['_id'];
+
+          setState(() {
+            _newImageFile = croppedImage;
+            _isImageDeleted = false;
+            _imageError = null;
+          });
+
+          // Xóa ảnh cũ trên server nếu có
+          if (oldImageId != null) {
+            try {
+              var response = await _fileService.deleteFileService(oldImageId);
+              appLog('Đã xóa ảnh cũ khi đổi ảnh: $oldImageId - $response');
+            } catch (e) {
+              appLog('Lỗi xóa ảnh cũ khi đổi: $e');
+            }
+          }
+        } else {
+          // Người dùng hủy cắt ảnh
+          if (context.mounted) {
+            SnackBarHelper.showWarning(context, 'Đã hủy chọn ảnh');
+          }
         }
+      } catch (e) {
+        if (context.mounted) Navigator.pop(context);
+        if (context.mounted) {
+          SnackBarHelper.showError(context, 'Lỗi khi xử lý ảnh: $e');
+        }
+      }
+    }
+  }
+
+  // PHƯƠNG THỨC MỚI - CHO PHÉP CẮT LẠI ẢNH ĐÃ CHỌN
+  Future<void> _recropImage() async {
+    if (_newImageFile == null) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final File? croppedImage = await _fileUtils.cropImage(
+        _newImageFile!,
+        16,
+        9,
+      );
+
+      if (context.mounted) Navigator.pop(context);
+
+      if (croppedImage != null) {
+        setState(() {
+          _newImageFile = croppedImage;
+        });
+        if (context.mounted) {
+          SnackBarHelper.showSuccess(context, 'Đã cắt lại ảnh thành công');
+        }
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.pop(context);
+      if (context.mounted) {
+        SnackBarHelper.showError(context, 'Lỗi khi cắt lại ảnh: $e');
       }
     }
   }
@@ -363,83 +436,118 @@ class _EditFeatureServiceState extends State<EditFeatureService> {
         const SizedBox(height: 8),
 
         // Image display
-        Container(
-          width: double.infinity,
-          height: 260,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: _imageError != null ? Colors.red.shade300 : Colors.grey.shade200,
-              width: 1.5,
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _imageError != null ? Colors.red.shade300 : Colors.grey.shade200,
+                width: 1.5,
+              ),
             ),
-          ),
-          child: _currentImage != null || _newImageFile != null
-              ? ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _newImageFile != null
-                    ? Image.file(
-                  _newImageFile!,
-                  fit: BoxFit.cover,
-                )
-                    : _currentImage != null && _currentImage!['url'] != null
-                    ? Image.network(
-                  FormatHelper.formatNetworkImageUrl(_currentImage!['url']),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildImagePlaceholder();
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        color: const Color(0xFF5E9B8C),
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                            : null,
-                      ),
-                    );
-                  },
-                )
-                    : _buildImagePlaceholder(),
-                // Delete button overlay
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _deleteImage,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+            child: _currentImage != null || _newImageFile != null
+                ? ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _newImageFile != null
+                      ? Image.file(
+                    _newImageFile!,
+                    fit: BoxFit.cover,
+                  )
+                      : _currentImage != null && _currentImage!['url'] != null
+                      ? Image.network(
+                    FormatHelper.formatNetworkImageUrl(_currentImage!['url']),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildImagePlaceholder();
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: const Color(0xFF5E9B8C),
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      );
+                    },
+                  )
+                      : _buildImagePlaceholder(),
+
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Row(
+                      children: [
+                        if (_newImageFile != null)
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _recropImage,
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.95),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.crop,
+                                  color: ColorConfig.primary,
+                                  size: 20,
+                                ),
+                              ),
                             ),
-                          ],
+                          ),
+                        const SizedBox(width: 8),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _deleteImage,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.95),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                                size: 20,
+                              ),
+                            ),
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
-                          size: 20,
-                        ),
-                      ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          )
-              : _buildImagePlaceholderWithButton(),
+                ],
+              ),
+            )
+                : _buildImagePlaceholderWithButton(),
+          ),
         ),
 
         const SizedBox(height: 16),
@@ -467,24 +575,51 @@ class _EditFeatureServiceState extends State<EditFeatureService> {
               ),
             ),
           )
-              : OutlinedButton.icon(
-            onPressed: _pickImage,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: ColorConfig.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+              : Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // THÊM NÚT CẮT LẠI ẢNH Ở DƯỚI
+              if (_newImageFile != null)
+                OutlinedButton.icon(
+                  onPressed: _recropImage,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ColorConfig.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    side: BorderSide(color: ColorConfig.primary),
+                  ),
+                  icon: const Icon(Icons.crop, size: 18),
+                  label: const Text(
+                    'Cắt lại',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: _pickImage,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ColorConfig.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  side: BorderSide(color: ColorConfig.primary),
+                ),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text(
+                  'Đổi ảnh',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-              side: BorderSide(color: ColorConfig.primary),
-            ),
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            label: const Text(
-              'Đổi ảnh',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            ],
           ),
         ),
 
