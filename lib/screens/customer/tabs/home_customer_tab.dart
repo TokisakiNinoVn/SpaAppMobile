@@ -978,7 +978,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                               onViewAll: () {},
                               children: [
                                 PromoCard(
-                                  image: "https://picsum.photos/200",
+                                  image: "https://i.pinimg.com/1200x/57/15/12/57151294cfea55e5190910a4e3ab1d48.jpg",
                                   title: "Combo Thư giãn toàn diện",
                                   subtitle: "Massage body + Chăm sóc da",
                                   oldPrice: "700.000đ",
@@ -986,16 +986,20 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                                   discount: "Giảm 30%",
                                   showCountdown: true,
                                   remaining: const Duration(hours: 2, minutes: 18, seconds: 45),
-                                  onTap: () {appLog("Combo Thư giãn toàn diện");},
+                                  onTap: () {
+                                    context.push(CustomerRouterConfig.listOrderNowTechnician);
+                                  },
                                 ),
                                 PromoCard(
-                                  image: "https://picsum.photos/201",
+                                  image: "https://i.pinimg.com/736x/46/07/5f/46075f13a2009a747fdfb1987a1f75d9.jpg",
                                   title: "Chăm sóc da chuyên sâu",
                                   subtitle: "Dưỡng ẩm – Trẻ hóa làn da",
                                   oldPrice: "500.000đ",
                                   newPrice: "400.000đ",
                                   discount: "Giảm 20%",
-                                  onTap: () {},
+                                  onTap: () {
+                                    context.push(CustomerRouterConfig.listOrderNowTechnician);
+                                  },
                                 ),
                               ],
                             )

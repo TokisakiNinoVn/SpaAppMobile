@@ -39,4 +39,7 @@ class CustomerRouterConfig {
   static String automaticMatching = "/home-customer/automatic-matching";
   static String createAutomaticMatchingOrder = "/home-customer/automatic-matching/create-order";
 
+  // Create Rate
+  static String createRate = "/home-customer/create-rate";
+  static String viewOrUpdateRate = "/home-customer/view-update-rate";
 }

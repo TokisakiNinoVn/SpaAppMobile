@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/services/user_discount_service.dart';
 
-class ListDiscountScreen extends StatefulWidget {
+class CreateReportScreen extends StatefulWidget {
 
-  const ListDiscountScreen({
+  const CreateReportScreen({
     super.key,
   });
 
   @override
-  State<ListDiscountScreen> createState() =>  _ListDiscountScreenState();
+  State<CreateReportScreen> createState() =>  _CreateReportScreenState();
 }
 
-class _ListDiscountScreenState extends State<ListDiscountScreen> {
+class _CreateReportScreenState extends State<CreateReportScreen> {
   final UserDiscountService _userDiscountService = UserDiscountService();
 
   void initState() {

@@ -46,16 +46,18 @@ class _ListDiscountScreenState extends State<ListDiscountScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Text("Yêu thích"),
+            const Text("__________"),
           ],
         ),
       ),
 
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Danh sách Kỹ thuật viên yêu thích!")
-        ],
+      body: Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Chức năng đang được phát triển!")
+          ],
+        ),
       ),
     );
   }
