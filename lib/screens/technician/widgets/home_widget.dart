@@ -449,6 +449,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
         'result': 'done'
       };
       final response = await _orderService.updateStatus(data);
+      appLog("$response");
 
       if (response['success'] == true) {
         if (!mounted) return;

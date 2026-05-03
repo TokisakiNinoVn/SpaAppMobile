@@ -13,6 +13,7 @@ class OrderService {
   }
 
   Future<Map<String, dynamic>> updateStatus(Map<String, dynamic> data) async {
+    appLog("Data: $data");
     return await ApiMethodsPrivate.putRequest(OrderApiRoutes.updateStatus, data);
   }
 

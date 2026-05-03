@@ -575,6 +575,9 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
     final name = service["name"] as String? ?? "Không có tên";
     final serviceId = service["_id"] as String?;
     final isSelected = (_selectedServiceId == serviceId);
+    final currentTimePrice = timePrices.isNotEmpty && _selectedTimeIndex < timePrices.length
+        ? timePrices[_selectedTimeIndex]
+        : null;
 
     // Giá hiển thị mặc định (lấy từ time đầu tiên)
     final defaultPrice = timePrices.isNotEmpty ? timePrices[0]["price"] : 0;
@@ -602,7 +605,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                       Text(name, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: ColorConfig.black)),
                       const SizedBox(height: 4),
                       Text(
-                        FormatHelper.formatPrice(defaultPrice),
+                        FormatHelper.formatPrice(currentTimePrice["price"]),
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: ColorConfig.black),
                       ),
                     ],

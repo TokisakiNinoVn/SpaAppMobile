@@ -3,6 +3,8 @@ import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/screens/customer/address/add.dart';
 import 'package:spa_app/screens/customer/address/edit.dart';
 import 'package:spa_app/screens/customer/address/list.dart';
+import 'package:spa_app/screens/customer/rate/create_rate_screen.dart';
+import 'package:spa_app/screens/customer/rate/view_update_rate_screen.dart';
 import 'package:spa_app/screens/customer/services/automatic_matching/create_automatic_matching_order.dart';
 import 'package:spa_app/screens/customer/services/books/create_book_order.dart';
 import 'package:spa_app/screens/customer/services/now/create_order_customer.dart';
@@ -92,6 +94,33 @@ final List<GoRoute> customerRoutes = [
           path: 'discounts',
           builder: (context, state) => ListDiscountScreen(),
         ),
+
+        GoRoute(
+          path: 'create-rate',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+
+            final orderId = extra?['orderId'];
+            final technicianId = extra?['technicianId'];
+
+            return CreateRateScreen(
+              orderId: orderId,
+              technicianId: technicianId,
+            );
+          },
+        ),
+
+        GoRoute(
+          path: 'view-update-rate',
+          builder: (context, state) {
+            final data = state.extra as Map<String, dynamic>?;
+
+            return ViewOrUpdateRateScreen(
+              data: data,
+            );
+          },
+        ),
+
 
         GoRoute(
           path: 'book',

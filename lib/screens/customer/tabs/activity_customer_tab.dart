@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/order_service.dart';
 
 import '../../../helper/check_login_helper.dart';
@@ -24,8 +25,8 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
   bool _isLogin = false;
   String _errorMessage = '';
 
-  String _selectedFilter = 'Tất cả';
-  final List<String> _filters = ['Tất cả', 'Đang chờ', 'Đã xác nhận', 'Đã hoàn thành', 'Đã hủy'];
+  String _selectedFilter = 'Đang làm';
+  final List<String> _filters = ['Đang làm', 'Đang chờ', 'Đã hoàn thành', 'Hết thời gian chờ', 'Đã hủy', 'Tất cả'];
 
   List<dynamic> _orders = [];
 
@@ -35,32 +36,18 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
     switch (_selectedFilter) {
       case 'Đang chờ':
         return _orders.where((order) => order['status'] == 'pending').toList();
-      case 'Đã xác nhận':
+      case 'Đang làm':
         return _orders.where((order) => order['status'] == 'approved').toList();
       case 'Đã hoàn thành':
-        return _orders.where((order) => order['status'] == 'completed').toList();
+        return _orders.where((order) => order['status'] == 'done').toList();
       case 'Đã hủy':
         return _orders.where((order) => order['status'] == 'rejected').toList();
+      case 'Hết thời gian chờ':
+        return _orders.where((order) => order['status'] == 'expired').toList();
       default:
         return _orders;
     }
   }
-
-  // Map trạng thái API sang tiếng Việt
-  Map<String, String> _statusMap = {
-    'pending': 'Đang chờ',
-    'approved': 'Đã xác nhận',
-    'completed': 'Đã hoàn thành',
-    'rejected': 'Đã hủy',
-  };
-
-  // Map trạng thái API sang màu
-  Map<String, Color> _statusColorMap = {
-    'pending': const Color(0xFF2196F3),
-    'approved': const Color(0xFFFF9800),
-    'completed': const Color(0xFF8BC34A),
-    'rejected': const Color(0xFFF44336),
-  };
 
   // Format ngày làm việc
   String _formatWorkingHours(String dateString) {
@@ -138,7 +125,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
 
               if (_isLoading) ...[
                 const Center(child: CircularProgressIndicator()),
@@ -147,10 +134,10 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                 _buildErrorWidget(),
               ] else ...[
                 _buildFilterSection(),
-                const SizedBox(height: 24),
+                // const SizedBox(height: 16),
 
-                _buildQuickStats(),
-                const SizedBox(height: 24),
+                // _buildQuickStats(),
+                // const SizedBox(height: 24),
 
                 _buildOrdersSection(),
                 const SizedBox(height: 24),
@@ -270,68 +257,6 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
     );
   }
 
-  Widget _buildQuickStats() {
-    final totalOrders = _orders.length;
-    final completedOrders = _orders.where((order) => order['status'] == 'approved').length;
-    final upcomingOrders = _orders.where((order) => order['status'] == 'pending').length;
-    final rejectedOrders = _orders.where((order) => order['status'] == 'rejected').length;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: ColorConfig.primary.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem('Tổng đơn', '$totalOrders', Icons.calendar_today),
-          _buildStatItem('Đã xác nhận', '$completedOrders', Icons.check_circle),
-          _buildStatItem('Đang chờ', '$upcomingOrders', Icons.schedule),
-          _buildStatItem('Đã hủy', '$rejectedOrders', Icons.cancel),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String title, String value, IconData icon) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: ColorConfig.primary.withOpacity(0.3),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: ColorConfig.primary, size: 20),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: ColorConfig.textBlack,
-          ),
-        ),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 12,
-            color: ColorConfig.textBlack.withOpacity(0.6),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildOrdersSection() {
     if (_filteredOrders.isEmpty) {
       return Center(
@@ -384,206 +309,314 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
 
   Widget _buildOrderItem(Map<String, dynamic> order) {
     final status = order['status'] ?? 'pending';
-    final statusText = _statusMap[status] ?? 'Không xác định';
-    final statusColor = _statusColorMap[status] ?? ColorConfig.yellow.withOpacity(.3);
     final price = order['price'] ?? 0;
-    final technicianName = order['technicianName'] ?? 'Chưa xác định';
+    final duration = order['serviceTimePrice']['duration'] ?? 0;
+    final technicianName =
+        order['technicianInfor']['fullName'] ?? 'Chưa xác định';
+    final technicianAvatar = FormatHelper.formatNetworkImageUrl(
+        order['technicianInfor']['avatar']);
     final workingHours = order['workingHours'] ?? '';
-    final note = order['noteCustomer'] ?? '';
     final address = order['address'] ?? '';
+    final rate = order['rate'] ?? '';
+
+    Color statusColor;
+    String statusText;
+
+    switch (status) {
+      case 'done':
+        statusColor = Colors.green;
+        statusText = 'Hoàn thành';
+        break;
+      case 'pending':
+        statusColor = Colors.orange;
+        statusText = 'Đang chờ';
+        break;
+      case 'cancelled':
+        statusColor = Colors.red;
+        statusText = 'Đã huỷ';
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusText = 'Không xác định';
+    }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white,
+            Colors.white,
+            // ColorConfig.primary.withOpacity(0.03),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: [
           BoxShadow(
-            color: ColorConfig.primary.withOpacity(0.2),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            // _showOrderDetails(order);
-            context.go('${CustomerRouterConfig.detailOrder}/${order['_id']}');
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header với tên dịch vụ và trạng thái
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        order['nameService'] ?? 'Dịch vụ không xác định',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: ColorConfig.textBlack,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          context.go('${CustomerRouterConfig.detailOrder}/${order['_id']}');
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// HEADER
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      order['nameService'] ?? 'Dịch vụ không xác định',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        statusText,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: statusColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                  ),
+                  // Container(
+                  //   padding:
+                  //   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  //   decoration: BoxDecoration(
+                  //     color: statusColor.withOpacity(0.1),
+                  //     borderRadius: BorderRadius.circular(20),
+                  //   ),
+                  //   child: Text(
+                  //     statusText,
+                  //     style: TextStyle(
+                  //       color: statusColor,
+                  //       fontSize: 12,
+                  //       fontWeight: FontWeight.w600,
+                  //     ),
+                  //   ),
+                  // )
+                ],
+              ),
 
-                // Thông tin kỹ thuật viên và thời gian
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: ColorConfig.primary.withOpacity(.2),
-                      child: Icon(
-                        Icons.person,
-                        color: ColorConfig.primary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Kỹ thuật viên: ${FormatHelper.formatNameTechnician(technicianName)}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: ColorConfig.textBlack.withOpacity(0.8),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatWorkingHours(workingHours),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: ColorConfig.textBlack.withOpacity(0.6),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-                // Thông tin giá và địa chỉ
+              /// PRICE + DURATION
+              Row(
+                children: [
+                  _buildChip(
+                    Icons.access_time,
+                    "$duration phút",
+                  ),
+                  const SizedBox(width: 8),
+                  _buildChip(
+                    Icons.payments_outlined,
+                    FormatHelper.formatPrice(price),
+                    isPrimary: true,
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              /// TECHNICIAN
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: ColorConfig.primary.withOpacity(.15),
+                    backgroundImage: NetworkImage(technicianAvatar),
+                    onBackgroundImageError: (_, __) {},
+                    child: technicianAvatar.isEmpty
+                        ? Icon(Icons.person, color: ColorConfig.primary)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          FormatHelper.formatNameTechnician(technicianName),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatWorkingHours(workingHours),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              if (address.isNotEmpty) ...[
+                const SizedBox(height: 10),
                 Row(
                   children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 16,
-                      color: ColorConfig.textBlack.withOpacity(0.5),
-                    ),
-                    const SizedBox(width: 4),
+                    Icon(Icons.location_on_outlined,
+                        size: 16, color: Colors.grey),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         address,
                         style: TextStyle(
                           fontSize: 13,
-                          color: ColorConfig.textBlack.withOpacity(0.6),
+                          color: Colors.grey.shade600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      FormatHelper.formatPrice(price),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: ColorConfig.primary,
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Hiển thị ghi chú nếu có
-                if (note.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Ghi chú: $note',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: ColorConfig.textBlack.withOpacity(0.7),
-                      fontStyle: FontStyle.italic,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-
-                // Hiển thị thời gian tạo đơn
-                const SizedBox(height: 12),
-                Divider(
-                  height: 1,
-                  color: ColorConfig.primary.withOpacity(0.5),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Đã tạo: ${FormatHelper.formatDateTime(order['createdAt'] ?? '')}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: ColorConfig.textBlack.withOpacity(0.5),
-                      ),
-                    ),
-                    if (status == 'approved' && order['approvedAt'] != null)
-                      Text(
-                        'Xác nhận: ${FormatHelper.formatDateTime((order['approvedAt'] ?? ''))}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: ColorConfig.primary.withOpacity(0.8),
-                        ),
-                      ),
-                    if (status == 'rejected' && order['rejectedAt'] != null)
-                      Text(
-                        'Hủy: ${FormatHelper.formatDateTime((order['rejectedAt'] ?? ''))}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: ColorConfig.textError.withOpacity(0.8),
-                        ),
-                      ),
+                    )
                   ],
                 ),
               ],
-            ),
+
+              Divider(color: Colors.grey.withOpacity(0.2)),
+
+              /// ACTIONS
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (status == 'pending' || status == 'approved') ...[
+                    buildActionButton(
+                      onPressed: () {
+                        SnackBarHelper.showWarning(context, "Chức năng đang phát triển");
+                      },
+                      icon: Icons.close,
+                      label: "Huỷ đơn",
+                      color: Colors.red,
+                    ),
+                  ],
+
+                  if (status == 'done') ...[
+                    buildActionButton(
+                      onPressed: () {
+                        SnackBarHelper.showWarning(context, "Chức năng đang phát triển");
+                      },
+                      icon: Icons.report,
+                      label: "Báo cáo",
+                      color: Colors.red,
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    if (rate != null && rate.isNotEmpty) ...[
+                      buildActionButton(
+                        onPressed: () {
+                          final orderId = order["_id"];
+                          final technicianId = order["technicianInfor"]["_id"];
+                          final Map<String, dynamic> data = {
+                            "orderId": orderId,
+                            "technicianId": technicianId,
+                            ...rate,
+                          };
+
+                          context.push(CustomerRouterConfig.viewOrUpdateRate, extra: data);
+                        },
+                        icon: Icons.arrow_right,
+                        label: "Xem đánh giá",
+                        color: Colors.amber.shade700,
+                      ),
+                    ] else ...[
+                      buildActionButton(
+                        onPressed: () {
+                          final orderId = order["_id"];
+                          final technicianId = order["technicianInfor"]["_id"];
+                          context.push(CustomerRouterConfig.createRate,
+                              extra: { "orderId": orderId, "technicianId": technicianId }
+                          );
+                        },
+                        icon: Icons.star_rounded,
+                        label: "Đánh giá",
+                        color: Colors.amber.shade700,
+                      ),
+                    ],
+                  ],
+                ],
+              )
+
+
+            ],
           ),
         ),
       ),
     );
   }
+
+  Widget buildActionButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+    required Color color,
+    Color? bgColor,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        side: BorderSide(color: color.withOpacity(.6), width: 1),
+        backgroundColor: bgColor ?? color.withOpacity(.08),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+      icon: Icon(icon, size: 18, color: color),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+
+  /// CHIP nhỏ xinh
+  Widget _buildChip(IconData icon, String text,
+      {bool isPrimary = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isPrimary
+            ? ColorConfig.primary.withOpacity(0.1)
+            : Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Icon(icon,
+              size: 14,
+              color: isPrimary ? ColorConfig.primary : Colors.grey),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isPrimary ? ColorConfig.primary : Colors.black87,
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildErrorWidget() {
     return Container(
@@ -635,161 +668,6 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
               ),
             ),
             child: const Text('Thử lại'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // void _showOrderDetails(Map<String, dynamic> order) {
-  //   final status = order['status'] ?? 'pending';
-  //   final statusText = _statusMap[status] ?? 'Không xác định';
-  //   final statusColor = _statusColorMap[status] ?? ColorConfig.primary;
-  //
-  //   showModalBottomSheet(
-  //     context: context,
-  //     isScrollControlled: true,
-  //     backgroundColor: Colors.white,
-  //     shape: const RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-  //     ),
-  //     builder: (context) {
-  //       return DraggableScrollableSheet(
-  //         initialChildSize: 0.7,
-  //         minChildSize: 0.5,
-  //         maxChildSize: 0.9,
-  //         expand: false,
-  //         builder: (context, scrollController) {
-  //           return Container(
-  //             padding: const EdgeInsets.all(20),
-  //             child: Column(
-  //               crossAxisAlignment: CrossAxisAlignment.start,
-  //               children: [
-  //                 Center(
-  //                   child: Container(
-  //                     width: 40,
-  //                     height: 4,
-  //                     decoration: BoxDecoration(
-  //                       color: ColorConfig.primary,
-  //                       borderRadius: BorderRadius.circular(2),
-  //                     ),
-  //                   ),
-  //                 ),
-  //                 const SizedBox(height: 16),
-  //                 Row(
-  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                   children: [
-  //                     Text(
-  //                       'Chi tiết đơn hàng',
-  //                       style: TextStyle(
-  //                         fontSize: 20,
-  //                         fontWeight: FontWeight.bold,
-  //                         color: ColorConfig.textBlack,
-  //                       ),
-  //                     ),
-  //                     Container(
-  //                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-  //                       decoration: BoxDecoration(
-  //                         color: statusColor.withOpacity(0.1),
-  //                         borderRadius: BorderRadius.circular(20),
-  //                       ),
-  //                       child: Text(
-  //                         statusText,
-  //                         style: TextStyle(
-  //                           fontSize: 14,
-  //                           fontWeight: FontWeight.w600,
-  //                           color: statusColor,
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //                 const SizedBox(height: 20),
-  //                 Expanded(
-  //                   child: ListView(
-  //                     controller: scrollController,
-  //                     children: [
-  //                       _buildDetailItem('Dịch vụ:', order['nameService'] ?? 'Không xác định'),
-  //                       _buildDetailItem('Kỹ thuật viên:', order['technicianName'] ?? 'Chưa xác định'),
-  //                       _buildDetailItem('Thời gian làm việc:', order['workingHours'] ?? ''),
-  //                       _buildDetailItem('Địa chỉ:', order['address'] ?? ''),
-  //                       _buildDetailItem('Giá:', '${_currencyFormat.format(order['price'] ?? 0)}'),
-  //
-  //                       if (order['noteCustomer']?.isNotEmpty == true)
-  //                         _buildDetailItem('Ghi chú:', order['noteCustomer'] ?? ''),
-  //
-  //                       if (order['noteTechnician']?.isNotEmpty == true)
-  //                         _buildDetailItem('Ghi chú kỹ thuật viên:', order['noteTechnician'] ?? ''),
-  //
-  //                       _buildDetailItem('Phương thức thanh toán:', order['paymentMethod'] == 'momo' ? 'Momo' : 'Không xác định'),
-  //
-  //                       if (order['coupon']?.isNotEmpty == true)
-  //                         _buildDetailItem('Mã giảm giá:', order['coupon'] ?? ''),
-  //
-  //                       _buildDetailItem('Thời gian tạo:', _formatDateTime(order['createdAt'] ?? '')),
-  //
-  //                       if (order['submittedAt'] != null)
-  //                         _buildDetailItem('Thời gian gửi:', _formatDateTime(order['submittedAt'] ?? '')),
-  //
-  //                       if (order['approvedAt'] != null)
-  //                         _buildDetailItem('Thời gian xác nhận:', _formatDateTime(order['approvedAt'] ?? '')),
-  //
-  //                       if (order['rejectedAt'] != null)
-  //                         _buildDetailItem('Thời gian hủy:', _formatDateTime(order['rejectedAt'] ?? '')),
-  //                     ],
-  //                   ),
-  //                 ),
-  //                 const SizedBox(height: 20),
-  //                 SizedBox(
-  //                   width: double.infinity,
-  //                   child: ElevatedButton(
-  //                     onPressed: () => Navigator.pop(context),
-  //                     style: ElevatedButton.styleFrom(
-  //                       backgroundColor: ColorConfig.primary,
-  //                       foregroundColor: Colors.white,
-  //                       padding: const EdgeInsets.symmetric(vertical: 16),
-  //                       shape: RoundedRectangleBorder(
-  //                         borderRadius: BorderRadius.circular(12),
-  //                       ),
-  //                     ),
-  //                     child: const Text('Đóng'),
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           );
-  //         },
-  //       );
-  //     },
-  //   );
-  // }
-
-  Widget _buildDetailItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: ColorConfig.textBlack.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              color: ColorConfig.textBlack,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Divider(
-            height: 1,
-            color: ColorConfig.primary.withOpacity(0.3),
           ),
         ],
       ),
