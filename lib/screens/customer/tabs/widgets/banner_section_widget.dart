@@ -24,13 +24,14 @@ class BannerSectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double borderImage = 10;
     if (isBannerLoading && bannerData.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Container(
           height: 200,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(0),
+            borderRadius: BorderRadius.circular(18),
             color: Colors.grey[300],
           ),
           child: const Center(
@@ -48,7 +49,7 @@ class BannerSectionWidget extends StatelessWidget {
         child: Container(
           height: 200,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(0),
+            borderRadius: BorderRadius.circular(18),
             color: Colors.grey[200],
           ),
           child: Center(
@@ -87,112 +88,158 @@ class BannerSectionWidget extends StatelessWidget {
                   controller: bannerController,
                   onPageChanged: (i) => onBannerPageChanged(i),
                   itemCount: bannerData.length,
-                  itemBuilder: (_, i) {
-                    final item = bannerData[i];
-                    return Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(0),
-                          child: CachedNetworkImage(
-                            imageUrl: item['image'],
-                            width: double.infinity,
-                            height: 200,
-                            fit: BoxFit.cover,
-                            // Cache key riêng cho banner
-                            cacheKey: 'banner_${item['id'] ?? item['image']}',
-                            // Placeholder hiển thị ngay lập tức từ cache nếu có
-                            placeholder: (context, url) => Container(
-                              color: Colors.grey[200],
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Color(0xFFD4845A),
+                    itemBuilder: (_, i) {
+                      final item = bannerData[i];
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(borderImage),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(borderImage),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
                                 ),
-                              ),
+                              ],
                             ),
-                            errorWidget: (context, url, error) => Container(
-                              color: Colors.grey[300],
-                              child: const Icon(
-                                Icons.broken_image,
-                                size: 50,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            // Fade in mượt
-                            fadeInDuration: const Duration(milliseconds: 300),
-                            fadeOutDuration: const Duration(milliseconds: 300),
-                          ),
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              stops: const [0.0, 0.4, 0.7, 1.0],
-                              colors: [
-                                ColorConfig.primary,
-                                ColorConfig.primary.withOpacity(1),
-                                ColorConfig.primary.withOpacity(0.4),
-                                ColorConfig.primary.withOpacity(0.15),
+                            child: Stack(
+                              children: [
+                                /// IMAGE
+                                Positioned.fill(
+                                  child: CachedNetworkImage(
+                                    imageUrl: item['image'],
+                                    cacheKey: 'banner_${item['id'] ?? item['image']}',
+
+                                    /// QUAN TRỌNG: dùng imageBuilder
+                                    imageBuilder: (context, imageProvider) {
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(borderImage),
+                                          image: DecorationImage(
+                                            image: imageProvider,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      );
+                                    },
+
+                                    placeholder: (context, url) => Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(borderImage),
+                                        color: Colors.grey[200],
+                                      ),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Color(0xFFD4845A),
+                                        ),
+                                      ),
+                                    ),
+
+                                    errorWidget: (context, url, error) => Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(borderImage),
+                                        color: Colors.grey[300],
+                                      ),
+                                      child: const Icon(
+                                        Icons.broken_image,
+                                        size: 50,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+
+                                    fadeInDuration: const Duration(milliseconds: 1000), // mượt hơn
+                                  ),
+                                ),
+
+
+                                /// GRADIENT OVERLAY
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                        stops: const [0.0, 0.4, 0.7, 1.0],
+                                        colors: [
+                                          ColorConfig.primary,
+                                          ColorConfig.primary.withOpacity(0.9),
+                                          ColorConfig.primary.withOpacity(0.4),
+                                          Colors.transparent,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                /// CONTENT
+                                Positioned(
+                                  left: 20,
+                                  top: 28,
+                                  right: 20,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item['title'],
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w800,
+                                          height: 1.2,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        item['description'],
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.95),
+                                          fontSize: 13,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          context.push(
+                                            CustomerRouterConfig.listOrderNowTechnician,
+                                          );
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.white,
+                                          foregroundColor: ColorConfig.textPrimary,
+                                          elevation: 0,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 18,
+                                            vertical: 10,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Đặt lịch ngay',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ),
-                        Positioned(
-                          left: 20,
-                          top: 28,
-                          right: 20,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item['title'],
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                item['description'],
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.95),
-                                  fontSize: 13,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  context.push(CustomerRouterConfig.listOrderNowTechnician);
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: ColorConfig.textPrimary,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Đặt lịch ngay',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              )
+                      );
+                    }
 
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
-                  },
                 ),
                 if (bannerData.length > 1)
                   Positioned(

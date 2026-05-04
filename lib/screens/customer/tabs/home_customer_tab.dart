@@ -286,7 +286,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
   void _startBannerTimer() {
     _bannerTimer?.cancel();
     if (bannerData.length > 1) {
-      _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      _bannerTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         if (!mounted) return;
         final next = (_currentBannerIndex + 1) % bannerData.length;
         setState(() => _currentBannerIndex = next);
@@ -895,20 +895,23 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                         onLocationTap: _onLocationButtonTap,
                         formatCooldown: _formatCooldown,
                       ),
-                      AnimatedSwitcher(
-                        duration: Duration(milliseconds: 300),
-                        child: _isDisplayBanner
-                            ? BannerSectionWidget(
-                                isBannerLoading: _isBannerLoading,
-                                bannerError: _bannerError,
-                                bannerData: bannerData,
-                                currentBannerIndex: _currentBannerIndex,
-                                bannerController: _bannerController,
-                                onBannerPageChanged: (index) {
-                                  setState(() => _currentBannerIndex = index);
-                                },
-                              )
-                            : SizedBox.shrink(),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 18),
+                        child: AnimatedSwitcher(
+                          duration: Duration(milliseconds: 300),
+                          child: _isDisplayBanner
+                              ? BannerSectionWidget(
+                                  isBannerLoading: _isBannerLoading,
+                                  bannerError: _bannerError,
+                                  bannerData: bannerData,
+                                  currentBannerIndex: _currentBannerIndex,
+                                  bannerController: _bannerController,
+                                  onBannerPageChanged: (index) {
+                                    setState(() => _currentBannerIndex = index);
+                                  },
+                                )
+                              : SizedBox.shrink(),
+                        ),
                       ),
 
                       const SizedBox(height: 18),
@@ -943,7 +946,6 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                               ],
                             ),
 
-
                             if (featuredServices.isNotEmpty) ...[
                               const SizedBox(height: 12),
                               Text("Dịch vụ nổi bật", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),),
@@ -974,6 +976,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                             ] else
                               const SizedBox(),
 
+                            const SizedBox(height: 10,),
                             PromoSection(
                               onViewAll: () {},
                               children: [
@@ -1003,9 +1006,6 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                                 ),
                               ],
                             )
-
-
-
                           ],
                         ),
                       ),

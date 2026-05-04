@@ -15,10 +15,10 @@ class PromoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
       decoration: BoxDecoration(
-        color: ColorConfig.primaryBackground,
-        borderRadius: BorderRadius.circular(20),
+        color: ColorConfig.primary.withOpacity(.18),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         children: [
@@ -49,7 +49,7 @@ class PromoSection extends StatelessWidget {
                 "Xem tất cả",
                 style: TextStyle(
                   color: Colors.green,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               SizedBox(width: 4),
