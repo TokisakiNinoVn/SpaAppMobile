@@ -38,6 +38,9 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Cho phép ứng dụng lưu ảnh vào thư viện</string>
 
+	<key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Cho phép ứng dụng lưu ảnh vào thư viện</string>
+
 	<!-- Location (chỉ dùng khi mở app) -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Vị trí của bạn được sử dụng để hiển thị các dịch vụ gần nhất và giúp hệ thống kết nối bạn với cộng tác viên phù hợp trong khu vực.</string>
