@@ -122,10 +122,10 @@ class _ListTechnicianOrderBookState extends State<ListTechnicianOrderBook> {
       var response;
       if (checkPermissionLocation) {
         response = await _technicianService.getListTechnicianForCustomer(
-            currentLat, currentLng);
+            currentLat, currentLng, "book");
       } else {
         response = await _technicianService
-            .getListTechnicianForCustomer(null, null);
+            .getListTechnicianForCustomer(null, null, "book");
       }
       if (response['success'] == true) {
         final data = List<Map<String, dynamic>>.from(response['data'] ?? []);

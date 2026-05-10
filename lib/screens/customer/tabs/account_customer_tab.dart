@@ -53,7 +53,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
 
   String rolesActive = '';
   List<String> roles = [];
-  bool get isAdmin => AppConfig.adminPhone.contains(inforUser?['phone']);
+  bool isAdmin = false;
 
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
@@ -153,7 +153,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
 
   Future<void> _loadInforUser() async {
     balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
-    final rolesActiveStr = await SharedPrefs.getValue(PrefType.string, "rolesActive") ?? '';
+    final rolesActiveStr = await SharedPrefs.getValue(PrefType.string, "role") ?? '';
     final rolesJsonStr = await SharedPrefs.getValue(PrefType.string, "roles") ?? '[]';
 
     List<String> rolesList = [];
@@ -175,6 +175,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
           inforUser = data;
           rolesActive = rolesActiveStr;
           roles = rolesList;
+          isAdmin = AppConfig.adminPhone.contains(inforUser?['phone']);
         });
 
       }
@@ -322,6 +323,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
 
   @override
   Widget build(BuildContext context) {
+    // appLog("$isAdmin - $rolesActive - $roles");
     return Scaffold(
       backgroundColor: ColorConfig.primaryBackground,
       body: RefreshIndicator(

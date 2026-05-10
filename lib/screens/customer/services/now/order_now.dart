@@ -123,10 +123,9 @@ class _ListTechnicianOrderNowState extends State<ListTechnicianOrderNow> {
       var response;
       if (checkPermissionLocation) {
         response = await _technicianService.getListTechnicianForCustomer(
-            currentLat, currentLng);
+            currentLat, currentLng, "now");
       } else {
-        response = await _technicianService
-            .getListTechnicianForCustomer(null, null);
+        response = await _technicianService.getListTechnicianForCustomer(null, null, "now");
       }
       if (response['success'] == true) {
         final data = List<Map<String, dynamic>>.from(response['data'] ?? []);
