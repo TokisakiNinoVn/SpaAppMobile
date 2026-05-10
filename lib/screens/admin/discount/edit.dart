@@ -34,6 +34,7 @@ class _EditDiscountScreenState extends State<EditDiscountScreen> {
   DateTime? _startDate;
   DateTime? _expiresAt;
   bool _isActive = false;
+  bool _isViewHome = false;
   bool _isLoading = false;
   int _usedCount = 0;
   String? _discountId;
@@ -80,6 +81,7 @@ class _EditDiscountScreenState extends State<EditDiscountScreen> {
           ? DateTime.parse(widget.data!['expiresAt'])
           : null;
       _isActive = widget.data!['isActive'] ?? false;
+      _isViewHome = widget.data!['isViewHome'] ?? false;
     }
   }
 
@@ -126,8 +128,10 @@ class _EditDiscountScreenState extends State<EditDiscountScreen> {
             : int.parse(_valueController.text);
         discountData['minOrderValue'] = int.parse(_minOrderValueController.text);
         discountData['isActive'] = _isActive;
+        discountData['isViewHome'] = _isViewHome;
       } else {
         discountData['isActive'] = _isActive;
+        discountData['isViewHome'] = _isViewHome;
       }
       var response;
       if (!_isEditable) {
@@ -411,6 +415,52 @@ class _EditDiscountScreenState extends State<EditDiscountScreen> {
                 onTap: _selectExpiryDate,
                 hint: 'Chọn ngày kết thúc',
                 enabled: true,
+              ),
+              const SizedBox(height: 16),
+
+              // Active status (always editable)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _border),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hiển thị Home',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: _textPrimary,
+                          ),
+                        ),
+                        Text(
+                          _isEditable
+                              ? 'Đang không hiển thị'
+                              : 'Đang hiển thị ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Switch(
+                      value: _isViewHome,
+                      onChanged: (value) {
+                        setState(() {
+                          _isViewHome = value;
+                        });
+                      },
+                      activeColor: _primary,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 

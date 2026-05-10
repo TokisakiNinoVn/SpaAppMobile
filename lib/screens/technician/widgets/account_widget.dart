@@ -1,17 +1,25 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/config/app_config.dart';
 
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/handlers/auth_response_handler.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/shared_preferences_helper.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/routes/config/technician_router_config.dart';
+import 'package:spa_app/screens/widgets/role_switcher_card.dart';
 import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/helper/full_screen_list_image.dart';
 import 'package:spa_app/services/auth_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
+
+import '../../../storage/index.dart';
 
 class AccountTab extends StatefulWidget {
   const AccountTab({super.key});
@@ -26,6 +34,10 @@ class _AccountTabState extends State<AccountTab> {
   Map<String, dynamic>? userData;
   bool isLoading = true;
   bool _isSwitchingRole = false;
+
+  String rolesActive = '';
+  List<String> roles = [];
+  bool get isAdmin => AppConfig.adminPhone.contains(userData?['user']['phone']);
 
   @override
   void initState() {
@@ -145,12 +157,29 @@ class _AccountTabState extends State<AccountTab> {
   }
 
   Future<void> _loadUserDetail() async {
+    final userInfoJson = await SharedPrefs.getValue(PrefType.string, "inforUserLogin") ?? '';
+    final rolesActiveStr = await SharedPrefs.getValue(PrefType.string, "rolesActive") ?? '';
+    final rolesJsonStr = await SharedPrefs.getValue(PrefType.string, "roles") ?? '[]';
+
+
+    List<String> rolesList = [];
+    if (rolesJsonStr.isNotEmpty) {
+      try {
+        final List<dynamic> decoded = json.decode(rolesJsonStr);
+        rolesList = decoded.map((e) => e.toString()).toList();
+      } catch (e) {
+        rolesList = [];
+      }
+    }
+
     try {
       final response = await userService.loadDetailUserService();
       if (response['success'] == true) {
         setState(() {
           userData = response['data'];
           isLoading = false;
+          rolesActive = rolesActiveStr;
+          roles = rolesList;
         });
       }
     } catch (e) {
@@ -158,6 +187,50 @@ class _AccountTabState extends State<AccountTab> {
         isLoading = false;
       });
       print("Lỗi load thông tin chi tiết người dùng: $e");
+    }
+  }
+
+  Future<void> _handleSwitchRole(String newRole) async {
+    if (newRole == rolesActive) {
+      SnackBarHelper.showWarning(context, "Bạn đang ở vai trò ${_getRoleDisplayName(newRole)}");
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final response = await authService.switchRoleAccount({
+        "roleChangeTo": newRole,
+      });
+      await SharedPreferencesHelper.logOut();
+
+      await AuthResponseHandler.handleLoginResponse(
+        context: context,
+        response: response,
+      );
+    } catch (e) {
+      appLog('Lỗi chuyển vai trò: $e');
+      SnackBarHelper.showError(
+        context,
+        "Lỗi kết nối hoặc hệ thống. Vui lòng thử lại!",
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  String _getRoleDisplayName(String roleKey) {
+    switch (roleKey) {
+      case 'admin':
+        return 'Quản trị viên';
+      case 'ktv':
+        return 'KTV';
+      case 'customer':
+        return 'Khách hàng';
+      default:
+        return roleKey;
     }
   }
 
@@ -333,6 +406,8 @@ class _AccountTabState extends State<AccountTab> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    appLog("$isAdmin");
+
     final user = userData?['user'];
     final technician = userData?['technician'];
 
@@ -443,6 +518,23 @@ class _AccountTabState extends State<AccountTab> {
               ),
             ),
           ),
+
+          // Sử dụng widget RoleSwitcherCard đã tách
+          if (isAdmin && roles.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 16,
+                ),
+                child: RoleSwitcherCard(
+                  roles: roles,
+                  activeRole: rolesActive,
+                  onSwitchRole: _handleSwitchRole,
+                  isSwitching: isLoading,
+                ),
+              ),
+            ),                             // ← đóng ngoặc
 
           // Nội dung chính
           SliverPadding(

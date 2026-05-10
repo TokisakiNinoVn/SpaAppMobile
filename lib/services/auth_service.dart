@@ -13,6 +13,10 @@ class AuthService {
     return await ApiMethodsPublic.postRequest(AuthApiRoutes.getOTP, body: data);
   }
 
+  Future<Map<String, dynamic>> switchRoleAccount(data) async {
+    return await ApiMethodsPrivate.postRequest(AuthApiRoutes.changeRolePrivate, data);
+  }
+
   Future<Map<String, dynamic>> verifyOTPService(data) async {
     return await ApiMethodsPublic.postRequest(AuthApiRoutes.verifyOTP, body: data);
   }

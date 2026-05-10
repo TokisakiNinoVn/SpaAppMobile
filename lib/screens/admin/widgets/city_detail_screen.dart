@@ -224,18 +224,18 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                           },
                           tooltip: 'Lọc theo trạng thái',
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.library_add_check_sharp),
-                          color: selectedServices.isNotEmpty ? Colors.blue : Colors.grey,
-                          onPressed: () {
-                            setState(() {
-                              showServiceList = true;
-                              showStatusList = false;
-                              showDistrictList = false;
-                            });
-                          },
-                          tooltip: 'Lọc theo dịch vụ',
-                        ),
+                        // IconButton(
+                        //   icon: const Icon(Icons.library_add_check_sharp),
+                        //   color: selectedServices.isNotEmpty ? Colors.blue : Colors.grey,
+                        //   onPressed: () {
+                        //     setState(() {
+                        //       showServiceList = true;
+                        //       showStatusList = false;
+                        //       showDistrictList = false;
+                        //     });
+                        //   },
+                        //   tooltip: 'Lọc theo dịch vụ',
+                        // ),
                       ],
                     ),
                   ],
@@ -552,10 +552,10 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: GridView.builder(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
+          crossAxisCount: 2,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 120 / 228,
+          childAspectRatio: 120 / 150,
         ),
         itemCount: filteredTechnicians.length,
         itemBuilder: (context, index) {
@@ -592,7 +592,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                     child: avatarUrl != null
                         ? Image.network(
                       FormatHelper.formatNetworkImageUrl(avatarUrl),
-                      height: 100,
+                      height: 160,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
                           Container(
@@ -602,7 +602,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                           ),
                     )
                         : Container(
-                      height: 110,
+                      height: 50,
                       color: Colors.grey[300],
                       child: const Icon(Icons.person, size: 40, color: Colors.grey),
                     ),
@@ -615,8 +615,8 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                       children: [
                         if (status == 'active') ...[
                           Container(
-                            width: 8,
-                            height: 8,
+                            width: 11,
+                            height: 11,
                             margin: const EdgeInsets.only(right: 6),
                             decoration: const BoxDecoration(
                               color: Colors.green,
@@ -624,10 +624,12 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                             ),
                           ),
                         ],
+
                         Flexible(
                           child: SizedBox(
                             height: 20,
-                            child: Marquee(
+                            child: fullName.length > 20
+                                ? Marquee(
                               text: fullName,
                               style: const TextStyle(
                                 fontSize: 14,
@@ -635,14 +637,42 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                               ),
                               scrollAxis: Axis.horizontal,
                               crossAxisAlignment: CrossAxisAlignment.center,
-                              blankSpace: 50.0,
-                              velocity: 30.0,
+                              blankSpace: 100,
+                              velocity: 30,
                               startAfter: const Duration(seconds: 1),
                               pauseAfterRound: const Duration(seconds: 1),
-                              showFadingOnlyWhenScrolling: false,
+                              numberOfRounds: 1,
+                            )
+                                : Text(
+                              fullName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
+                        // Flexible(
+                        //   child: SizedBox(
+                        //     height: 20,
+                        //     child: Marquee(
+                        //       text: fullName,
+                        //       style: const TextStyle(
+                        //         fontSize: 14,
+                        //         fontWeight: FontWeight.w600,
+                        //       ),
+                        //       scrollAxis: Axis.horizontal,
+                        //       crossAxisAlignment: CrossAxisAlignment.center,
+                        //       blankSpace: 50.0,
+                        //       velocity: 30.0,
+                        //       startAfter: const Duration(seconds: 1),
+                        //       pauseAfterRound: const Duration(seconds: 1),
+                        //       showFadingOnlyWhenScrolling: false,
+                        //     ),
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),
@@ -658,27 +688,6 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                         ),
-                        // Text(
-                        //   'SĐT: $phone',
-                        //   style: const TextStyle(fontSize: 10, color: Colors.grey),
-                        //   maxLines: 1,
-                        //   overflow: TextOverflow.ellipsis,
-                        //   textAlign: TextAlign.center,
-                        // ),
-                        const SizedBox(height: 4),
-                        ...services.take(3).map((service) => Text(
-                          service.toString(),
-                          style: TextStyle(fontSize: 12, color: ColorConfig.textPrimary),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        )).toList(),
-                        // if (services.length > 2)
-                        //   Text(
-                        //     '+${services.length - 2} dịch vụ khác',
-                        //     style: const TextStyle(fontSize: 9, color: Colors.grey),
-                        //     textAlign: TextAlign.center,
-                        //   ),
                       ],
                     ),
                   ),

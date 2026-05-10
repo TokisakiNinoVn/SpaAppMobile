@@ -33,7 +33,7 @@ class _ApproveTabState extends State<ApproveTab> {
   Future<void> _loadApprovalRequests() async {
     setState(() => isLoading = true);
     final response = await approvalRequestService.getAllApprovalRequestService();
-    print("response: ");
+    // appLog("response: $response");
     if (response['success']) {
       setState(() {
         approvalRequests = List<Map<String, dynamic>>.from(response['data']);
@@ -140,7 +140,6 @@ class _ApproveTabState extends State<ApproveTab> {
     }
   }
 
-
   void _showRequestDetails(BuildContext context, Map<String, dynamic> request) {
     final isTechnicianRequest = request['technician'] != null;
 
@@ -231,6 +230,7 @@ class _ApproveTabState extends State<ApproveTab> {
                     _buildInfoRow('Địa chỉ chi tiết', '${request['technician']['address'] ?? 'Không có'}'),
                     _buildInfoRow('Kinh nghiệm', request['technician']['experience'] ?? 'Không có'),
                     // _buildInfoRow('Tiểu sử', request['technician']['bio'] ?? 'Không có'),
+
                   ],
                   if(request['isCreatedForTechnician'] == true) ...[
                     _buildInfoRow('Vai trò', request['role'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'),
@@ -239,6 +239,66 @@ class _ApproveTabState extends State<ApproveTab> {
                   ],
                   _buildInfoRow('Trạng thái', request['status'] == 'approved' ? 'Đã phê duyệt' : 'Chưa phê duyệt'),
                   _buildInfoRow('Ngày gửi', FormatHelper.formatDateTime(request['submittedAt'])),
+                  const SizedBox(height: 16),
+
+                  Text(
+                    'Dịch vụ cung cấp',
+                    style: ThemeConfig.appTextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: ColorConfig.textPrimary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  (request['technician']['services'] as List<dynamic>?)?.isNotEmpty ?? false
+                      ? Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: (request['technician']['services'] as List<dynamic>)
+                        .map((service) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F3EE),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFFE7D7C9),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                             Icon(
+                              Icons.spa_rounded,
+                              size: 18,
+                              color: ColorConfig.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              service['name'] ?? 'Không có tên',
+                              style: ThemeConfig.appTextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: ColorConfig.textBlack,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  )
+                      : Text(
+                    'Không có dịch vụ',
+                    style: ThemeConfig.appTextStyle(
+                      fontSize: 15,
+                      color: ColorConfig.textSecondary,
+                    ),
+                  ),
                   if (isTechnicianRequest) ...[
                     const SizedBox(height: 24),
                     Text(
@@ -291,24 +351,6 @@ class _ApproveTabState extends State<ApproveTab> {
                         style: ThemeConfig.appTextStyle(fontSize: 16, color: ColorConfig.textSecondary)
                     ),
                   ],
-                  const SizedBox(height: 24),
-                  // Center(
-                  //   child: request['status'] != 'approved' ? IconButton(
-                  //     onPressed: () => _approveRequest(request['_id']),
-                  //     icon: Icon(Icons.check_circle, size: 40, color: Colors.green),
-                  //     tooltip: 'Phê duyệt',
-                  //   ) : const SizedBox.shrink(),
-                  // ),
-
-                  // Center(
-                  //   child: request['status'] != 'approved'
-                  //       ? IconButton(
-                  //     onPressed: () => _showApproveConfirmDialog(request['_id']),
-                  //     icon: Icon(Icons.check_circle, size: 40, color: Colors.green),
-                  //     tooltip: 'Phê duyệt',
-                  //   )
-                  //       : const SizedBox.shrink(),
-                  // ),
 
                   Center(
                     child: request['status'] != 'approved'
@@ -478,12 +520,12 @@ class _ApproveTabState extends State<ApproveTab> {
                     children: [
                       if(request['user'] == null) ...[
                         Text(
-                            '${request['role'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'}',
+                            '${request['role'] == 'ktv' ? 'Kỹ thuật viên' : '${request['role']} Quản lý'}',
                             style: ThemeConfig.appTextStyle(fontSize: 14, color: ColorConfig.textBlack)
                         ),
                       ] else
                         Text(
-                            '${request['user']['roles'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'}',
+                            '${request['role'] == 'ktv' ? 'Kỹ thuật viên' : 'Quản lý'}',
                             style: ThemeConfig.appTextStyle(fontSize: 14, color: ColorConfig.textBlack)
                         ),
                     ],

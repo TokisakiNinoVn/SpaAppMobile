@@ -12,6 +12,7 @@ class FeaturedServicesWidgetV2 extends StatelessWidget {
   final String tag;
   final String imageUrl;
   final String router;
+  final int startPrice;
 
   const FeaturedServicesWidgetV2({
     super.key,
@@ -19,7 +20,8 @@ class FeaturedServicesWidgetV2 extends StatelessWidget {
     required this.description,
     required this.tag,
     required this.imageUrl,
-    required this.router
+    required this.router,
+    required this.startPrice
   });
 
   @override
@@ -37,6 +39,7 @@ class FeaturedServicesWidgetV2 extends StatelessWidget {
             router: router,
             imageUrl: FormatHelper.formatNetworkImageUrl(imageUrl),
             tag: tag,
+            startPrice: FormatHelper.formatPrice(startPrice),
             tagColor: ColorConfig.primary,
           ),
           const SizedBox(height: 1),
@@ -52,6 +55,7 @@ class FeaturedServicesWidgetV2 extends StatelessWidget {
     required String imageUrl,
     required String router,
     required String tag,
+    required String startPrice,
     required Color tagColor,
   }) {
     return InkWell(
@@ -156,7 +160,7 @@ class FeaturedServicesWidgetV2 extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Từ 250.000đ",
+                        "Từ ${startPrice}",
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,

@@ -15,15 +15,15 @@ class PromoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       decoration: BoxDecoration(
         color: ColorConfig.primary.withOpacity(.18),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
           _buildHeader(),
-          const SizedBox(height: 10),
+          const SizedBox(height: 7),
           ...children,
         ],
       ),
@@ -34,6 +34,7 @@ class PromoSection extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        // const SizedBox(width: 0),
         const Text(
           "Ưu đãi hấp dẫn",
           style: TextStyle(

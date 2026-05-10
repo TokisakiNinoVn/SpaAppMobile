@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
+import 'package:spa_app/handlers/auth_response_handler.dart';
 import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
@@ -67,61 +68,81 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPLoginScreen>
 
     setState(() => isLoading = true);
 
+    // try {
+    //   final response = await AuthService().verifyOTPLoginService({
+    //     'phone': widget.phone,
+    //     'otp': otp,
+    //   });
+    //   if (response['token'] != null) {
+    //     final isHaveTechnician = response['data']?['isHaveTechnician'] ?? false;
+    //     await SharedPrefs.saveValue(PrefType.string, "token", response['token']);
+    //     await SharedPrefs.saveValue(PrefType.string, "role", response['data']?['rolesActive']);
+    //     await SharedPrefs.saveValue(PrefType.bool, "isTechnicianActive", response['data']?['isTechnicianActive'] ?? false);
+    //     await SharedPrefs.saveValue(PrefType.string, "inforUserLogin", response['data'] ?? {});
+    //     await SharedPrefs.saveValue(PrefType.bool, "isLogin", true);
+    //
+    //     final role = response['data']?['rolesActive'];
+    //     if (role == 'customer') {
+    //       await SharedPrefs.saveValue(PrefType.string, "customerProfile", response['data']?['customerProfile']?? {});
+    //       await SharedPrefs.saveValue(PrefType.int, "balance", response['data']?['customerProfile']?['balance'] ?? 0);
+    //       await SharedPrefs.saveValue(PrefType.bool, "isHaveTechnician", isHaveTechnician);
+    //
+    //       context.go(CustomerRouterConfig.homeCustomer);
+    //     } else if (role == 'ktv') {
+    //       if (isHaveTechnician) {
+    //         await SharedPrefs.saveValue(PrefType.string, 'technician', response['data']?['technicianProfile']);
+    //         await SharedPrefs.saveValue(PrefType.string, 'serviceIds', jsonEncode(response['data']?['technicianProfile']?['serviceIds'] ?? []));
+    //         await SharedPrefs.saveValue(PrefType.string,
+    //           'inforService',
+    //           jsonEncode(response['data']?['inforService'] ?? []),
+    //         );
+    //
+    //         context.go('/home-technician');
+    //       } else {
+    //         SnackBarHelper.showWarning(context, "Bạn đã đăng ký tài khoản nhưng chưa tạo hồ sơ!");
+    //         context.go('/create-technician');
+    //       }
+    //     }
+    //     // else if (role == 'quanly') {
+    //     //   context.go('/home-quanly');
+    //     // }
+    //     else {
+    //       // context.go('/home-customer');
+    //       SnackBarHelper.showWarning(context, "Không xác định role: $role");
+    //
+    //     }
+    //   } else {
+    //     SnackBarHelper.showError(
+    //         context, response['message'] ?? "Đăng nhập thất bại");
+    //   }
+    // } catch (e) {
+    //   appLog('Lỗi đăng nhập: $e');
+    //   SnackBarHelper.showError(context, "Lỗi kết nối hoặc hệ thống. Vui lòng thử lại!");
+    // } finally {
+    //   if (mounted) setState(() => isLoading = false);
+    // }
+
     try {
       final response = await AuthService().verifyOTPLoginService({
         'phone': widget.phone,
         'otp': otp,
       });
-      final isHaveTechnician = response['data']?['isHaveTechnician'] ?? false;
 
-      final prefs = await SharedPreferences.getInstance();
-
-      if (response['token'] != null) {
-        await prefs.setString('token', response['token']);
-        await prefs.setBool('isLogin', true);
-        await prefs.setString('inforUserLogin', jsonEncode(response['data']));
-        await prefs.setString('role', jsonEncode(response['data']?['role']));
-        await prefs.setString('statusAccount', jsonEncode(response['data']?['status']));
-        await prefs.setString('isTechnicianActive', jsonEncode(response['data']?['isTechnicianActive'] ?? false));
-
-        final role = response['data']?['role'];
-        if (role == 'customer') {
-          await SharedPrefs.saveValue(PrefType.string, "customerProfile", response['data']?['customerProfile']?? {});
-          await SharedPrefs.saveValue(PrefType.int, "balance", response['data']?['customerProfile']?['balance'] ?? 0);
-
-          context.go(CustomerRouterConfig.homeCustomer);
-        } else if (role == 'ktv') {
-          if (isHaveTechnician) {
-            await prefs.setString('technician', jsonEncode(response['data']?['technicianProfile']));
-            await prefs.setString('serviceIds', jsonEncode(response['data']?['technicianProfile']?['serviceIds'] ?? []));
-            await prefs.setString(
-              'inforService',
-              jsonEncode(response['data']?['inforService'] ?? []),
-            );
-
-            context.go('/home-technician');
-          } else {
-            SnackBarHelper.showWarning(context, "Bạn đã đăng ký tài khoản nhưng chưa tạo hồ sơ!");
-            context.go('/create-technician');
-          }
-        }
-        // else if (role == 'quanly') {
-        //   context.go('/home-quanly');
-        // }
-        // else if (role == 'customer') {
-        //   await prefs.setString('customerProfile', jsonEncode(response['data']?['customerProfile']));
-        //   context.go('/home-customer');
-        // }
-      } else {
-        SnackBarHelper.showError(
-            context, response['message'] ?? "Đăng nhập thất bại");
-      }
+      await AuthResponseHandler.handleLoginResponse(
+        context: context,
+        response: response,
+      );
     } catch (e) {
       appLog('Lỗi đăng nhập: $e');
+
       SnackBarHelper.showError(
-          context, "Lỗi kết nối hoặc hệ thống. Vui lòng thử lại!");
+        context,
+        "Lỗi kết nối hoặc hệ thống. Vui lòng thử lại!",
+      );
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,10 +9,13 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/config/theme_config.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/screens/customer/tabs/components/feature_item.dart';
 import 'package:spa_app/screens/customer/tabs/components/feature_section.dart';
 import 'package:spa_app/screens/customer/tabs/components/promo_section.dart';
+import 'package:spa_app/services/customer_service.dart';
+import 'package:spa_app/services/discount_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:spa_app/routes/config/customer_router_config.dart';
@@ -40,20 +44,30 @@ class HomeCustomerTab extends StatefulWidget {
 
 class _HomeCustomerTabState extends State<HomeCustomerTab>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+
   final BannerService _bannerService = BannerService();
+  final CustomerService _customerService = CustomerService();
   final InformationService _informationService = InformationService();
+  final DiscountService _discountService = DiscountService();
 
   @override
   bool get wantKeepAlive => true;
 
   // ─── Banner Data from API ─────────────────────────────────
   List<Map<String, dynamic>> bannerData = [];
+  List<dynamic> listHomeDiscount = [];
   List<Map<String, dynamic>> featuredServices = [];
-  bool _isBannerLoading = true;
-  bool _isFeaturedServiceLoading = true;
+  List<dynamic> _displayDiscounts = [];
+
   bool isLoading = true;
+  bool _isHomeDiscountLoading = true;
+  bool _isBannerLoading = true;
+  bool _isBalanceLoading = true;
+  bool _isFeaturedServiceLoading = true;
+
   String? _bannerError;
   String? _currentAddress;
+  int balance = 0;
 
   int _currentBannerIndex = 0;
   late PageController _bannerController;
@@ -83,66 +97,10 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
   bool checkPermissionLocation = false;
 
   // ─── Notification badge ───────────────────────────────────
-  final int _notificationCount = 3;
-
-  // ─── Services ─────────────────────────────────────────────
-  // final String massageImage =
-  //     'https://i.pinimg.com/736x/b5/0f/b8/b50fb8f8e4ea9423c61b36f6dc3edbcd.jpg';
-  // final String skincareImage =
-  //     'https://i.pinimg.com/736x/fd/c4/05/fdc4051627ff930ccd716a523706449c.jpg';
-  //
-  // final String skincareImage2 =
-  //     'https://i.pinimg.com/736x/3e/0d/c2/3e0dc2ff82049cc97aac309f676ad115.jpg';
+  final int _notificationCount = 0;
 
   // ─── Support Button State ─────────────────────────────────
   bool _showSupportButton = true;
-
-  // Thông tin hỗ trợ
-  final supportChannels = [
-    SupportChannel(
-      iconAsset: 'lib/assets/images/zalo.png',
-      name: 'Zalo',
-      description: 'Nhắn tin qua Zalo',
-      color: Color(0xFF0068FF),
-      type: SupportType.zalo,
-      url: 'https://zalo.me/123456789', // Thay bằng số Zalo thật
-      packageName: 'com.zing.zalo', // Package name cho Zalo
-    ),
-    SupportChannel(
-      iconAsset: 'lib/assets/images/messenger.png',
-      name: 'Messenger',
-      description: 'Chat qua Facebook Messenger',
-      color: Color(0xFF0084FF),
-      type: SupportType.messenger,
-      url: 'https://m.me/your_page_id', // Thay bằng link Messenger thật
-      packageName: 'com.facebook.orca',
-    ),
-    SupportChannel(
-      iconAsset: 'lib/assets/images/hotline.png',
-      name: 'Hotline',
-      description: 'Gọi tổng đài hỗ trợ',
-      color: Color(0xFF34B7F1),
-      type: SupportType.phone,
-      url: 'tel:1900xxxx', // Thay bằng số hotline thật
-    ),
-    SupportChannel(
-      iconAsset: 'lib/assets/images/email.png',
-      name: 'Email',
-      description: 'Gửi email hỗ trợ',
-      color: Color(0xFFEA4335),
-      type: SupportType.email,
-      url: 'mailto:support@spaapp.com', // Thay bằng email thật
-    ),
-    SupportChannel(
-      iconAsset: 'lib/assets/images/telegram.png',
-      name: 'Telegram',
-      description: 'Nhắn tin qua Telegram',
-      color: Color(0xFF26A5E4),
-      type: SupportType.telegram,
-      url: 'https://t.me/your_username', // Thay bằng link Telegram thật
-      packageName: 'org.telegram.messenger',
-    ),
-  ];
 
   @override
   void initState() {
@@ -173,8 +131,13 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
         _loadBanners(),
         _checkLogin(),
         _initLocationState(),
-        _loadFeatureService()
+        _loadFeatureService(),
+        _loadHomeDiscount()
       ]);
+
+      if (_isLogin) {
+        await _loadBalance();
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -190,6 +153,10 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
     await Future.wait([
       _loadBanners(forceRefresh: true),
       _checkLogin(),
+      _loadHomeDiscount(),
+      if(_isLogin)
+        _loadBalance(),
+
     ]);
   }
 
@@ -239,6 +206,56 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
     }
   }
 
+  Future<void> _loadBalance() async {
+    setState(() {
+      _isBalanceLoading = true;
+    });
+    try {
+      final response = await _customerService.balanceCustomerService();
+      balance = response["data"]["balance"] ?? 0;
+    } catch (e) {
+      if (mounted) {
+        SnackBarHelper.showError(context, 'Lỗi khi tải số dư');
+      }
+      balance = 0;
+      appLog("Lỗi khi tải số dư: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBalanceLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadHomeDiscount() async {
+    setState(() {
+      _isHomeDiscountLoading = true;
+    });
+    try {
+      final response = await _discountService.listHome();
+      listHomeDiscount = response["data"] ?? [];
+      // appLog("${listHomeDiscount}");
+
+      final random = Random();
+      final randomDiscounts = List<dynamic>.from(listHomeDiscount)..shuffle(random);
+      _displayDiscounts = randomDiscounts.take(2).toList();
+      // appLog("${_displayDiscounts}");
+    } catch (e) {
+      if (mounted) {
+        SnackBarHelper.showError(context, 'Lỗi khi tải mã giảm giá');
+      }
+      balance = 0;
+      appLog("Lỗi khi tải mã giảm giá: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isHomeDiscountLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _loadFeatureService({bool forceRefresh = false}) async {
     // Nếu đã có data và không force refresh thì bỏ qua
     if (!forceRefresh && featuredServices.isNotEmpty) {
@@ -263,7 +280,8 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
               'title': item['title'] ?? 'Banner',
               'description': item['description'] ?? '',
               'id': item['_id'],
-              'tag': item['tag']
+              'tag': item['tag'],
+              'startPrice': item['startPrice']
             };
           }).toList();
 
@@ -654,14 +672,14 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
               ListView.separated(
                 shrinkWrap: true,
                 physics: const BouncingScrollPhysics(),
-                itemCount: supportChannels.length,
+                itemCount: AppConfig.supportChannels.length,
                 separatorBuilder: (context, index) => Divider(
                   height: 1,
                   color: Colors.grey[300],
                   indent: 70,
                 ),
                 itemBuilder: (context, index) {
-                  final channel = supportChannels[index];
+                  final channel = AppConfig.supportChannels[index];
                   return ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
@@ -864,6 +882,13 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
       }
     }
 
+    // final random = Random();
+    //
+    // final randomDiscounts = List<dynamic>.from(listHomeDiscount)
+    //   ..shuffle(random);
+    //
+    // final displayDiscounts = randomDiscounts.take(2).toList();
+
     super.build(context);
     return Scaffold(
       backgroundColor: ColorConfig.primaryBackground,
@@ -895,6 +920,63 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                         onLocationTap: _onLocationButtonTap,
                         formatCooldown: _formatCooldown,
                       ),
+                      if (_isLogin) ...[
+                        SizedBox(height: 8),
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFFFFF),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // LEFT (gộp 1 dòng)
+                                Row(
+                                  children: [
+                                    Text('Ví Zen: ', style: TextStyle(fontSize: 14, color: Colors.black54)),
+                                    _isBalanceLoading
+                                        ? SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: ColorConfig.primary,),
+                                    )
+                                        : Text(
+                                      '${FormatHelper.formatPrice(balance)} đ',
+                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+
+                                // RIGHT BUTTON
+                                GestureDetector(
+                                  onTap: () {
+                                    context.push(CustomerRouterConfig.choosePackage);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE8F1E8),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'Nạp tiền',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF4CAF50),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 18),
                         child: AnimatedSwitcher(
@@ -967,6 +1049,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                                           tag: item['tag'],
                                           imageUrl: item['image'],
                                           router: _mapRouter(index),
+                                          startPrice: item['startPrice'] ?? 0,
                                         ),
                                       ),
                                     );
@@ -977,67 +1060,70 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                               const SizedBox(),
 
                             const SizedBox(height: 10,),
+
                             PromoSection(
                               onViewAll: () {},
-                              children: [
-                                PromoCard(
-                                  image: "https://i.pinimg.com/1200x/57/15/12/57151294cfea55e5190910a4e3ab1d48.jpg",
-                                  title: "Combo Thư giãn toàn diện",
-                                  subtitle: "Massage body + Chăm sóc da",
-                                  oldPrice: "700.000đ",
-                                  newPrice: "490.000đ",
-                                  discount: "Giảm 30%",
+                              children: _displayDiscounts.isEmpty
+                                  ? []
+                                  : _displayDiscounts.asMap().entries.map((entry) {
+                                final index = entry.key;
+                                final discount = entry.value;
+
+                                final isPercent =
+                                    discount['type'] == 'percentage';
+
+                                final value = discount['value'] ?? 0;
+
+                                // Ảnh xen kẽ:
+                                // index chẵn -> ảnh 1
+                                // index lẻ -> ảnh 2
+                                final image = index % 2 == 0
+                                    ? ThemeConfig.urlImage1DiscountHome
+                                    : ThemeConfig.urlImage2DiscountHome;
+
+                                final code =
+                                (discount['code'] ?? '').toString().trim();
+
+                                final description =
+                                (discount['description'] ?? '')
+                                    .toString()
+                                    .trim();
+
+                                return PromoCard(
+                                  image: image,
+
+                                  title: code.isNotEmpty
+                                      ? "Mã: $code"
+                                      : "Ưu đãi đặc biệt",
+
+                                  subtitle: description.isNotEmpty
+                                      ? description
+                                      : "Nhanh tay sử dụng ưu đãi trước khi kết thúc",
+
+                                  newPrice: isPercent
+                                      ? "Giảm $value%"
+                                      : "${FormatHelper.formatPrice(value)} đ",
+
+                                  discount: isPercent
+                                      ? "Giảm $value%"
+                                      : "Giảm ${FormatHelper.formatPrice(value)}",
+
                                   showCountdown: true,
-                                  remaining: const Duration(hours: 2, minutes: 18, seconds: 45),
+                                  expiresAt: discount['expiresAt'],
+
                                   onTap: () {
-                                    context.push(CustomerRouterConfig.listOrderNowTechnician);
+                                    context.push(
+                                      CustomerRouterConfig
+                                          .listOrderNowTechnician,
+                                    );
                                   },
-                                ),
-                                PromoCard(
-                                  image: "https://i.pinimg.com/736x/46/07/5f/46075f13a2009a747fdfb1987a1f75d9.jpg",
-                                  title: "Chăm sóc da chuyên sâu",
-                                  subtitle: "Dưỡng ẩm – Trẻ hóa làn da",
-                                  oldPrice: "500.000đ",
-                                  newPrice: "400.000đ",
-                                  discount: "Giảm 20%",
-                                  onTap: () {
-                                    context.push(CustomerRouterConfig.listOrderNowTechnician);
-                                  },
-                                ),
-                              ],
+                                );
+                              }).toList(),
                             )
+
                           ],
                         ),
                       ),
-                      // if(featuredServices.isNotEmpty)...[
-                      //   FeaturedServicesWidget(
-                      //     title: featuredServices[0]['title'],
-                      //     description: featuredServices[0]['description'],
-                      //     tag: featuredServices[0]['tag'],
-                      //     imageUrl: featuredServices[0]['image'],
-                      //     router: CustomerRouterConfig.orderNow,
-                      //   ),
-                      //   FeaturedServicesWidget(
-                      //     title: featuredServices[1]['title'],
-                      //     description: featuredServices[1]['description'],
-                      //     tag: featuredServices[1]['tag'],
-                      //     imageUrl: featuredServices[1]['image'],
-                      //     router: CustomerRouterConfig.listBookTechnician,
-                      //   ),
-                      //
-                      //   FeaturedServicesWidget(
-                      //     title: featuredServices[2]['title'],
-                      //     description: featuredServices[2]['description'],
-                      //     tag: featuredServices[2]['tag'],
-                      //     imageUrl: featuredServices[2]['image'],
-                      //     router: CustomerRouterConfig.automaticMatching,
-                      //   ),
-                      // ] else
-                      //   const Text(""),
-                      const Divider(height: 1, thickness: 0.5, indent: 16, endIndent: 16),
-                      const SizedBox(height: 20),
-                      Center(child: const Text("Về ${AppConfig.appName}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),)),
-                      const SizedBox(height: 10),
 
                       FeatureSection(),
                       const SizedBox(height: 70),

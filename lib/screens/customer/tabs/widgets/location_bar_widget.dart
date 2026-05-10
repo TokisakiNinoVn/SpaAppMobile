@@ -45,11 +45,11 @@ class LocationBarWidget extends StatelessWidget {
         onTap: locationLoading ? null : onLocationTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: locationText != null
                 ? ColorConfig.white : Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: locationText != null
                   ? const Color(0xFF4CAF50).withOpacity(0.5)
@@ -117,7 +117,7 @@ class LocationBarWidget extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(colors: buttonGradient),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     buttonLabel,

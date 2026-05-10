@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class SpaDialog extends StatelessWidget {
-  // final IconData icon;
+class CustomDialog extends StatelessWidget {
+  final IconData? icon;
   final Color iconColor;
   final String title;
   final String body;
@@ -10,8 +10,8 @@ class SpaDialog extends StatelessWidget {
   final Color confirmColor;
   final VoidCallback onConfirm;
 
-  const SpaDialog({
-    // required this.icon,
+  const CustomDialog({
+    this.icon,
     this.iconColor = const Color(0xFF8B7355),
     required this.title,
     required this.body,

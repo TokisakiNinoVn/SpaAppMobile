@@ -438,8 +438,8 @@ class _BannerManagementState extends State<BannerManagement>
                   child: Switch.adaptive(
                     value: displayStatus,
                     onChanged: updateDisplayStatus,
-                    activeColor: _primary,
-                    activeTrackColor: _primaryLight,
+                    activeColor: ColorConfig.primary,
+                    activeTrackColor: ColorConfig.primary.withOpacity(.3),
                     inactiveThumbColor: Colors.white,
                     inactiveTrackColor: Colors.grey.shade300,
                   ),

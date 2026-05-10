@@ -18,16 +18,16 @@ import 'package:spa_app/services/file_service.dart';
 import 'package:spa_app/services/service_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
 
-import '../storage/index.dart';
+import '../../../storage/index.dart';
 
-class CreateTechnicianScreen extends StatefulWidget {
-  const CreateTechnicianScreen({super.key});
+class CreateProfileTechnician extends StatefulWidget {
+  const CreateProfileTechnician({super.key});
 
   @override
-  State<CreateTechnicianScreen> createState() => _CreateTechnicianScreen();
+  State<CreateProfileTechnician> createState() => _CreateTechnicianScreen();
 }
 
-class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
+class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
   final UploadService _uploadService = UploadService();
   final ServiceService _serviceService = ServiceService();
 
@@ -282,8 +282,10 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
             await SharedPrefs.saveValue(PrefType.string, 'serviceIds', response['data']?['technicianProfile']['serviceIds'] ?? []);
             await SharedPrefs.saveValue(PrefType.string, 'inforService', response['data']?['inforService']);
 
+            await SharedPrefs.saveValue(PrefType.bool, 'isHaveTechnician', true);
+
             SnackBarHelper.showSuccess(context, "Hồ sơ đã tạo thành công, chờ duyệt");
-            context.go('/home-technician');
+            context.pop();
           }
 
         }

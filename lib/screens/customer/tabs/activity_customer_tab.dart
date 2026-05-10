@@ -26,7 +26,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
   String _errorMessage = '';
 
   String _selectedFilter = 'Đang làm';
-  final List<String> _filters = ['Đang làm', 'Đang chờ', 'Đã hoàn thành', 'Hết thời gian chờ', 'Đã hủy', 'Tất cả'];
+  final List<String> _filters = ['Tất cả', 'Đang chờ', 'Đang làm', 'Đã hoàn thành', 'Đã hủy', 'Hết thời gian chờ', ];
 
   List<dynamic> _orders = [];
 

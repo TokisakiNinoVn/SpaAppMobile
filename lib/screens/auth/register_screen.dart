@@ -4,8 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/services/auth_service.dart';
+
+import '../../storage/index.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -68,7 +71,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (response['status'] == 'success') {
         SnackBarHelper.showSuccess(context, "Đăng ký tài khoản thành công");
-        context.go('/login');
+        await SharedPrefs.saveValue(PrefType.string, "token", response['token']);
+        await SharedPrefs.saveValue(PrefType.string, "inforUserLogin", response['data']);
+
+        await SharedPrefs.saveValue(PrefType.string, "role", response['data']?['rolesActive']);
+        await SharedPrefs.saveValue(PrefType.bool, "isLogin", true);
+        await SharedPrefs.saveValue(PrefType.bool, "isHaveTechnician", false);
+        // await SharedPrefs.saveValue(PrefType.bool, "isTechnicianActive", response['data']?['isTechnicianActive'] ?? false);
+        await SharedPrefs.saveValue(PrefType.bool, "isTechnicianActive", false);
+        await SharedPrefs.saveValue(PrefType.string, "customerProfile", response['data']?['customerProfile']?? {});
+        await SharedPrefs.saveValue(PrefType.int, "balance", response['data']?['customerProfile']?['balance'] ?? 0);
+
+        context.go(CustomerRouterConfig.homeCustomer);
       } else {
         SnackBarHelper.showError(context, response['message'] ?? 'Đăng ký thất bại');
       }

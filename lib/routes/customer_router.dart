@@ -19,6 +19,7 @@ import 'package:spa_app/screens/customer/services/automatic_matching/automatic_m
 import 'package:spa_app/screens/customer/services/books/book.dart';
 import 'package:spa_app/screens/customer/profile/update_profile.dart';
 import 'package:spa_app/screens/customer/services/now/order_now.dart';
+import 'package:spa_app/screens/customer/to_technician/create_profile_technician.dart';
 import 'package:spa_app/screens/customer/withdraw/confirm_request.dart';
 import 'package:spa_app/screens/customer/withdraw/create_request.dart';
 import 'package:spa_app/screens/customer/withdraw/history.dart';
@@ -93,6 +94,10 @@ final List<GoRoute> customerRoutes = [
         GoRoute(
           path: 'discounts',
           builder: (context, state) => ListDiscountScreen(),
+        ),
+        GoRoute(
+          path: 'create-profile-technician',
+          builder: (context, state) => CreateProfileTechnician(),
         ),
 
         GoRoute(

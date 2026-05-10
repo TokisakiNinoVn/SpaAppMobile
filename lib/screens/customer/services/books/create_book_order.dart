@@ -206,7 +206,7 @@ class _CreateBookOrderScreenState
     final moneyPrioritize = moneyPrioritizeRaw.isEmpty ? 0 : int.tryParse(moneyPrioritizeRaw) ?? 0;
     final price = widget.data['serviceTimePrice']['price'] as int;
     final data = {
-      'typeOrder': 'order-now',
+      'typeOrder': 'book',
       "technicianId": widget.data['technician']['id'],
       "serviceTimePriceId": widget.data['serviceTimePrice']['_id'],
       "nameService": widget.data['nameService'],
@@ -264,7 +264,7 @@ class _CreateBookOrderScreenState
     try {
       balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
       final rawProfile = await SharedPrefs.getValue(PrefType.string, "customerProfile");
-      appLog("data Profile: $rawProfile");
+      // appLog("data Profile: $rawProfile");
       if (rawProfile != null) {
         final profile = jsonDecode( rawProfile);
         // Lấy danh sách địa chỉ

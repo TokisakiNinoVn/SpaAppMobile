@@ -11,4 +11,6 @@ class AuthApiRoutes {
   static const String verifyOTP = '${AppConfig.apiUrlPublic}/auth/verify-otp';
   static const String verifyOTPLogin = '${AppConfig.apiUrlPublic}/auth/verify-otp-login';
   static const String changePassword = '${AppConfig.apiUrlPublic}/auth/change-password';
+
+  static const String changeRolePrivate = '${AppConfig.apiUrlPrivate}/auth-private/change-role';
 }

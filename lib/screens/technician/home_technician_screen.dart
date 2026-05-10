@@ -42,7 +42,7 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
     setState(() {
       role = prefs.getString('role') ?? 'Không rõ';
       isLoading = false;
-      isTechnicianActive = prefs.getString('isTechnicianActive') == 'true';
+      isTechnicianActive = prefs.getBool('isTechnicianActive') == true;
     });
   }
 

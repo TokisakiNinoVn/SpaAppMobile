@@ -282,7 +282,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Việc làm mới',
+                      'Nhận việc',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
