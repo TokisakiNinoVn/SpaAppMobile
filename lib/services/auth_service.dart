@@ -14,6 +14,7 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> switchRoleAccount(data) async {
+    // appLog("Role: $data");
     return await ApiMethodsPrivate.postRequest(AuthApiRoutes.changeRolePrivate, data);
   }
 

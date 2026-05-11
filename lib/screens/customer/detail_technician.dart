@@ -6,6 +6,7 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/helper/check_login_helper.dart';
+import 'package:spa_app/screens/customer/widgets/rating_breakdown_widget.dart';
 import 'package:spa_app/services/like_service.dart';
 import 'package:spa_app/services/technician_service.dart';
 import '../../helper/format_helper.dart';
@@ -334,10 +335,14 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                       _buildTechnicianInfo(),
                       _buildDescription(),
                       _buildServicesSection(),
+                      Divider(color: Colors.grey.withOpacity(.5)),
+                      
 
-                      _buildRatingBreakdown(),
-                      const SizedBox(height: 20),
-                      const SizedBox(height: 100),
+                      // _buildRatingBreakdown(),
+                      RatingBreakdownWidget(
+                        technicianId: widget.id,
+                      ),
+                      const SizedBox(height: 120),
                       if (_showBottomBar) const SizedBox(height: 200),
                     ],
                   ),
@@ -697,163 +702,165 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
   }
 
   /// Phần hiển thị đánh giá chi tiết (1-5 sao)
-  Widget _buildRatingBreakdown() {
-    final Map<int, int> ratingCounts = {
-      5: 120,
-      4: 45,
-      3: 12,
-      2: 5,
-      1: 3,
-    };
-
-    final totalReviews = ratingCounts.values.reduce((a, b) => a + b);
-    final averageRating = _technicianDetails!["rate"]?.toDouble() ?? 0.0;
-
-    return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Đánh giá",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: ColorConfig.black,
-            ),
-          ),
-          /// ===== HÀNG 1 =====
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              /// CỘT 1: SỐ RATE
-              Text(
-                averageRating.toStringAsFixed(1),
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: ColorConfig.black,
-                ),
-              ),
-
-              const SizedBox(width: 16),
-
-              /// CỘT 2: STAR + TEXT
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// HÀNG 1: ICON STAR
-                  Row(
-                    children: List.generate(5, (index) {
-                      return Icon(
-                        index < averageRating.floor()
-                            ? Icons.star
-                            : (index < averageRating.ceil()
-                            ? Icons.star_half
-                            : Icons.star_border),
-                        size: 18,
-                        color: ColorConfig.yellow,
-                      );
-                    }),
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  /// HÀNG 2: TEXT REVIEW
-                  Text(
-                    "$totalReviews đánh giá",
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: ColorConfig.black.withOpacity(0.6),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          /// ===== HÀNG 2: BREAKDOWN =====
-          Column(
-            children: List.generate(5, (star) {
-              final starLevel = 5 - star;
-              final count = ratingCounts[starLevel] ?? 0;
-              final percent =
-              totalReviews > 0 ? (count / totalReviews) : 0.0;
-
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 40,
-                      child: Row(
-                        children: [
-                          Text(
-                            "$starLevel",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color:
-                              ColorConfig.black.withOpacity(0.7),
-                            ),
-                          ),
-                          const SizedBox(width: 2),
-                          Icon(
-                            Icons.star,
-                            size: 14,
-                            color: ColorConfig.yellow,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: percent,
-                          backgroundColor: Colors.grey.shade200,
-                          color: ColorConfig.primary,
-                          minHeight: 6,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    SizedBox(
-                      width: 35,
-                      child: Text(
-                        "$count",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color:
-                          ColorConfig.black.withOpacity(0.7),
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildRatingBreakdown(String idTechnician) {
+  //   final Map<int, int> ratingCounts = {
+  //     5: 120,
+  //     4: 45,
+  //     3: 12,
+  //     2: 5,
+  //     1: 3,
+  //   };
+  //
+  //
+  //
+  //   final totalReviews = ratingCounts.values.reduce((a, b) => a + b);
+  //   final averageRating = _technicianDetails!["rate"]?.toDouble() ?? 0.0;
+  //
+  //   return Container(
+  //     margin: const EdgeInsets.all(12),
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       borderRadius: BorderRadius.circular(16),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.04),
+  //           blurRadius: 8,
+  //           offset: const Offset(0, 2),
+  //         )
+  //       ],
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(
+  //           "Đánh giá",
+  //           style: TextStyle(
+  //             fontSize: 20,
+  //             fontWeight: FontWeight.bold,
+  //             color: ColorConfig.black,
+  //           ),
+  //         ),
+  //         /// ===== HÀNG 1 =====
+  //         Row(
+  //           crossAxisAlignment: CrossAxisAlignment.center,
+  //           children: [
+  //             /// CỘT 1: SỐ RATE
+  //             Text(
+  //               averageRating.toStringAsFixed(1),
+  //               style: TextStyle(
+  //                 fontSize: 40,
+  //                 fontWeight: FontWeight.bold,
+  //                 color: ColorConfig.black,
+  //               ),
+  //             ),
+  //
+  //             const SizedBox(width: 16),
+  //
+  //             /// CỘT 2: STAR + TEXT
+  //             Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 /// HÀNG 1: ICON STAR
+  //                 Row(
+  //                   children: List.generate(5, (index) {
+  //                     return Icon(
+  //                       index < averageRating.floor()
+  //                           ? Icons.star
+  //                           : (index < averageRating.ceil()
+  //                           ? Icons.star_half
+  //                           : Icons.star_border),
+  //                       size: 18,
+  //                       color: ColorConfig.yellow,
+  //                     );
+  //                   }),
+  //                 ),
+  //
+  //                 const SizedBox(height: 4),
+  //
+  //                 /// HÀNG 2: TEXT REVIEW
+  //                 Text(
+  //                   "$totalReviews đánh giá",
+  //                   style: TextStyle(
+  //                     fontSize: 13,
+  //                     color: ColorConfig.black.withOpacity(0.6),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ],
+  //         ),
+  //
+  //         /// ===== HÀNG 2: BREAKDOWN =====
+  //         Column(
+  //           children: List.generate(5, (star) {
+  //             final starLevel = 5 - star;
+  //             final count = ratingCounts[starLevel] ?? 0;
+  //             final percent =
+  //             totalReviews > 0 ? (count / totalReviews) : 0.0;
+  //
+  //             return Padding(
+  //               padding: const EdgeInsets.symmetric(vertical: 3),
+  //               child: Row(
+  //                 children: [
+  //                   SizedBox(
+  //                     width: 40,
+  //                     child: Row(
+  //                       children: [
+  //                         Text(
+  //                           "$starLevel",
+  //                           style: TextStyle(
+  //                             fontSize: 12,
+  //                             color:
+  //                             ColorConfig.black.withOpacity(0.7),
+  //                           ),
+  //                         ),
+  //                         const SizedBox(width: 2),
+  //                         Icon(
+  //                           Icons.star,
+  //                           size: 14,
+  //                           color: ColorConfig.yellow,
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //
+  //                   Expanded(
+  //                     child: ClipRRect(
+  //                       borderRadius: BorderRadius.circular(4),
+  //                       child: LinearProgressIndicator(
+  //                         value: percent,
+  //                         backgroundColor: Colors.grey.shade200,
+  //                         color: ColorConfig.primary,
+  //                         minHeight: 6,
+  //                       ),
+  //                     ),
+  //                   ),
+  //
+  //                   const SizedBox(width: 8),
+  //
+  //                   SizedBox(
+  //                     width: 35,
+  //                     child: Text(
+  //                       "$count",
+  //                       style: TextStyle(
+  //                         fontSize: 12,
+  //                         fontWeight: FontWeight.w500,
+  //                         color:
+  //                         ColorConfig.black.withOpacity(0.7),
+  //                       ),
+  //                       textAlign: TextAlign.right,
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             );
+  //           }),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
 
   /// Bottom bar hiển thị gói dịch vụ đã chọn

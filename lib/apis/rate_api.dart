@@ -5,4 +5,6 @@ class RateApiRoutes {
   static const String create = '${AppConfig.apiUrlPrivate}/rate/create';
   static const String update = '${AppConfig.apiUrlPrivate}/rate/update';
   static const String delete = '${AppConfig.apiUrlPrivate}/rate/delete';
+
+  static const String byTechnician = '${AppConfig.apiUrlPrivate}/rate/technician';
 }

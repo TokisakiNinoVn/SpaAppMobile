@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -92,6 +94,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
       if (response['success'] == true) {
         setState(() {
           _orders = response['data'] ?? [];
+          appLog("List order: $_orders");
           _isLoading = false;
         });
       } else {
@@ -104,6 +107,16 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
       });
       print('Error loading orders: $e');
     }
+  }
+
+  void _onOrderExpired(String orderId) {
+    setState(() {
+      final index = _orders.indexWhere((order) => order['_id'] == orderId);
+      if (index != -1 && _orders[index]['status'] == 'pending') {
+        _orders[index]['status'] = 'expired';
+        SnackBarHelper.showWarning(context, 'Đơn hàng đã hết thời gian chờ');
+      }
+    });
   }
 
   @override
@@ -217,11 +230,11 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
               final isSelected = _selectedFilter == filter;
 
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4), // 👈 giảm mạnh
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: FilterChip(
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 6), // 👈 giảm padding text
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // 👈 bỏ vùng tap thừa
-                  visualDensity: VisualDensity.compact, // 👈 nén lại tổng thể
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
 
                   label: Text(
                     filter,
@@ -309,6 +322,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
 
   Widget _buildOrderItem(Map<String, dynamic> order) {
     final status = order['status'] ?? 'pending';
+    final typeOrder = order['order-now'] ?? 'order-now';
     final price = order['price'] ?? 0;
     final duration = order['serviceTimePrice']['duration'] ?? 0;
     final technicianName =
@@ -419,9 +433,28 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                     FormatHelper.formatPrice(price),
                     isPrimary: true,
                   ),
+                  const SizedBox(width: 8),
+                  _buildChip(
+                    Icons.payments_outlined,
+                    typeOrder == "book" ? "Đặt trước" : "Đặt ngay",
+                    isPrimary: true,
+                  ),
                 ],
               ),
-
+              const SizedBox(height: 5),
+              if (order['submittedAt'] != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.schedule, size: 12, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Tạo lúc: ${FormatHelper.formatDateTime(order['submittedAt'])}',
+                      style: TextStyle(fontSize: 14, color: Colors.black),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 14),
 
               /// TECHNICIAN
@@ -455,6 +488,54 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                             color: Colors.grey.shade600,
                           ),
                         ),
+
+                        // Text(_formatWorkingHours(workingHours)),  // giờ làm
+                        // 👇 THÊM submittedAt ở đây
+                        // if (order['submittedAt'] != null) ...[
+                        //   const SizedBox(height: 4),
+                        //   Row(
+                        //     children: [
+                        //       Icon(Icons.schedule, size: 12, color: Colors.grey),
+                        //       const SizedBox(width: 4),
+                        //       Text(
+                        //         'Tạo lúc: ${FormatHelper.formatDateTime(order['submittedAt'])}',
+                        //         style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        //       ),
+                        //     ],
+                        //   ),
+                        // ],
+                        // ... sau phần hiển thị technician và workingHours
+                        // Row(
+                        //   children: [
+                        //     CircleAvatar(...),
+                        //     const SizedBox(width: 12),
+                        //     Expanded(
+                        //       child: Column(
+                        //         crossAxisAlignment: CrossAxisAlignment.start,
+                        //         children: [
+                        //           Text(...),   // tên ktv
+                        //           const SizedBox(height: 2),
+                        //           Text(_formatWorkingHours(workingHours)),  // giờ làm
+                        //           // 👇 THÊM submittedAt ở đây
+                        //           if (order['submittedAt'] != null) ...[
+                        //             const SizedBox(height: 4),
+                        //             Row(
+                        //               children: [
+                        //                 Icon(Icons.schedule, size: 12, color: Colors.grey),
+                        //                 const SizedBox(width: 4),
+                        //                 Text(
+                        //                   'Tạo lúc: ${FormatHelper.formatDateTime(order['submittedAt'])}',
+                        //                   style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        //                 ),
+                        //               ],
+                        //             ),
+                        //           ],
+                        //         ],
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
+
                       ],
                     ),
                   ),
@@ -480,6 +561,13 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                       ),
                     )
                   ],
+                ),
+              ],
+              if (status == 'pending') ...[
+                const SizedBox(height: 10),
+                _OrderCountdownWidget(
+                  order: order,
+                  onExpired: () => _onOrderExpired(order['_id']),
                 ),
               ],
 
@@ -672,5 +760,121 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
         ],
       ),
     );
+  }
+}
+
+class _OrderCountdownWidget extends StatefulWidget {
+  final Map<String, dynamic> order;
+  final VoidCallback onExpired;
+
+  const _OrderCountdownWidget({
+    required this.order,
+    required this.onExpired,
+  });
+
+  @override
+  State<_OrderCountdownWidget> createState() => _OrderCountdownWidgetState();
+}
+
+class _OrderCountdownWidgetState extends State<_OrderCountdownWidget> {
+  late Timer _timer;
+  late Duration _remaining;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateRemaining();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _updateRemaining();
+      if (_remaining.isNegative || _remaining.inSeconds <= 0) {
+        _timer.cancel();
+        widget.onExpired(); // báo cho parent biết đơn đã hết hạn
+      }
+    });
+  }
+
+  void _updateRemaining() {
+    final expiresAtStr = widget.order['expiresAt'] as String?;
+    if (expiresAtStr == null) {
+      _remaining = Duration.zero;
+      return;
+    }
+    final expiresAt = DateTime.parse(expiresAtStr);
+    _remaining = expiresAt.difference(DateTime.now());
+    if (_remaining.isNegative) _remaining = Duration.zero;
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final totalDuration = _getTotalDuration(); // thời gian chờ tối đa
+    final percentage = totalDuration.inSeconds > 0
+        ? 1 - (_remaining.inSeconds / totalDuration.inSeconds)
+        : 1.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Row(
+        //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //   children: [
+        //     Text(
+        //       '${_formatDuration(_remaining)}',
+        //       style: TextStyle(
+        //         fontSize: 12,
+        //         color: _remaining.inSeconds < 60 ? Colors.red : Colors.orange,
+        //         fontWeight: FontWeight.w500,
+        //       ),
+        //     ),
+        //     Text(
+        //       'Hết hạn lúc: ${_formatDateTime(widget.order['expiresAt'])}',
+        //       style: const TextStyle(fontSize: 11, color: Colors.grey),
+        //     ),
+        //   ],
+        // ),
+        // const SizedBox(height: 6),
+        LinearProgressIndicator(
+          value: percentage.clamp(0.0, 1.0),
+          backgroundColor: Colors.grey.shade200,
+          color: _remaining.inSeconds < 60 ? Colors.red : Colors.orange,
+          minHeight: 5,
+          borderRadius: BorderRadius.circular(3),
+        ),
+      ],
+    );
+  }
+
+  Duration _getTotalDuration() {
+    final submittedAtStr = widget.order['submittedAt'] as String?;
+    final expiresAtStr = widget.order['expiresAt'] as String?;
+    if (submittedAtStr == null || expiresAtStr == null) return Duration.zero;
+    final start = DateTime.parse(submittedAtStr);
+    final end = DateTime.parse(expiresAtStr);
+    return end.difference(start);
+  }
+
+  String _formatDuration(Duration d) {
+    if (d.isNegative) return '00:00';
+    final hours = d.inHours;
+    final minutes = d.inMinutes.remainder(60);
+    final seconds = d.inSeconds.remainder(60);
+    if (hours > 0) return '$hours giờ ${minutes.toString().padLeft(2, '0')} phút';
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')} phút';
+  }
+
+  String _formatDateTime(String? isoString) {
+    if (isoString == null) return '--:--';
+    try {
+      final dt = DateTime.parse(isoString);
+      return DateFormat('HH:mm dd/MM/yyyy').format(dt);
+    } catch (_) {
+      return isoString;
+    }
   }
 }

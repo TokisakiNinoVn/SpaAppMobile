@@ -45,6 +45,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
 
   bool isLoading = false;
   bool _isSwitchingRole = false;
+  bool isHasTechnicianProfile = false;
   bool _isLogin = false;
   Map<String, dynamic>? inforUser;
   String _selectedLang = 'vi';
@@ -153,6 +154,8 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
 
   Future<void> _loadInforUser() async {
     balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
+    isHasTechnicianProfile = await SharedPrefs.getValue(PrefType.bool, 'isHaveTechnician') ?? false;
+
     final rolesActiveStr = await SharedPrefs.getValue(PrefType.string, "role") ?? '';
     final rolesJsonStr = await SharedPrefs.getValue(PrefType.string, "roles") ?? '[]';
 
@@ -232,16 +235,27 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
   Future<void> _changeRole() async {
     setState(() => _isSwitchingRole = true);
     try {
-      final response = await _userService.changeRoleService({});
+      // final response = await _userService.changeRoleService({
+      final response = await authService.switchRoleAccount({
+        "roleChangeTo": "ktv",
+      });
+
+      await SharedPreferencesHelper.logOut();
+
+      await AuthResponseHandler.handleLoginResponse(
+        context: context,
+        response: response,
+      );
+
       // appLog("$response");
-      if (!mounted) return;
-      if (response['success'] == true) {
-        SnackBarHelper.showSuccess(context, "Chuyển đổi vai trò thành công!");
-        await SharedPreferencesHelper.logOut();
-        if (mounted) context.go(GlobalRouterConfig.loginOTP);
-      } else {
-        SnackBarHelper.showError(context, "Lỗi chuyển đổi vai trò!");
-      }
+      // if (!mounted) return;
+      // if (response['success'] == true) {
+      //   SnackBarHelper.showSuccess(context, "Chuyển đổi vai trò thành công!");
+      //   await SharedPreferencesHelper.logOut();
+      //   if (mounted) context.go(GlobalRouterConfig.loginOTP);
+      // } else {
+      //   SnackBarHelper.showError(context, "Lỗi chuyển đổi vai trò!");
+      // }
     } catch (e) {
       if (mounted) SnackBarHelper.showError(context, "Lỗi: $e");
     } finally {
@@ -319,6 +333,27 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
         onSelect: (code) => setState(() => _selectedLang = code),
       ),
     );
+  }
+
+  Future<bool> _hasTechnicianProfile() async {
+    return await SharedPrefs.getValue(PrefType.bool, 'isHaveTechnician') ?? false;
+  }
+
+  void _handleRegisterTap() async {
+    if (_isLogin) {
+      final hasTechnician = await _hasTechnicianProfile();
+      if (hasTechnician) {
+        _showRoleSwitchDialog();
+      } else {
+        if (mounted) {
+          context.go(CustomerRouterConfig.createProfileTechnician);
+        }
+      }
+    } else {
+      if (mounted) {
+        context.go(GlobalRouterConfig.signup);
+      }
+    }
   }
 
   @override
@@ -477,7 +512,6 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
     );
   }
 
-
   Widget _buildBalanceSection() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -607,7 +641,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
         children: [
           InkWell(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-            onTap: _isSwitchingRole ? null : _showRoleSwitchDialog,
+            onTap: _isSwitchingRole ? null : _handleRegisterTap,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
@@ -615,8 +649,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
                   const Icon(Icons.change_circle, size: 20, color: _kGray),
                   const SizedBox(width: 14),
                   Expanded(
-                    child: Text(
-                      _isSwitchingRole ? 'Đang chuyển...' : 'Trở thành Cộng tác viên',
+                    child: Text(isHasTechnicianProfile ? 'Chuyển đổi tài khoản KTV' : 'Trở thành Cộng tác viên',
                       style: TextStyle(fontSize: 14, color: _isSwitchingRole ? _kGray : _kBlack),
                     ),
                   ),

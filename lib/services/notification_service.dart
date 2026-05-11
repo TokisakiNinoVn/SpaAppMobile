@@ -4,7 +4,7 @@ import 'package:spa_app/helper/logger_utils-ok.dart';
 
 class NotificationService {
   Future<Map<String, dynamic>> createNotificationService( Map<String, dynamic> data) async {
-    appLog("${NotificationApiRoutes.create} - data: ${data}");
+    // appLog("${NotificationApiRoutes.create} - data: ${data}");
     return await ApiMethodsPrivate.postRequest(
       '${NotificationApiRoutes.create}', data
     );
@@ -21,9 +21,24 @@ class NotificationService {
       '${NotificationApiRoutes.delete}/$id'
     );
   }
+
    Future<Map<String, dynamic>> detailsNotificationService(String id) async {
       return await ApiMethodsPrivate.getRequest(
         '${NotificationApiRoutes.details}/$id'
+      );
+   }
+
+
+  // User
+  Future<Map<String, dynamic>> listNotificationUserService() async {
+    return await ApiMethodsPrivate.getRequest(
+        '${NotificationApiRoutes.listUser}'
+    );
+  }
+
+   Future<Map<String, dynamic>> readNotificationService(String id) async {
+      return await ApiMethodsPrivate.putRequest(
+        '${NotificationApiRoutes.readUser}/$id', {}
       );
    }
 

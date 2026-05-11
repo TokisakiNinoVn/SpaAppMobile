@@ -105,37 +105,47 @@ class _AccountTabState extends State<AccountTab> {
         _isSwitchingRole = true;
       });
 
-      final response = await userService.changeRoleService({});
-      if (response['success'] == true) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              "Đã chuyển đổi vai trò thành công. Vui lòng đăng nhập lại!",
-              style: TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-        await _logout();
+      final response = await authService.switchRoleAccount({
+        "roleChangeTo": "customer",
+      });
 
-      } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              "Có lỗi xảy ra khi chuyển đổi vai trò",
-              style: TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      await SharedPreferencesHelper.logOut();
+
+      await AuthResponseHandler.handleLoginResponse(
+        context: context,
+        response: response,
+      );
+
+      // if (response['success'] == true) {
+      //   if (!mounted) return;
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: const Text(
+      //         "Đã chuyển đổi vai trò thành công. Vui lòng đăng nhập lại!",
+      //         style: TextStyle(color: Colors.white),
+      //       ),
+      //       backgroundColor: Colors.green,
+      //       duration: const Duration(seconds: 3),
+      //       behavior: SnackBarBehavior.floating,
+      //       shape: RoundedRectangleBorder(
+      //         borderRadius: BorderRadius.circular(10),
+      //       ),
+      //     ),
+      //   );
+      //   await _logout();
+      //
+      // } else {
+      //   if (!mounted) return;
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: const Text(
+      //         "Có lỗi xảy ra khi chuyển đổi vai trò",
+      //         style: TextStyle(color: Colors.white),
+      //       ),
+      //       backgroundColor: Colors.red,
+      //     ),
+      //   );
+      // }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -157,6 +167,7 @@ class _AccountTabState extends State<AccountTab> {
   }
 
   Future<void> _loadUserDetail() async {
+    await SharedPreferencesHelper.listAllKeyValue();
     final userInfoJson = await SharedPrefs.getValue(PrefType.string, "inforUserLogin") ?? '';
     final rolesActiveStr = await SharedPrefs.getValue(PrefType.string, "rolesActive") ?? '';
     final rolesJsonStr = await SharedPrefs.getValue(PrefType.string, "roles") ?? '[]';
@@ -406,7 +417,8 @@ class _AccountTabState extends State<AccountTab> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    appLog("$isAdmin");
+    // appLog("$isAdmin");
+    // appLog("$roles");
 
     final user = userData?['user'];
     final technician = userData?['technician'];
@@ -616,12 +628,15 @@ class _AccountTabState extends State<AccountTab> {
                   ),
                   child: Column(
                     children: [
-                      _buildMenuItem(
-                        icon: Icons.swap_horiz,
-                        label: 'Chuyển vai trò khách hàng',
-                        onTap: () => _showRoleSwitchDialog(context),
-                      ),
-                      const Divider(height: 1, indent: 52),
+                      if (roles.contains('customer'))...[
+                        _buildMenuItem(
+                          icon: Icons.swap_horiz,
+                          label: 'Chuyển vai trò khách hàng',
+                          onTap: () => _showRoleSwitchDialog(context),
+                        ),
+                        const Divider(height: 1, indent: 52),
+
+                      ],
                       _buildMenuItem(
                         icon: Icons.logout,
                         label: 'Đăng xuất',

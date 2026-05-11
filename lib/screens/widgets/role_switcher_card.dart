@@ -157,30 +157,30 @@ class RoleSwitcherCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCurrentRoleCard(Color primary) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: primary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              _getRoleDisplayName(activeRole),
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const Icon(Icons.check_circle, color: Colors.green, size: 20),
-        ],
-      ),
-    );
-  }
+  // Widget _buildCurrentRoleCard(Color primary) {
+  //   return Container(
+  //     width: double.infinity,
+  //     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+  //     decoration: BoxDecoration(
+  //       color: primary.withOpacity(0.08),
+  //       borderRadius: BorderRadius.circular(16),
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         Expanded(
+  //           child: Text(
+  //             _getRoleDisplayName(activeRole),
+  //             style: const TextStyle(
+  //               fontSize: 15,
+  //               fontWeight: FontWeight.w600,
+  //             ),
+  //           ),
+  //         ),
+  //         const Icon(Icons.check_circle, color: Colors.green, size: 20),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // Widget _buildRoleChip(String role, Color primary, BuildContext context) {
   //   return InkWell(

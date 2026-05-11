@@ -93,11 +93,11 @@ class TechnicianService {
     // print("✅ $lat - $lng");
     bool isLogin = await SharedPrefs.getValue(PrefType.bool, "isLogin") ?? false;
     String fullUrl = "${TechnicianApiRoutes.listTechnicianForCustomer}?lat=${lat}&lng=${lng}&isLogin=$isLogin&typeOrder=$typeOrder";
-    appLog("$fullUrl");
+    // appLog("$fullUrl");
     if(isLogin) {
-      return await ApiMethodsPublic.getRequest(fullUrl);
-    } else {
       return await ApiMethodsPrivate.getRequest(fullUrl);
+    } else {
+      return await ApiMethodsPublic.getRequest(fullUrl);
     }
   }
 

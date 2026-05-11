@@ -9,11 +9,12 @@ class OrderService {
   //   return await ApiMethodsPrivate.postRequest(ServiceApiRoutes.technicianAddService, data);
   // }
   Future<Map<String, dynamic>> createOrder(Map<String, dynamic> data) async {
+    // appLog("Data create order: $data");
     return await ApiMethodsPrivate.postRequest(OrderApiRoutes.create, data);
   }
 
   Future<Map<String, dynamic>> updateStatus(Map<String, dynamic> data) async {
-    appLog("Data: $data");
+    // appLog("Data: $data");
     return await ApiMethodsPrivate.putRequest(OrderApiRoutes.updateStatus, data);
   }
 

@@ -256,7 +256,7 @@ class _CreateOrderNowScreenState
 
     try {
       final response = await _orderService.createOrder(data);
-      appLog("response: $response");
+      // appLog("response: $response");
       if (response['success'] == true) {
         context.go('/home-customer');
         SnackBarHelper.showSuccess(context, "Tạo yêu cầu đơn thành công! Vui lòng chờ kỹ thuật viên phản hồi!");
@@ -308,7 +308,7 @@ class _CreateOrderNowScreenState
       if (response['success'] == true) {
         setState(() {
           _discounts = response['data'] ?? [];
-          appLog("${_discounts}");
+          // appLog("${_discounts}");
           _isLoading = false;
         });
         // appLog("list discount: $_discounts");

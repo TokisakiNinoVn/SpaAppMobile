@@ -97,7 +97,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
   bool checkPermissionLocation = false;
 
   // ─── Notification badge ───────────────────────────────────
-  final int _notificationCount = 0;
+  final int _notificationCount = 1;
 
   // ─── Support Button State ─────────────────────────────────
   bool _showSupportButton = true;

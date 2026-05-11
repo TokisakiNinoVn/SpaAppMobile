@@ -39,7 +39,9 @@ class _FeatureSectionState extends State<FeatureSection> {
   Future<void> _changeRole() async {
     setState(() => _isSwitchingRole = true);
     try {
-      final response = await _userService.changeRoleService({});
+      final response = await _userService.changeRoleService({
+
+      });
       if (!mounted) return;
 
       if (response['success'] == true) {
