@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/providers/user_provider.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/screens/customer/services/widgets/info_row.dart';
 import 'package:spa_app/screens/customer/services/widgets/input_box.dart';
@@ -36,8 +38,7 @@ class CreateOrderNowScreen extends StatefulWidget {
   });
 
   @override
-  State<CreateOrderNowScreen> createState() =>
-      _CreateOrderNowScreenState();
+  State<CreateOrderNowScreen> createState() => _CreateOrderNowScreenState();
 }
 
 class _CreateOrderNowScreenState
@@ -52,6 +53,7 @@ class _CreateOrderNowScreenState
   String? _errorMessage;
   bool _isRefreshingDiscount = false;
   // bool _isLoadingAddress = false;
+  int? nowBalance;
 
   List<Map<String, dynamic>> _addresses = [];
   List<dynamic> _discounts = [];
@@ -103,8 +105,10 @@ class _CreateOrderNowScreenState
   void initState() {
     super.initState();
     _paymentMethod = PaymentMethod.zenhome;
-    _loadCustomerProfile();
-    _loadDiscounts();
+      _loadDiscounts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCustomerProfile();
+    });
     _loadAddresses();
     _noteFocusNode.addListener(_onFocusChange);
     _moneyPrioritizeController.addListener(_formatExtraFeeOnChange);
@@ -288,10 +292,15 @@ class _CreateOrderNowScreenState
   }
 
   Future<void> _loadCustomerProfile() async {
+    final provider = context.read<UserProvider>();
+
     try {
-      balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
+      await provider.loadBalanceCustomer();
+      balance = provider.nowBalance;
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -1153,7 +1162,12 @@ class _CreateOrderNowScreenState
           ),
         ),
       ),
-      body: _loading
+      body:GestureDetector(
+        onTap: () {
+          // Tắt bàn phím khi tap ra ngoài
+          FocusScope.of(context).unfocus();
+        },
+        child: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -1331,6 +1345,10 @@ class _CreateOrderNowScreenState
                   controller: _noteController,
                   focusNode: _noteFocusNode,
                   maxLines: 2,
+                  textInputAction: TextInputAction.done,
+                  onEditingComplete: () {
+                    _noteFocusNode.unfocus();
+                  },
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     hintText: "Ví dụ: Thời gian phù hợp, tình trạng cụ thể, lưu ý khi đến…",
@@ -1344,6 +1362,7 @@ class _CreateOrderNowScreenState
           ],
         ),
       ),
+      )
     );
   }
 

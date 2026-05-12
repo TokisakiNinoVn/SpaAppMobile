@@ -43,6 +43,8 @@ class CustomerRouterConfig {
   static String createRate = "/home-customer/create-rate";
   static String viewOrUpdateRate = "/home-customer/view-update-rate";
 
+  static String canceledOrder = "/home-customer/cancel-order";
+
   //
   static String createProfileTechnician = "/home-customer/create-profile-technician";
 

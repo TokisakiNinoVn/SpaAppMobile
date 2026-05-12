@@ -3,6 +3,7 @@ import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/screens/customer/address/add.dart';
 import 'package:spa_app/screens/customer/address/edit.dart';
 import 'package:spa_app/screens/customer/address/list.dart';
+import 'package:spa_app/screens/customer/order/canceled_screen.dart';
 import 'package:spa_app/screens/customer/rate/create_rate_screen.dart';
 import 'package:spa_app/screens/customer/rate/view_update_rate_screen.dart';
 import 'package:spa_app/screens/customer/services/automatic_matching/create_automatic_matching_order.dart';
@@ -41,6 +42,14 @@ final List<GoRoute> customerRoutes = [
           builder: (context, state) {
             final id = state.pathParameters['id']!;
             return DetailsOrderScreen(id: id);
+          },
+        ),
+
+        GoRoute(
+          path: 'cancel-order/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return CanceledOrderScreen(idOrder: id);
           },
         ),
 

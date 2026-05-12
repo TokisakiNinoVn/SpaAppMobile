@@ -27,6 +27,8 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
   bool _isLogin = false;
   String _errorMessage = '';
 
+  Timer? _autoRefreshTimer;
+
   String _selectedFilter = 'Đang làm';
   final List<String> _filters = ['Tất cả', 'Đang chờ', 'Đang làm', 'Đã hoàn thành', 'Đã hủy', 'Hết thời gian chờ', ];
 
@@ -43,7 +45,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
       case 'Đã hoàn thành':
         return _orders.where((order) => order['status'] == 'done').toList();
       case 'Đã hủy':
-        return _orders.where((order) => order['status'] == 'rejected').toList();
+        return _orders.where((order) => order['status'] == 'canceled').toList();
       case 'Hết thời gian chờ':
         return _orders.where((order) => order['status'] == 'expired').toList();
       default:
@@ -71,6 +73,22 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
   void initState() {
     super.initState();
     checkLogin();
+    // _startAutoRefresh();
+  }
+
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      // Chỉ gọi load nếu không đang loading và widget còn mounted
+      if (!_isLoading && mounted) {
+        _loadOrders();
+      }
+    });
+  }
+
+  void _stopAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = null;
   }
 
   Future<void> checkLogin() async {
@@ -94,7 +112,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
       if (response['success'] == true) {
         setState(() {
           _orders = response['data'] ?? [];
-          appLog("List order: $_orders");
+          // appLog("List order: $_orders");
           _isLoading = false;
         });
       } else {
@@ -281,6 +299,21 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
               style: TextStyle(
                 fontSize: 16,
                 color: ColorConfig.textBlack.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _loadOrders,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                backgroundColor: ColorConfig.primary,
+              ),
+              child: const Text(
+                'Cập nhật',
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -580,7 +613,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                   if (status == 'pending' || status == 'approved') ...[
                     buildActionButton(
                       onPressed: () {
-                        SnackBarHelper.showWarning(context, "Chức năng đang phát triển");
+                        context.push("${CustomerRouterConfig.canceledOrder}/${order['_id']}");
                       },
                       icon: Icons.close,
                       label: "Huỷ đơn",
@@ -589,16 +622,16 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                   ],
 
                   if (status == 'done') ...[
-                    buildActionButton(
-                      onPressed: () {
-                        SnackBarHelper.showWarning(context, "Chức năng đang phát triển");
-                      },
-                      icon: Icons.report,
-                      label: "Báo cáo",
-                      color: Colors.red,
-                    ),
+                    // buildActionButton(
+                    //   onPressed: () {
+                    //     SnackBarHelper.showWarning(context, "Chức năng đang phát triển");
+                    //   },
+                    //   icon: Icons.report,
+                    //   label: "Báo cáo",
+                    //   color: Colors.red,
+                    // ),
 
-                    const SizedBox(width: 6),
+                    // const SizedBox(width: 6),
 
                     if (rate != null && rate.isNotEmpty) ...[
                       buildActionButton(
@@ -808,6 +841,8 @@ class _OrderCountdownWidgetState extends State<_OrderCountdownWidget> {
   @override
   void dispose() {
     _timer.cancel();
+    // _stopAutoRefresh();
+
     super.dispose();
   }
 
@@ -859,22 +894,22 @@ class _OrderCountdownWidgetState extends State<_OrderCountdownWidget> {
     return end.difference(start);
   }
 
-  String _formatDuration(Duration d) {
-    if (d.isNegative) return '00:00';
-    final hours = d.inHours;
-    final minutes = d.inMinutes.remainder(60);
-    final seconds = d.inSeconds.remainder(60);
-    if (hours > 0) return '$hours giờ ${minutes.toString().padLeft(2, '0')} phút';
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')} phút';
-  }
-
-  String _formatDateTime(String? isoString) {
-    if (isoString == null) return '--:--';
-    try {
-      final dt = DateTime.parse(isoString);
-      return DateFormat('HH:mm dd/MM/yyyy').format(dt);
-    } catch (_) {
-      return isoString;
-    }
-  }
+  // String _formatDuration(Duration d) {
+  //   if (d.isNegative) return '00:00';
+  //   final hours = d.inHours;
+  //   final minutes = d.inMinutes.remainder(60);
+  //   final seconds = d.inSeconds.remainder(60);
+  //   if (hours > 0) return '$hours giờ ${minutes.toString().padLeft(2, '0')} phút';
+  //   return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')} phút';
+  // }
+  //
+  // String _formatDateTime(String? isoString) {
+  //   if (isoString == null) return '--:--';
+  //   try {
+  //     final dt = DateTime.parse(isoString);
+  //     return DateFormat('HH:mm dd/MM/yyyy').format(dt);
+  //   } catch (_) {
+  //     return isoString;
+  //   }
+  // }
 }
