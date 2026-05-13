@@ -355,19 +355,19 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
 
   Widget _buildOrderItem(Map<String, dynamic> order) {
     final status = order['status'] ?? 'pending';
-    final typeOrder = order['order-now'] ?? 'order-now';
+    final typeOrder = order['typeOrder'] ?? "";
     final price = order['price'] ?? 0;
     final duration = order['serviceTimePrice']['duration'] ?? 0;
-    final technicianName =
-        order['technicianInfor']['fullName'] ?? 'Chưa xác định';
+    final technicianName = order['technicianInfor']?['fullName'] ?? 'Chưa xác định';
     final technicianAvatar = FormatHelper.formatNetworkImageUrl(
-        order['technicianInfor']['avatar']);
+        order['technicianInfor']?['avatar'] ?? "");
     final workingHours = order['workingHours'] ?? '';
     final address = order['address'] ?? '';
     final rate = order['rate'] ?? '';
 
     Color statusColor;
     String statusText;
+    String typeOderDisplay;
 
     switch (status) {
       case 'done':
@@ -385,6 +385,22 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
       default:
         statusColor = Colors.grey;
         statusText = 'Không xác định';
+    }
+
+    switch (typeOrder) {
+      case "book":
+        typeOderDisplay = "Đặt trước";
+        break;
+      case "order-now":
+        // appLog("$typeOrder");
+        typeOderDisplay = "Đặt ngay";
+        break;
+      case "automatic-matching":
+        typeOderDisplay = "Tự động ghép";
+        break ;
+      default:
+        typeOderDisplay = "Không xác định";
+        break ;
     }
 
     return Container(
@@ -469,7 +485,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
                   const SizedBox(width: 8),
                   _buildChip(
                     Icons.payments_outlined,
-                    typeOrder == "book" ? "Đặt trước" : "Đặt ngay",
+                    typeOderDisplay,
                     isPrimary: true,
                   ),
                 ],
@@ -493,26 +509,39 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
               /// TECHNICIAN
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: ColorConfig.primary.withOpacity(.15),
-                    backgroundImage: NetworkImage(technicianAvatar),
-                    onBackgroundImageError: (_, __) {},
-                    child: technicianAvatar.isEmpty
-                        ? Icon(Icons.person, color: ColorConfig.primary)
-                        : null,
-                  ),
+                  if(typeOrder != "automatic-matching")...[
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: ColorConfig.primary.withOpacity(.15),
+                      backgroundImage: NetworkImage(technicianAvatar),
+                      onBackgroundImageError: (_, __) {},
+                      child: technicianAvatar.isEmpty
+                          ? Icon(Icons.person, color: ColorConfig.primary)
+                          : null,
+                    ),
+                  ],
+                  // CircleAvatar(
+                  //   radius: 22,
+                  //   backgroundColor: ColorConfig.primary.withOpacity(.15),
+                  //   backgroundImage: NetworkImage(technicianAvatar),
+                  //   onBackgroundImageError: (_, __) {},
+                  //   child: technicianAvatar.isEmpty
+                  //       ? Icon(Icons.person, color: ColorConfig.primary)
+                  //       : null,
+                  // ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          FormatHelper.formatNameTechnician(technicianName),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
+                        if(typeOrder != "automatic-matching")...[
+                          Text(
+                            FormatHelper.formatNameTechnician(technicianName),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
+                        ],
                         const SizedBox(height: 2),
                         Text(
                           _formatWorkingHours(workingHours),
@@ -730,7 +759,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: isPrimary ? ColorConfig.primary : Colors.black87,
+              color: ColorConfig.primary,
             ),
           )
         ],

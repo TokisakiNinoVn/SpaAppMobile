@@ -42,4 +42,9 @@ class NotificationService {
       );
    }
 
+    Future<Map<String, dynamic>> deleteNotificationUserService(String id) async {
+      return await ApiMethodsPrivate.deleteRequest(
+          '${NotificationApiRoutes.deleteUser}/$id'
+      );
+    }
 }

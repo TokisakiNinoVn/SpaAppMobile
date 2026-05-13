@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 
 import 'package:spa_app/services/like_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -71,19 +73,19 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
 
   Future<void> _deleteNotification(String notificationId, int index) async {
     try {
-      final response = await _notificationService.deleteNotificationService(notificationId);
+      final response = await _notificationService.deleteNotificationUserService(notificationId);
+      appLog("Response: $response");
 
       if (response['success'] == true) {
         setState(() {
           _notificationList.removeAt(index);
         });
+      SnackBarHelper.showSuccess(context, 'Xóa thông báo thành công!');
       } else {
         throw Exception(response['message'] ?? 'Không thể xóa thông báo');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Xóa thông báo thất bại')),
-      );
+      SnackBarHelper.showError(context, 'Xóa thông báo thất bại');
     }
   }
 

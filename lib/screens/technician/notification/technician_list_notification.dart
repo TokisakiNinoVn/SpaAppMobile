@@ -71,7 +71,7 @@ class _ListNotificationScreenState extends State<ListNotificationTechnician> {
 
   Future<void> _deleteNotification(String notificationId, int index) async {
     try {
-      final response = await _notificationService.deleteNotificationService(notificationId);
+      final response = await _notificationService.deleteNotificationUserService(notificationId);
 
       if (response['success'] == true) {
         setState(() {

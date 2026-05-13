@@ -108,7 +108,7 @@ class _DetailsNewOrderScreenState extends State<DetailsNewOrderScreen> {
         'noteTechnician': note,
       };
       final response = await _orderService.updateStatus(data);
-      // appLog('response : $response');
+      appLog('response : $response');
 
       if (response['success'] == true) {
         setState(() => isLoading = false);
