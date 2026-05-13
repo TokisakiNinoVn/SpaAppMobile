@@ -85,26 +85,29 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
       // Xử lý các loại role filter
       if (roleFilter == 'ktv') {
         // KTV đã được duyệt (có technician và status == true)
-        matchesRole = user['roles'] == 'ktv'
+        matchesRole = user['rolesActive'] == 'ktv'
             && user['technician'] != null
             && user['technician'].isNotEmpty
             && user['isAcceptHaveApprovalRequest'] == true;
 
       } else if (roleFilter == 'ktv_pending') {
         // KTV chưa duyệt (có technician và status == false)
-        matchesRole = user['roles'] == 'ktv' &&
+        matchesRole = user['rolesActive'] == 'ktv' &&
             user['technician'] != null &&
             user['technician'].isNotEmpty &&
             user['isAcceptHaveApprovalRequest'] == false;
       } else if (roleFilter == 'empty') {
         // Tài khoản trống (chưa tạo hồ sơ technician)
-        matchesRole = user['roles'] == 'ktv' && (user['technician'] == null || user['technician'].isEmpty);
+        matchesRole = user['rolesActive'] == 'ktv' && (user['technician'] == null || user['technician'].isEmpty);
       } else if (roleFilter == 'quanly') {
-        matchesRole = user['roles'] == 'quanly';
+        matchesRole = user['rolesActive'] == 'quanly';
       } else if (roleFilter == 'admin') {
-        matchesRole = user['roles'] == 'admin';
+        matchesRole = user['rolesActive'] == 'admin';
+      }
+      else if (roleFilter == 'customer') {
+        matchesRole = user['rolesActive'] == 'customer';
       } else {
-        matchesRole = user['roles'] == roleFilter;
+        matchesRole = user['rolesActive'] == roleFilter;
       }
 
       final matchesStatus = statusFilter == 'all' || user['status'] == statusFilter;
@@ -345,6 +348,7 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
                         items: const [
                           DropdownMenuItem(value: 'ktv', child: Text('Kỹ thuật viên (đã duyệt)')),
                           DropdownMenuItem(value: 'ktv_pending', child: Text('KTV - chưa duyệt')),
+                          DropdownMenuItem(value: 'customer', child: Text('Khách hàng')),
                           DropdownMenuItem(value: 'empty', child: Text('Tài khoản trống')),
                           DropdownMenuItem(value: 'quanly', child: Text('Đầu bắn tour')),
                           DropdownMenuItem(value: 'admin', child: Text('Boss (Admin)')),
@@ -455,7 +459,8 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text("Quản lý tài khoản", style: TextStyle(fontWeight: FontWeight.w600)),
+          // title: const Text("Quản lý tài khoản", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          title: const Text("Quản lý tài khoản", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
           actions: [
             IconButton(
               icon: const Icon(Icons.filter_alt_outlined, size: 22),
@@ -670,7 +675,7 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (user['roles'] == 'ktv')
+                                  if (user['rolesActive'] == 'ktv')
                                     Row(
                                       children: [
                                         Expanded(
@@ -707,13 +712,13 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
                                   ),
                                   if (hasTechnician) ...[
                                     const SizedBox(height: 4),
-                                  ] else if (user['roles'] == 'quanly') ...[
+                                  ] else if (user['rolesActive'] == 'quanly') ...[
                                     const SizedBox(height: 4),
                                     Text(
                                       user['fullname'] ?? 'Không có tên',
                                       style: TextStyle(color: ColorConfig.primary),
                                     )
-                                  ] else if (user['roles'] == 'admin') ...[
+                                  ] else if (user['rolesActive'] == 'admin') ...[
                                     const SizedBox(height: 4),
                                     Text(
                                       'Quản lý',
@@ -745,7 +750,7 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
                                 _showChangePasswordDialog(user['_id']);
                               },
                             ),
-                            if (user['roles'] == 'ktv' && user['technician'] != null) ...[
+                            if (user['rolesActive'] == 'ktv' && user['technician'] != null) ...[
                               IconButton(
                                 icon: const Icon(Icons.edit),
                                 tooltip: 'Chỉnh sửa thông tin',
@@ -760,7 +765,7 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
                                 },
                               )
                             ],
-                            if (user['roles'] != 'admin')
+                            if (user['rolesActive'] != 'admin')
                               IconButton(
                                 icon: Icon(
                                   user['isActive'] ? Icons.lock_open : Icons.lock,
@@ -773,7 +778,7 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
                                 onPressed: () =>
                                     _toggleUserStatus(user['_id'], user['isActive']),
                               ),
-                            if (user['roles'] != 'admin')
+                            if (user['rolesActive'] != 'admin')
                               IconButton(
                                 icon: const Icon(Icons.delete, color: Colors.red),
                                 onPressed: () => _deleteUser(user['_id']),
@@ -829,7 +834,7 @@ class UserDetailWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Chi tiết tài khoản (Admin - Account)',
+                'Chi tiết tài khoản',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -846,7 +851,7 @@ class UserDetailWidget extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  user['roles'] == 'ktv' && technician != null ? Center(
+                  user['rolesActive'] == 'ktv' && technician != null ? Center(
                     child: GestureDetector(
                       onTap: () {
                         final imageUrl = technician!['avatar']['url'];
@@ -866,17 +871,17 @@ class UserDetailWidget extends StatelessWidget {
                     ),
                   ) : const SizedBox(),
                   const SizedBox(height: 16),
-                  if (user['roles'] == 'quanly' || user['roles'] == 'admin') ...[
+                  if (user['rolesActive'] == 'quanly' || user['rolesActive'] == 'admin') ...[
                     Center(
                       child: Text(
-                        user['roles'] == 'quanly' ? user['fullname'] : 'Quản trị viên - Admin',
+                        user['rolesActive'] == 'quanly' ? user['fullname'] : 'Quản trị viên - Admin',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  ] else if (user['roles'] == 'ktv' && technician == null) ...[
+                  ] else if (user['rolesActive'] == 'ktv' && technician == null) ...[
                     Center(
                       child: Text(
                         'Tài khoản được đăng ký với quyền kỹ thuật viên nhưng chưa tạo hồ sơ',

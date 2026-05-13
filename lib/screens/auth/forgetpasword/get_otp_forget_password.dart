@@ -9,6 +9,7 @@ import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
 import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/services/auth_service.dart';
 
 import '../../../helper/snackbar_helper.dart';
@@ -168,7 +169,7 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
               duration: const Duration(seconds: 2),
             ),
           );
-          context.go('/get-otp/confirm-otp/$phone');
+          context.push('/get-otp/confirm-otp/$phone');
         }
       } else {
         if (mounted) {
@@ -192,36 +193,79 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ColorConfig.primaryBackground,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: ColorConfig.primaryBackground,
+        elevation: 0,
+        title: Row(
+          children: [
+            InkWell(
+              onTap: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.push(GlobalRouterConfig.loginOTP);
+                }
+              },
+              borderRadius: BorderRadius.circular(40),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+            ),
+            // const SizedBox(width: 16),
+            // const Expanded(
+            //   child: Text(
+            //     "Đăng nhập bằng OTP",
+            //     style: TextStyle(
+            //       color: Color(0xFF1A1A1A),
+            //       fontWeight: FontWeight.w600,
+            //       fontSize: 16,
+            //     ),
+            //   ),
+            // ),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             children: [
-              const SizedBox(height: 20),
-
-              // Back button
-              Align(
-                alignment: Alignment.centerLeft,
-                child: GestureDetector(
-                  onTap: () => context.go('/login'),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(40),
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 18,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 40),
+              // const SizedBox(height: 20),
+              //
+              // // Back button
+              // Align(
+              //   alignment: Alignment.centerLeft,
+              //   child: GestureDetector(
+              //     onTap: () => context.pop(),
+              //     child: Container(
+              //       width: 40,
+              //       height: 40,
+              //       decoration: BoxDecoration(
+              //         color: const Color(0xFFF5F5F5),
+              //         borderRadius: BorderRadius.circular(40),
+              //       ),
+              //       child: const Icon(
+              //         Icons.arrow_back_ios_new_rounded,
+              //         size: 18,
+              //         color: Color(0xFF333333),
+              //       ),
+              //     ),
+              //   ),
+              // ),
+              //
+              // const SizedBox(height: 40),
 
               // Icon header
               Container(

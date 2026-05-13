@@ -580,37 +580,39 @@ class _AccountTabState extends State<AccountTab> {
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                // const SizedBox(height: 20),
+                if(!isAdmin)...[
+                  Column(
+                    children: [
+                      _buildActionButton(
+                        icon: Icons.edit_outlined,
+                        label: 'Cập nhật thông tin',
+                        onTap: () {
+                          context.push('/home-technician/update-profile');
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _buildActionButton(
+                        icon: Icons.spa_outlined,
+                        label: 'Các dịch vụ cung cấp',
+                        onTap: () {
+                          context.go('/home-technician/technician-update-service');
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _buildActionButton(
+                        icon: Icons.bar_chart,
+                        label: 'Thống kê doanh thu',
+                        onTap: () {
+                          context.go(TechnicianRouterConfig.statistical);
+                        },
+                      ),
+                    ],
+                  ),
 
-                Column(
-                  children: [
-                    _buildActionButton(
-                      icon: Icons.edit_outlined,
-                      label: 'Cập nhật thông tin',
-                      onTap: () {
-                        context.push('/home-technician/update-profile');
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _buildActionButton(
-                      icon: Icons.spa_outlined,
-                      label: 'Các dịch vụ cung cấp',
-                      onTap: () {
-                        context.go('/home-technician/technician-update-service');
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _buildActionButton(
-                      icon: Icons.bar_chart,
-                      label: 'Thống kê doanh thu',
-                      onTap: () {
-                        context.go(TechnicianRouterConfig.statistical);
-                      },
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: 24),
+                ],
 
-                const SizedBox(height: 24),
 
                 // Các nút hành động
                 Container(

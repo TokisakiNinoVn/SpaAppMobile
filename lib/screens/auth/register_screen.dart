@@ -162,20 +162,60 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: ColorConfig.primaryBackground,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: ColorConfig.primaryBackground,
+        elevation: 0,
+        title: Row(
+          children: [
+            InkWell(
+              onTap: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.push(GlobalRouterConfig.loginOTP);
+                }
+              },
+              borderRadius: BorderRadius.circular(40),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+            ),
+            // const SizedBox(width: 16),
+            // const Expanded(
+            //   child: Text(
+            //     "Đăng nhập bằng OTP",
+            //     style: TextStyle(
+            //       color: Color(0xFF1A1A1A),
+            //       fontWeight: FontWeight.w600,
+            //       fontSize: 16,
+            //     ),
+            //   ),
+            // ),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 40),
 
               Image.asset(
                 'lib/assets/images/zen-hone-circle-logo.png',
-                height: 100,
+                height: 90,
               ),
-
-              const SizedBox(height: 24),
 
               Text(
                 AppConfig.appNameUpperCase,
@@ -198,7 +238,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
 
-              const SizedBox(height: 48),
+              const SizedBox(height: 20),
 
               _buildTextField(
                 controller: fullnameController,
@@ -303,7 +343,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(width: 4),
                   GestureDetector(
-                    onTap: () => context.go(GlobalRouterConfig.loginOTP),
+                    onTap: () => context.push(GlobalRouterConfig.loginOTP),
                     child: Text(
                       'Đăng nhập',
                       style: TextStyle(
@@ -329,7 +369,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(width: 4),
                   GestureDetector(
-                    onTap: () => context.go('/register-partner'),
+                    onTap: () => context.push('/register-partner'),
                     child: Text(
                       '${AppConfig.appName}',
                       style: TextStyle(
