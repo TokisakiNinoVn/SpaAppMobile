@@ -433,17 +433,25 @@ class _BannerManagementState extends State<BannerManagement>
                     ],
                   ),
                 ),
-                Transform.scale(
-                  scale: 0.9,
-                  child: Switch.adaptive(
-                    value: displayStatus,
-                    onChanged: updateDisplayStatus,
-                    activeColor: ColorConfig.primary,
-                    activeTrackColor: ColorConfig.primary.withOpacity(.3),
-                    inactiveThumbColor: Colors.white,
-                    inactiveTrackColor: Colors.grey.shade300,
-                  ),
-                ),
+                // Transform.scale(
+                //   scale: 0.9,
+                //   child: Switch.adaptive(
+                //     value: displayStatus,
+                //     onChanged: updateDisplayStatus,
+                //     activeColor: ColorConfig.primary,
+                //     activeTrackColor: ColorConfig.primary.withOpacity(.3),
+                //     inactiveThumbColor: Colors.white,
+                //     inactiveTrackColor: Colors.grey.shade300,
+                //   ),
+                // ),
+                Switch(
+                  value: displayStatus,
+                  onChanged: updateDisplayStatus,
+                  activeColor: ColorConfig.primary,
+                  activeTrackColor: ColorConfig.primary.withOpacity(.3),
+                  inactiveThumbColor: Colors.white,
+                  inactiveTrackColor: Colors.grey.shade300,
+                )
               ],
             ),
           ),

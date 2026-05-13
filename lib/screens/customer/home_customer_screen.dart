@@ -82,6 +82,7 @@ class _HomeCustomerScreenState extends State<HomeCustomerScreen> {
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.dark,
         child: Scaffold(
+          backgroundColor: ColorConfig.primaryBackground,
           body: SafeArea(
             child: IndexedStack(
               index: _selectedIndex,
