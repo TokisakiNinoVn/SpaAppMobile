@@ -820,6 +820,7 @@ class _DiscountManagementState extends State<DiscountManagement> {
 
   Widget _buildDiscountCard(Map<String, dynamic> discount) {
     final isActive = discount['isActive'] == true;
+    final isViewHome = discount['isViewHome'] == true;
     final typeDiscount = discount['typeDiscount'];
     final value = discount['value'];
     final valueText = typeDiscount == 'percentage'
@@ -869,20 +870,69 @@ class _DiscountManagementState extends State<DiscountManagement> {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isActive ? Colors.green[50] : Colors.red[50],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      isActive ? 'Hoạt động' : 'Không hoạt động',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isActive ? Colors.green[700] : Colors.red[700],
+
+
+                  // Container(
+                  //   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  //   decoration: BoxDecoration(
+                  //     color: isActive ? Colors.green[50] : Colors.red[50],
+                  //     borderRadius: BorderRadius.circular(20),
+                  //   ),
+                  //   child: Text(
+                  //     isActive ? 'Hoạt động' : 'Không hoạt động',
+                  //     style: TextStyle(
+                  //       fontSize: 12,
+                  //       fontWeight: FontWeight.w600,
+                  //       color: isActive ? Colors.green[700] : Colors.red[700],
+                  //     ),
+                  //   ),
+                  // ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isActive ? Colors.green[50] : Colors.red[50],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          isActive ? 'Hoạt động' : 'Không hoạt động',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isActive ? Colors.green[700] : Colors.red[700],
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isViewHome ? Colors.purple[50] : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isViewHome ? Icons.visibility : Icons.visibility_off,
+                              size: 12,
+                              color: isViewHome ? Colors.purple[700] : Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isViewHome ? 'Hiển thị Home' : 'Ẩn Home',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isViewHome ? Colors.purple[700] : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

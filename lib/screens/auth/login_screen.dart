@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/app_config.dart';
+import 'package:spa_app/handlers/auth_response_handler.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -14,6 +15,7 @@ import 'package:spa_app/services/auth_service.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 
 import '../../helper/logger_utils.dart';
+import '../../storage/index.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -115,69 +117,96 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await authService.loginService({
-        "phone": phone,
-        "password": password,
-        "fcm_token": fcm,
-        "device_type": "android",
-      });
+            "phone": phone,
+            "password": password,
+            "fcm_token": fcm,
+            "device_type": "android",
+          });;
 
-      final prefs = await SharedPreferences.getInstance();
-
-      if (response['token'] != null) {
-        await prefs.setString('token', response['token']);
-        await prefs.setBool('isLogin', true);
-        await prefs.setString('inforUserLogin', jsonEncode(response['data']));
-        await prefs.setString('role', jsonEncode(response['data']?['role']));
-        await prefs.setBool('rememberMe', rememberMe);
-
-        await prefs.setString('statusAccount', jsonEncode(response['data']?['status']));
-        await prefs.setString('isTechnicianActive', jsonEncode(response['data']?['isTechnicianActive'] ?? false));
-
-        if (rememberMe) {
-          await prefs.setString('loginData', jsonEncode({
-            'phone': phone,
-            'password': password,
-          }));
-        } else {
-          await prefs.remove('loginData');
-        }
-
-        final role = response['data']?['role'];
-        final isHaveTechnician = response['data']?['isHaveTechnician'] ?? false;
-
-        if (role == 'admin') {
-          context.go('/home-admin');
-        } else if (role == 'ktv') {
-          if (isHaveTechnician) {
-            await prefs.setString('technician', jsonEncode(response['data']?['technicianProfile']));
-            await prefs.setString('serviceIds', jsonEncode(response['data']?['technicianProfile']?['serviceIds'] ?? []));
-            await prefs.setString(
-              'inforService',
-              jsonEncode(response['data']?['inforService'] ?? []),
-            );
-
-            context.go('/home-technician');
-          } else {
-            SnackBarHelper.showWarning(context, "Bạn đã đăng ký tài khoản nhưng chưa tạo hồ sơ!");
-            context.go('/create-technician');
-          }
-        } else if (role == 'quanly') {
-          context.go('/home-quanly');
-        } else if (role == 'customer') {
-          await prefs.setString('customerProfile', jsonEncode(response['data']?['customerProfile']));
-          context.go('/home-customer');
-        }
-      } else {
-        SnackBarHelper.showError(context, response['message'] ?? "Đăng nhập thất bại");
-      }
+      await AuthResponseHandler.handleLoginResponse(
+        context: context,
+        response: response,
+      );
     } catch (e) {
-      debugPrint('Lỗi đăng nhập: $e');
-      SnackBarHelper.showError(context, "Lỗi kết nối hoặc hệ thống. Vui lòng thử lại!");
+      appLog('Lỗi đăng nhập: $e');
+
+      SnackBarHelper.showError(
+        context,
+        "Lỗi kết nối hoặc hệ thống. Vui lòng thử lại!",
+      );
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
       }
     }
+
+    // try {
+    //   final response = await authService.loginService({
+    //     "phone": phone,
+    //     "password": password,
+    //     "fcm_token": fcm,
+    //     "device_type": "android",
+    //   });
+    //
+    //   final prefs = await SharedPreferences.getInstance();
+    //
+    //   if (response['token'] != null) {
+    //     await prefs.setString('token', response['token']);
+    //     await prefs.setBool('isLogin', true);
+    //     await prefs.setString('inforUserLogin', jsonEncode(response['data']));
+    //     await prefs.setString('role', jsonEncode(response['data']?['rolesActive']));
+    //     await prefs.setBool('rememberMe', rememberMe);
+    //
+    //     await prefs.setString('statusAccount', jsonEncode(response['data']?['status']));
+    //     await prefs.setString('isTechnicianActive', jsonEncode(response['data']?['isTechnicianActive'] ?? false));
+    //
+    //     if (rememberMe) {
+    //       await prefs.setString('loginData', jsonEncode({
+    //         'phone': phone,
+    //         'password': password,
+    //       }));
+    //     } else {
+    //       await prefs.remove('loginData');
+    //     }
+    //
+    //     final role = response['data']?['rolesActive'];
+    //     final isHaveTechnician = response['data']?['isHaveTechnician'] ?? false;
+    //
+    //     if (role == 'admin') {
+    //       context.go('/home-admin');
+    //     } else if (role == 'ktv') {
+    //       if (isHaveTechnician) {
+    //         await prefs.setString('technician', jsonEncode(response['data']?['technicianProfile']));
+    //         await prefs.setString('serviceIds', jsonEncode(response['data']?['technicianProfile']?['serviceIds'] ?? []));
+    //         await prefs.setString(
+    //           'inforService',
+    //           jsonEncode(response['data']?['inforService'] ?? []),
+    //         );
+    //
+    //         context.go('/home-technician');
+    //       } else {
+    //         SnackBarHelper.showWarning(context, "Bạn đã đăng ký tài khoản nhưng chưa tạo hồ sơ!");
+    //         context.go('/create-technician');
+    //       }
+    //     } else if (role == 'quanly') {
+    //       context.go('/home-quanly');
+    //     } else if (role == 'customer') {
+    //       await prefs.setString('customerProfile', jsonEncode(response['data']?['customerProfile']));
+    //       await SharedPrefs.saveValue(PrefType.bool, "isHaveTechnician", isHaveTechnician);
+    //
+    //       context.go('/home-customer');
+    //     }
+    //   } else {
+    //     SnackBarHelper.showError(context, response['message'] ?? "Đăng nhập thất bại");
+    //   }
+    // } catch (e) {
+    //   debugPrint('Lỗi đăng nhập: $e');
+    //   SnackBarHelper.showError(context, "Lỗi kết nối hoặc hệ thống. Vui lòng thử lại!");
+    // } finally {
+    //   if (mounted) {
+    //     setState(() => isLoading = false);
+    //   }
+    // }
   }
 
   @override

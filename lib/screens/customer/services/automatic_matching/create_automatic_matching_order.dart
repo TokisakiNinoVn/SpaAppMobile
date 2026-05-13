@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/providers/user_provider.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/screens/customer/services/widgets/address_picker_widget.dart';
 import 'package:spa_app/services/user_discount_service.dart';
@@ -273,8 +275,12 @@ class _CreateAutoMatchingOrderScreenState
   }
 
   Future<void> _loadCustomerProfile() async {
+    final provider = context.read<UserProvider>();
     try {
-      balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
+      await provider.loadBalanceCustomer();
+      balance = provider.nowBalance;
+
+      // balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
       final rawProfile = await SharedPrefs.getValue(PrefType.string, "customerProfile");
       // appLog("data Profile: $rawProfile");
       if (rawProfile != null) {
@@ -1067,7 +1073,12 @@ class _CreateAutoMatchingOrderScreenState
         ),
       ),
 
-      body: _loading
+      body: GestureDetector(
+        onTap: () {
+          // Tắt bàn phím khi tap ra ngoài
+          FocusScope.of(context).unfocus();
+        },
+        child: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 10, left: 14, right: 14, top: 0),
@@ -1478,6 +1489,7 @@ class _CreateAutoMatchingOrderScreenState
           ],
         ),
       ),
+      )
     );
   }
   Widget _buildDiscountRow() {

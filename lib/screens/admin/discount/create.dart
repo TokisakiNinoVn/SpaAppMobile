@@ -1,15 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:spa_app/config/color_config.dart';
 
 import 'package:spa_app/services/file_service.dart';
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/discount_service.dart';
 
 import '../../../helper/snackbar_helper.dart';
-import '../../../services/discount_service.dart';
-import 'package:spa_app/helper/format_helper.dart';
+import '../../../helper/format_helper.dart';
 
 class CreateDiscountScreen extends StatefulWidget {
   const CreateDiscountScreen({super.key});
@@ -33,34 +34,65 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
   DateTime? _startDate;
   DateTime? _expiresAt;
   bool _isActive = false;
+  bool _isViewHome = false;
   bool _isLoading = false;
 
   // Form validation
   final _formKey = GlobalKey<FormState>();
 
-  // Design tokens
-  static const _primary = Color(0xFF2563EB);
-  static const _primaryLight = Color(0xFFEFF6FF);
+  // Design tokens - chuyển sang màu đỏ
+  static const _primary = Color(0xFFDC2626); // Red-600
   static const _surface = Color(0xFFF8FAFC);
   static const _border = Color(0xFFE2E8F0);
   static const _textPrimary = Color(0xFF0F172A);
   static const _textSecondary = Color(0xFF64748B);
-  static const _success = Color(0xFF16A34A);
-  static const _successLight = Color(0xFFF0FDF4);
-  static const _error = Color(0xFFDC2626);
+
+  List<TextInputFormatter> _valueFormatters = [];
 
   @override
   void initState() {
     super.initState();
+    // Giá trị mặc định cho ngày bắt đầu và kết thúc
+    _startDate = DateTime.now();
+    _expiresAt = DateTime.now().add(const Duration(days: 30));
+    // Giá trị mặc định cho đơn hàng tối thiểu và số lượt sử dụng là 0
+    _minOrderValueController.text = '0';
+    _maxUsesController.text = '0';
+    // Cập nhật input formatter cho trường giá trị dựa trên loại giảm giá
+    _updateValueInputFormatter();
+  }
+
+  // Cập nhật input formatter để giới hạn phần trăm từ 0-100
+  void _updateValueInputFormatter() {
+    if (_selectedTypeDiscount == 'percentage') {
+      _valueFormatters = [
+        FilteringTextInputFormatter.digitsOnly,
+        _PercentageRangeFormatter(),
+      ];
+    } else {
+      _valueFormatters = [
+        FilteringTextInputFormatter.digitsOnly,
+      ];
+    }
+
+    setState(() {}); // refresh UI
+  }
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    _descriptionController.dispose();
+    _valueController.dispose();
+    _minOrderValueController.dispose();
+    _maxUsesController.dispose();
+    super.dispose();
   }
 
   Future<void> _createDiscount() async {
-    // Validate form
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    // Validate dates
     if (_startDate == null) {
       SnackBarHelper.showError(context, 'Vui lòng chọn ngày bắt đầu');
       return;
@@ -90,6 +122,7 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
         'startAt': _startDate!.toUtc().toIso8601String(),
         'expiresAt': _expiresAt!.toUtc().toIso8601String(),
         'isActive': _isActive,
+        'isViewHome': _isViewHome
       };
 
       final response = await discountService.createDiscount(discountData);
@@ -214,32 +247,34 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                   children: [
                     Expanded(
                       child: RadioListTile<String>(
-                        title: const Text('Cố định (VNĐ)'),
+                        title: const Text('Cố định (VNĐ)', style: TextStyle(fontSize: 14),),
                         value: 'fixed',
                         groupValue: _selectedTypeDiscount,
                         onChanged: (value) {
                           setState(() {
                             _selectedTypeDiscount = value;
                             _valueController.clear();
+                            _updateValueInputFormatter();
                           });
                         },
                         activeColor: _primary,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 1),
                       ),
                     ),
                     Expanded(
                       child: RadioListTile<String>(
-                        title: const Text('Phần trăm (%)'),
+                        title: const Text('Phần trăm (%)', style: TextStyle(fontSize: 14),),
                         value: 'percentage',
                         groupValue: _selectedTypeDiscount,
                         onChanged: (value) {
                           setState(() {
                             _selectedTypeDiscount = value;
                             _valueController.clear();
+                            _updateValueInputFormatter();
                           });
                         },
                         activeColor: _primary,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 2),
                       ),
                     ),
                   ],
@@ -251,7 +286,7 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
               _buildTextField(
                 controller: _valueController,
                 label: _selectedTypeDiscount == 'percentage' ? 'Giá trị giảm (%) *' : 'Giá trị giảm (VNĐ) *',
-                hint: _selectedTypeDiscount == 'percentage' ? 'VD: 50' : 'VD: 50000',
+                hint: _selectedTypeDiscount == 'percentage' ? 'VD: 50 (tối đa 100)' : 'VD: 50000',
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -263,7 +298,7 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                   }
                   if (_selectedTypeDiscount == 'percentage') {
                     if (val < 0 || val > 100) {
-                      return 'Phần trăm giảm phải từ 0-100';
+                      return 'Phần trăm giảm phải từ 0 đến 100';
                     }
                   } else {
                     if (val <= 0) {
@@ -279,7 +314,7 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
               _buildTextField(
                 controller: _minOrderValueController,
                 label: 'Giá trị đơn hàng tối thiểu *',
-                hint: 'VD: 400000',
+                hint: 'VD: 400000 (0 = không yêu cầu tối thiểu)',
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -287,7 +322,7 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                   }
                   final val = int.tryParse(value);
                   if (val == null || val < 0) {
-                    return 'Vui lòng nhập số hợp lệ';
+                    return 'Vui lòng nhập số hợp lệ (>= 0)';
                   }
                   return null;
                 },
@@ -298,15 +333,15 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
               _buildTextField(
                 controller: _maxUsesController,
                 label: 'Số lượt sử dụng tối đa *',
-                hint: 'VD: 100',
+                hint: 'VD: 100 (0 = không giới hạn)',
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Vui lòng nhập số lượt sử dụng tối đa';
                   }
                   final val = int.tryParse(value);
-                  if (val == null || val <= 0) {
-                    return 'Số lượt sử dụng phải lớn hơn 0';
+                  if (val == null || val < 0) {
+                    return 'Vui lòng nhập số hợp lệ (>= 0)';
                   }
                   return null;
                 },
@@ -328,6 +363,50 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                 selectedDate: _expiresAt,
                 onTap: _selectExpiryDate,
                 hint: 'Chọn ngày kết thúc',
+              ),
+              const SizedBox(height: 16),
+
+              // Active status
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _border),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hiển thị trên màn hình Home',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: _textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Mã giảm giá này sẽ hiển thị trên \nmàn hình Home phía khách',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Switch(
+                      value: _isViewHome,
+                      onChanged: (value) {
+                        setState(() {
+                          _isViewHome = value;
+                        });
+                      },
+                      activeColor: _primary,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -382,10 +461,10 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _createDiscount,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _primary,
+                    backgroundColor: ColorConfig.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(40),
                     ),
                     elevation: 0,
                   ),
@@ -517,14 +596,20 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
       ),
     );
   }
+}
 
+// Custom input formatter để giới hạn phần trăm từ 0-100
+class _PercentageRangeFormatter extends TextInputFormatter {
   @override
-  void dispose() {
-    _codeController.dispose();
-    _descriptionController.dispose();
-    _valueController.dispose();
-    _minOrderValueController.dispose();
-    _maxUsesController.dispose();
-    super.dispose();
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) return newValue;
+    final int? value = int.tryParse(newValue.text);
+    if (value == null) return oldValue;
+    if (value > 100) {
+      // Nếu vượt quá 100, giữ lại giá trị cũ
+      return oldValue;
+    }
+    return newValue;
   }
 }

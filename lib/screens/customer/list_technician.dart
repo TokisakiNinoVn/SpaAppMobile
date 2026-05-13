@@ -121,10 +121,10 @@ class _ListTechnicianScreenState extends State<ListTechnicianScreen> {
       var response;
       if (checkPermissionLocation) {
         response = await _technicianService.getListTechnicianForCustomer(
-            currentLat, currentLng);
+            currentLat, currentLng, "");
       } else {
         response = await _technicianService
-            .getListTechnicianForCustomer(null, null);
+            .getListTechnicianForCustomer(null, null, "");
       }
       if (response['success'] == true) {
         setState(() {

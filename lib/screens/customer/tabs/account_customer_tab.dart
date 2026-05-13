@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:spa_app/config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/handlers/auth_response_handler.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/screens/widgets/role_switcher_card.dart';
+import 'package:spa_app/services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/helper/shared_preferences_helper.dart';
@@ -38,13 +41,20 @@ class AccountCustomerTab extends StatefulWidget {
 class _AccountCustomerTabState extends State<AccountCustomerTab>
     with SingleTickerProviderStateMixin {
   final UserService _userService = UserService();
+  final AuthService authService = AuthService();
 
+  bool isLoading = false;
   bool _isSwitchingRole = false;
+  bool isHasTechnicianProfile = false;
   bool _isLogin = false;
   Map<String, dynamic>? inforUser;
   String _selectedLang = 'vi';
   int balance = 0;
   bool _isRefreshing = false;
+
+  String rolesActive = '';
+  List<String> roles = [];
+  bool isAdmin = false;
 
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
@@ -144,30 +154,108 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
 
   Future<void> _loadInforUser() async {
     balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
+    isHasTechnicianProfile = await SharedPrefs.getValue(PrefType.bool, 'isHaveTechnician') ?? false;
+
+    final rolesActiveStr = await SharedPrefs.getValue(PrefType.string, "role") ?? '';
+    final rolesJsonStr = await SharedPrefs.getValue(PrefType.string, "roles") ?? '[]';
+
+    List<String> rolesList = [];
+    if (rolesJsonStr.isNotEmpty) {
+      try {
+        final List<dynamic> decoded = json.decode(rolesJsonStr);
+        rolesList = decoded.map((e) => e.toString()).toList();
+      } catch (e) {
+        rolesList = [];
+      }
+    };
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonString = prefs.getString('inforUserLogin');
       final data = jsonString != null ? jsonDecode(jsonString) as Map<String, dynamic> : null;
-      if (mounted) setState(() => inforUser = data);
+      if (mounted)
+      {
+        setState(() {
+          inforUser = data;
+          rolesActive = rolesActiveStr;
+          roles = rolesList;
+          isAdmin = AppConfig.adminPhone.contains(inforUser?['phone']);
+        });
+
+      }
     } catch (e) {
       debugPrint('❌ Parse error: $e');
       if (mounted) setState(() => inforUser = null);
     }
   }
 
+  Future<void> _handleSwitchRole(String newRole) async {
+    if (newRole == rolesActive) {
+      SnackBarHelper.showWarning(context, "Bạn đang ở vai trò ${_getRoleDisplayName(newRole)}");
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final response = await authService.switchRoleAccount({
+        "roleChangeTo": newRole,
+      });
+      await SharedPreferencesHelper.logOut();
+
+      await AuthResponseHandler.handleLoginResponse(
+        context: context,
+        response: response,
+      );
+    } catch (e) {
+      appLog('Lỗi chuyển vai trò: $e');
+      SnackBarHelper.showError(
+        context,
+        "Lỗi kết nối hoặc hệ thống. Vui lòng thử lại!",
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  String _getRoleDisplayName(String roleKey) {
+    switch (roleKey) {
+      case 'admin':
+        return 'Admin';
+      case 'ktv':
+        return 'KTV';
+      case 'customer':
+        return 'Khách hàng';
+      default:
+        return roleKey;
+    }
+  }
+
   Future<void> _changeRole() async {
     setState(() => _isSwitchingRole = true);
     try {
-      final response = await _userService.changeRoleService({});
+      // final response = await _userService.changeRoleService({
+      final response = await authService.switchRoleAccount({
+        "roleChangeTo": "ktv",
+      });
+
+      await SharedPreferencesHelper.logOut();
+
+      await AuthResponseHandler.handleLoginResponse(
+        context: context,
+        response: response,
+      );
+
       // appLog("$response");
-      if (!mounted) return;
-      if (response['success'] == true) {
-        SnackBarHelper.showSuccess(context, "Chuyển đổi vai trò thành công!");
-        await SharedPreferencesHelper.logOut();
-        if (mounted) context.go(GlobalRouterConfig.loginOTP);
-      } else {
-        SnackBarHelper.showError(context, "Lỗi chuyển đổi vai trò!");
-      }
+      // if (!mounted) return;
+      // if (response['success'] == true) {
+      //   SnackBarHelper.showSuccess(context, "Chuyển đổi vai trò thành công!");
+      //   await SharedPreferencesHelper.logOut();
+      //   if (mounted) context.go(GlobalRouterConfig.loginOTP);
+      // } else {
+      //   SnackBarHelper.showError(context, "Lỗi chuyển đổi vai trò!");
+      // }
     } catch (e) {
       if (mounted) SnackBarHelper.showError(context, "Lỗi: $e");
     } finally {
@@ -204,7 +292,6 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => SpaDialog(
-        // icon: Icons.logout_rounded,
         iconColor: _kRed,
         title: 'Đăng xuất',
         body: 'Bạn có chắc chắn muốn đăng xuất?',
@@ -248,8 +335,30 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
     );
   }
 
+  Future<bool> _hasTechnicianProfile() async {
+    return await SharedPrefs.getValue(PrefType.bool, 'isHaveTechnician') ?? false;
+  }
+
+  void _handleRegisterTap() async {
+    if (_isLogin) {
+      final hasTechnician = await _hasTechnicianProfile();
+      if (hasTechnician) {
+        _showRoleSwitchDialog();
+      } else {
+        if (mounted) {
+          context.go(CustomerRouterConfig.createProfileTechnician);
+        }
+      }
+    } else {
+      if (mounted) {
+        context.go(GlobalRouterConfig.signup);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // appLog("$isAdmin - $rolesActive - $roles");
     return Scaffold(
       backgroundColor: ColorConfig.primaryBackground,
       body: RefreshIndicator(
@@ -270,7 +379,16 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
                     children: [
                       if (_isLogin) ...[
                         _buildUserHeader(),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 10),
+
+                        if (isAdmin && roles.isNotEmpty)
+                          RoleSwitcherCard(
+                            roles: roles,
+                            activeRole: rolesActive,
+                            onSwitchRole: _handleSwitchRole,
+                            isSwitching: isLoading,
+                          ),
+                        // const SizedBox(height: 10),
                         _buildBalanceSection(),
                         const SizedBox(height: 24),
                         _buildMenuSection(),
@@ -394,7 +512,6 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
     );
   }
 
-
   Widget _buildBalanceSection() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -469,7 +586,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
     final items = [
       MenuEntry(icon: Icons.person_outline_rounded, label: 'Thông tin cá nhân', route: CustomerRouterConfig.updateProfile),
       // MenuEntry(icon: Icons.favorite_border_rounded, label: 'Kỹ thuật viên yêu thích', route: CustomerRouterConfig.listLike),
-      MenuEntry(icon: Icons.discount_outlined, label: 'Mã giảm giá', route: CustomerRouterConfig.listDiscountScreen),
+      // MenuEntry(icon: Icons.discount_outlined, label: 'Mã giảm giá', route: CustomerRouterConfig.listDiscountScreen),
       MenuEntry(icon: Icons.location_on_outlined, label: 'Địa chỉ của tôi', route: CustomerRouterConfig.listAddress),
     ];
 
@@ -524,7 +641,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
         children: [
           InkWell(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-            onTap: _isSwitchingRole ? null : _showRoleSwitchDialog,
+            onTap: _isSwitchingRole ? null : _handleRegisterTap,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
@@ -532,8 +649,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
                   const Icon(Icons.change_circle, size: 20, color: _kGray),
                   const SizedBox(width: 14),
                   Expanded(
-                    child: Text(
-                      _isSwitchingRole ? 'Đang chuyển...' : 'Trở thành Cộng tác viên',
+                    child: Text(isHasTechnicianProfile ? 'Chuyển đổi tài khoản KTV' : 'Trở thành Cộng tác viên',
                       style: TextStyle(fontSize: 14, color: _isSwitchingRole ? _kGray : _kBlack),
                     ),
                   ),

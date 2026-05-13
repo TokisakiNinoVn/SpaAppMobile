@@ -13,7 +13,6 @@ class DiscountApi {
   static const String saveDiscount = '${AppConfig.apiAdminUrlPrivate}/user-discount/save';
   static const String deleteUserDiscount = '${AppConfig.apiAdminUrlPrivate}/user-discount';
   static const String detailUserDiscount = '${AppConfig.apiAdminUrlPrivate}/user-discount';
-
-
-
+  static const String listHome = '${AppConfig.apiUrlPublic}/discount/view-home';
+  static const String listPublic = '${AppConfig.apiUrlPublic}/discount';
 }

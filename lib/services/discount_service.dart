@@ -3,6 +3,9 @@
 
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/discount_api.dart';
+import 'package:spa_app/apis/helper/api_methods_public.dart';
+
+import '../helper/logger_utils.dart';
 
 class DiscountService {
   Future<Map<String, dynamic>> checkDiscountService(
@@ -18,6 +21,14 @@ class DiscountService {
     return await ApiMethodsPrivate.getRequest(DiscountApi.listDiscount);
   }
 
+  Future<Map<String, dynamic>> listHome() async {
+    return await ApiMethodsPublic.getRequest(DiscountApi.listHome);
+  }
+
+  Future<Map<String, dynamic>> listPublic() async {
+    return await ApiMethodsPublic.getRequest(DiscountApi.listPublic);
+  }
+
   Future<Map<String, dynamic>> createDiscount(Map<String, dynamic> data) async {
     return await ApiMethodsPrivate.postRequest('${DiscountApi.createDiscount}', data);
   }
@@ -31,7 +42,7 @@ class DiscountService {
   }
 
   Future<Map<String, dynamic>> changeIsActiveDiscount(String id, Map<String, dynamic> data) async {
-    print("URL PATCH: ${DiscountApi.changeIsActiveDiscount} -$id - ${data}");
+    // print("URL PATCH: ${DiscountApi.changeIsActiveDiscount} -$id - ${data}");
     return await ApiMethodsPrivate.patchRequest('${DiscountApi.changeIsActiveDiscount}/$id', data);
   }
 

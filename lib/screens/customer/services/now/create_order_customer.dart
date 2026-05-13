@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/providers/user_provider.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/screens/customer/services/widgets/info_row.dart';
 import 'package:spa_app/screens/customer/services/widgets/input_box.dart';
@@ -36,8 +38,7 @@ class CreateOrderNowScreen extends StatefulWidget {
   });
 
   @override
-  State<CreateOrderNowScreen> createState() =>
-      _CreateOrderNowScreenState();
+  State<CreateOrderNowScreen> createState() => _CreateOrderNowScreenState();
 }
 
 class _CreateOrderNowScreenState
@@ -52,6 +53,7 @@ class _CreateOrderNowScreenState
   String? _errorMessage;
   bool _isRefreshingDiscount = false;
   // bool _isLoadingAddress = false;
+  int? nowBalance;
 
   List<Map<String, dynamic>> _addresses = [];
   List<dynamic> _discounts = [];
@@ -103,8 +105,10 @@ class _CreateOrderNowScreenState
   void initState() {
     super.initState();
     _paymentMethod = PaymentMethod.zenhome;
-    _loadCustomerProfile();
-    _loadSavedDiscounts();
+      _loadDiscounts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCustomerProfile();
+    });
     _loadAddresses();
     _noteFocusNode.addListener(_onFocusChange);
     _moneyPrioritizeController.addListener(_formatExtraFeeOnChange);
@@ -156,12 +160,12 @@ class _CreateOrderNowScreenState
       final response = await _userService.listAddress();
 
       if (response['success'] == true || response['status'] == 'success') {
-        appLog("List address: ${response['data']}");
+        // appLog("List address: ${response['data']}");
 
         List<dynamic> addressList = response['data'] ?? [];
         setState(() {
           _addresses = addressList.map((addr) => Map<String, dynamic>.from(addr)).toList();
-          appLog("List address2: $_addresses");
+          // appLog("List address2: $_addresses");
 
           // THÊM: Tự động chọn địa chỉ mặc định nếu có
           _selectDefaultAddress();
@@ -194,7 +198,7 @@ class _CreateOrderNowScreenState
     // Cập nhật controller
     if (defaultAddress['address'] != null && defaultAddress['address'].toString().isNotEmpty) {
       _addressController.text = defaultAddress['address'];
-      appLog("Selected default address: ${_addressController.text}");
+      // appLog("Selected default address: ${_addressController.text}");
     } else {
       // Fallback: chọn địa chỉ đầu tiên có address
       final firstValidAddress = _addresses.firstWhere(
@@ -215,6 +219,7 @@ class _CreateOrderNowScreenState
         "code": _appliedDiscountCode!,
         "orderValue": _totalBeforeDiscount,
       });
+      
       if (response['success'] == true) {
         setState(() {
           _discountData = response['data'];
@@ -255,7 +260,7 @@ class _CreateOrderNowScreenState
 
     try {
       final response = await _orderService.createOrder(data);
-      appLog("response: $response");
+      // appLog("response: $response");
       if (response['success'] == true) {
         context.go('/home-customer');
         SnackBarHelper.showSuccess(context, "Tạo yêu cầu đơn thành công! Vui lòng chờ kỹ thuật viên phản hồi!");
@@ -287,24 +292,32 @@ class _CreateOrderNowScreenState
   }
 
   Future<void> _loadCustomerProfile() async {
+    final provider = context.read<UserProvider>();
+
     try {
-      balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
+      await provider.loadBalanceCustomer();
+      balance = provider.nowBalance;
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
-  Future<void> _loadSavedDiscounts() async {
+  Future<void> _loadDiscounts() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final response = await _userDiscountService.listSaveDiscount();
-      if (response['status'] == 'success') {
+      final response = await _discountService.listPublic();
+      // appLog("${response}");
+      // appLog("${response['data']}");
+      if (response['success'] == true) {
         setState(() {
-          _discounts = response['data']['discounts'] ?? [];
+          _discounts = response['data'] ?? [];
+          // appLog("${_discounts}");
           _isLoading = false;
         });
         // appLog("list discount: $_discounts");
@@ -544,54 +557,102 @@ class _CreateOrderNowScreenState
     bool localChecking = false;
     String? selectedDiscountId;
 
+    // Màu xanh chủ đạo
+    const Color primaryGreen = Color(0xFF2E7D32);
+    const Color lightGreen = Color(0xFFE8F5E9);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (context) {
         final height = MediaQuery.of(context).size.height * 0.7;
 
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            return SizedBox(
+            return Container(
               height: height,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Chọn / nhập mã giảm giá',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                children: [
+                  // Thanh kéo (drag handle)
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    const SizedBox(height: 10),
-                    Row(
+                  ),
+                  const SizedBox(height: 16),
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Chọn mã giảm giá',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: ColorConfig.textBlack,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(Icons.close, color: Colors.grey.shade500),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Ô nhập mã + nút áp dụng
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
                       children: [
                         Expanded(
                           child: TextField(
                             controller: couponController,
                             textCapitalization: TextCapitalization.characters,
-                            style: const TextStyle(fontSize: 14),
+                            style: const TextStyle(fontSize: 15),
                             decoration: InputDecoration(
-                              hintText: 'Mã giảm giá',
+                              hintText: 'Nhập mã khuyến mãi',
+                              prefixIcon: Icon(Icons.discount_outlined,
+                                  color: primaryGreen, size: 20),
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                                horizontal: 12,
+                                vertical: 12,
+                                horizontal: 16,
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide(color: primaryGreen, width: 1.5),
                               ),
                               errorText: localError,
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: const BorderSide(color: Colors.red),
+                              ),
                             ),
                             onChanged: (_) {
                               if (localError != null) {
@@ -600,7 +661,7 @@ class _CreateOrderNowScreenState
                             },
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         ElevatedButton(
                           onPressed: localChecking
                               ? null
@@ -642,69 +703,250 @@ class _CreateOrderNowScreenState
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: ColorConfig.primary,
-                            foregroundColor: ColorConfig.textWhite,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                            backgroundColor: primaryGreen,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
                           ),
                           child: localChecking
-                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Text('Áp dụng'),
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Áp dụng', style: TextStyle(fontWeight: FontWeight.w600)),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    const Text('Mã của bạn', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 10),
-                    Expanded(
-                      child: (_discounts.isEmpty)
-                          ? const Center(child: Text('Không có mã giảm giá'))
-                          : ListView.builder(
-                        itemCount: _discounts.length,
-                        itemBuilder: (context, index) {
-                          final item = _discounts[index];
-                          final discount = item['discount'];
-                          final code = discount['code'];
-                          final int value = discount['value'];
-                          final int minOrder = discount['minOrderValue'];
-                          final isSelected = selectedDiscountId == item['id'];
-                          return GestureDetector(
-                            onTap: () {
-                              setSheetState(() {
-                                selectedDiscountId = item['id'];
-                                couponController.text = code;
-                              });
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isSelected ? Colors.amber : Colors.grey.shade300,
-                                  width: isSelected ? 2 : 1,
+                  ),
+                  const SizedBox(height: 10),
+                  // Danh sách mã giảm giá
+                  Expanded(
+                    child: _discounts.isEmpty
+                        ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.local_offer_outlined,
+                              size: 48, color: Colors.grey.shade400),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Không có mã giảm giá nào',
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                        : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      itemCount: _discounts.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        double borderAll = 7;
+                        final Map<String, dynamic> item =
+                        _discounts[index] as Map<String, dynamic>;
+
+                        final String id = item['_id']?.toString() ?? "";
+                        final String code = item['code']?.toString() ?? "";
+                        final String typeDiscount =
+                            item['typeDiscount']?.toString() ?? "";
+                        final int value = int.tryParse(item['value'].toString()) ?? 0;
+                        final int minOrderValue = int.tryParse(item['minOrderValue'].toString()) ?? 0;
+                        final String expiresAt =
+                            item['expiresAt']?.toString() ?? "";
+                        final bool isSelected = selectedDiscountId == id;
+
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          decoration: BoxDecoration(
+                            color: isSelected ? lightGreen : Colors.white,
+                            borderRadius: BorderRadius.circular(borderAll),
+                            border: Border.all(
+                              color: isSelected
+                                  ? primaryGreen
+                                  : Colors.grey.shade200,
+                              width: isSelected ? 1 : 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.02),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(borderAll),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(borderAll),
+                              onTap: () {
+                                setSheetState(() {
+                                  selectedDiscountId = id;
+                                  couponController.text = code;
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(0),
+                                child: IntrinsicHeight(
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      // Icon / giá trị giảm
+                                      Container(
+                                        width: 90,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? ColorConfig.primary
+                                              : ColorConfig.primary.withOpacity(.8),
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(borderAll),
+                                            topLeft: Radius.circular(borderAll),
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                "Giảm",
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              Text(
+                                                typeDiscount == "percentage"
+                                                    ? "$value%"
+                                                    : "${FormatHelper.formatPrice(value)} đ",
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                  
+                                      // Thông tin chi tiết
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 8),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      code,
+                                                      style: const TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w700,
+                                                        letterSpacing: 0.3,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  if (isSelected)
+                                                    Icon(
+                                                      Icons.check_circle,
+                                                      size: 20,
+                                                      color: primaryGreen,
+                                                    ),
+
+                                                  const SizedBox(width: 10),
+
+                                                ],
+                                              ),
+                                  
+                                              const SizedBox(height: 4),
+                                  
+                                              Text(
+                                                "Đơn tối thiểu: ${FormatHelper.formatPrice(minOrderValue)}đ",
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: ColorConfig.textBlack.withOpacity(.8),
+                                                ),
+                                              ),
+
+                                              Text(
+                                                "HSD: ${FormatHelper.formatDateTime(expiresAt)}",
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: ColorConfig.textBlack.withOpacity(.8),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(code, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                  const SizedBox(height: 4),
-                                  Text('Giảm: ${FormatHelper.formatPrice(value)} đ'),
-                                  Text('Đơn tối thiểu: ${FormatHelper.formatPrice(minOrder)} đ'),
-                                ],
-                              ),
                             ),
-                          );
-                        },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: ColorConfig.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          // side: BorderSide(
+                          //   color: Colors.grey.shade800,
+                          //   width: 1,
+                          // ),
+                        ),
+                      ).copyWith(
+                        overlayColor: WidgetStatePropertyAll(
+                          Colors.white.withOpacity(0.08),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Đóng',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Hủy'),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
               ),
             );
           },
@@ -920,7 +1162,12 @@ class _CreateOrderNowScreenState
           ),
         ),
       ),
-      body: _loading
+      body:GestureDetector(
+        onTap: () {
+          // Tắt bàn phím khi tap ra ngoài
+          FocusScope.of(context).unfocus();
+        },
+        child: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -1098,6 +1345,10 @@ class _CreateOrderNowScreenState
                   controller: _noteController,
                   focusNode: _noteFocusNode,
                   maxLines: 2,
+                  textInputAction: TextInputAction.done,
+                  onEditingComplete: () {
+                    _noteFocusNode.unfocus();
+                  },
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     hintText: "Ví dụ: Thời gian phù hợp, tình trạng cụ thể, lưu ý khi đến…",
@@ -1111,6 +1362,7 @@ class _CreateOrderNowScreenState
           ],
         ),
       ),
+      )
     );
   }
 

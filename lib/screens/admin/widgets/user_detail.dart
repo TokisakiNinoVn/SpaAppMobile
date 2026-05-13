@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 
 import '../../../helper/format_helper.dart';
 import '../../../helper/full_screen_list_image.dart';
@@ -297,7 +298,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                           showDialog(
                             context: context,
                             builder: (_) => FullScreenSingleImageViewer(
-                              imageUrl: imageUrl,
+                              imageUrl: FormatHelper.formatNetworkImageUrl(imageUrl),
                             ),
                           );
                         }
@@ -306,7 +307,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                         borderRadius: BorderRadius.circular(8),
                         child: widget.user['avatar']?['url'] != null
                             ? Image.network(
-                          widget.user['avatar']['url'],
+                          FormatHelper.formatNetworkImageUrl(widget.user['avatar']['url']),
                           width: 100,
                           height: 100,
                           fit: BoxFit.cover,
@@ -384,7 +385,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                   const Divider(),
                   _buildDetailRow('Kinh nghiệm', widget.user['experience'] ?? 'Không có'),
                   const Divider(),
-                  _buildListDetail('Dịch vụ', widget.user['services']),
+                  // _buildListDetail('Dịch vụ', widget.user['services']),
                   if (widget.user['images'] != null &&
                       (widget.user['images'] as List).isNotEmpty) ...[
                     const SizedBox(height: 16),
@@ -412,7 +413,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                                 index,
                               ),
                               child: Image.network(
-                                image['url'] ?? '',
+                                FormatHelper.formatNetworkImageUrl(image['url'] ?? ''),
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.cover,

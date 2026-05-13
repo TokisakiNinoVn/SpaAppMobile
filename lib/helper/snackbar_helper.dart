@@ -42,7 +42,7 @@ class SnackBarHelper {
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(border ?? 40),
+          borderRadius: BorderRadius.circular(border ?? 8),
         ),
       ),
     );

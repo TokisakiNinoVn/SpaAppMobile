@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/providers/user_provider.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/services/user_discount_service.dart';
 
@@ -206,7 +208,7 @@ class _CreateBookOrderScreenState
     final moneyPrioritize = moneyPrioritizeRaw.isEmpty ? 0 : int.tryParse(moneyPrioritizeRaw) ?? 0;
     final price = widget.data['serviceTimePrice']['price'] as int;
     final data = {
-      'typeOrder': 'order-now',
+      'typeOrder': 'book',
       "technicianId": widget.data['technician']['id'],
       "serviceTimePriceId": widget.data['serviceTimePrice']['_id'],
       "nameService": widget.data['nameService'],
@@ -261,10 +263,13 @@ class _CreateBookOrderScreenState
   }
 
   Future<void> _loadCustomerProfile() async {
+      final provider = context.read<UserProvider>();
     try {
-      balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
+      await provider.loadBalanceCustomer();
+      balance = provider.nowBalance;
+
       final rawProfile = await SharedPrefs.getValue(PrefType.string, "customerProfile");
-      appLog("data Profile: $rawProfile");
+      // appLog("data Profile: $rawProfile");
       if (rawProfile != null) {
         final profile = jsonDecode( rawProfile);
         // Lấy danh sách địa chỉ
@@ -314,187 +319,6 @@ class _CreateBookOrderScreenState
       });
     }
   }
-
-  // void _showAddressPicker() {
-  //   showModalBottomSheet(
-  //     context: context,
-  //     isScrollControlled: true,
-  //     backgroundColor: Colors.transparent,
-  //     builder: (context) {
-  //       final height = MediaQuery.of(context).size.height * 0.7;
-  //
-  //       return StatefulBuilder(
-  //         builder: (context, setSheetState) {
-  //           return Container(
-  //             height: height,
-  //             decoration: const BoxDecoration(
-  //               color: Colors.white,
-  //               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-  //             ),
-  //             child: Column(
-  //               children: [
-  //                 const SizedBox(height: 10),
-  //                 Container(
-  //                   width: 40,
-  //                   height: 4,
-  //                   decoration: BoxDecoration(
-  //                     color: Colors.grey.shade300,
-  //                     borderRadius: BorderRadius.circular(10),
-  //                   ),
-  //                 ),
-  //
-  //                 const Padding(
-  //                   padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-  //                   child: Row(
-  //                     children: [
-  //                       Text(
-  //                         'Chọn địa chỉ',
-  //                         style: TextStyle(
-  //                           fontSize: 20,
-  //                           fontWeight: FontWeight.w700,
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ),
-  //
-  //                 /// 🔥 LIST ĐỊA CHỈ
-  //                 Expanded(
-  //                   child: (_addresses.isEmpty)
-  //                       ? const Center(
-  //                     child: Text(
-  //                       'Chưa có địa chỉ nào',
-  //                       style: TextStyle(color: Colors.grey),
-  //                     ),
-  //                   )
-  //                       : ListView.builder(
-  //                     padding: const EdgeInsets.symmetric(horizontal: 16),
-  //                     itemCount: _addresses.length,
-  //                     itemBuilder: (context, index) {
-  //                       final addr = _addresses[index];
-  //                       final isDefault = addr['isDefault'] == true;
-  //                       final isSelected =
-  //                           _addressController.text == addr['address'];
-  //
-  //                       return AnimatedContainer(
-  //                         duration: const Duration(milliseconds: 200),
-  //                         margin: const EdgeInsets.only(bottom: 12),
-  //                         padding: const EdgeInsets.all(14),
-  //                         decoration: BoxDecoration(
-  //                           color: isSelected
-  //                               ? Colors.blue.withOpacity(0.08)
-  //                               : Colors.grey.shade50,
-  //                           borderRadius: BorderRadius.circular(16),
-  //                           border: Border.all(
-  //                             color: isSelected
-  //                                 ? ColorConfig.primary
-  //                                 : Colors.grey.shade200,
-  //                             width: isSelected ? 1.5 : 1,
-  //                           ),
-  //                         ),
-  //                         child: InkWell(
-  //                           borderRadius: BorderRadius.circular(16),
-  //                           onTap: () {
-  //                             setState(() {
-  //                               _addressController.text =
-  //                               addr['address'];
-  //                             });
-  //                             Navigator.pop(context);
-  //                           },
-  //                           child: Row(
-  //                             children: [
-  //                               Container(
-  //                                 padding: const EdgeInsets.all(10),
-  //                                 decoration: BoxDecoration(
-  //                                   color: isDefault
-  //                                       ? Colors.blue.withOpacity(0.1)
-  //                                       : Colors.grey.withOpacity(0.1),
-  //                                   shape: BoxShape.circle,
-  //                                 ),
-  //                                 child: Icon(
-  //                                   isDefault
-  //                                       ? Icons.home_rounded
-  //                                       : Icons.location_on_rounded,
-  //                                   color: isDefault
-  //                                       ? ColorConfig.primary
-  //                                       : Colors.grey,
-  //                                 ),
-  //                               ),
-  //
-  //                               const SizedBox(width: 12),
-  //
-  //                               /// TEXT
-  //                               Expanded(
-  //                                 child: Column(
-  //                                   crossAxisAlignment:
-  //                                   CrossAxisAlignment.start,
-  //                                   children: [
-  //                                     Text(
-  //                                       addr['address'],
-  //                                       style: const TextStyle(
-  //                                         fontSize: 15,
-  //                                         fontWeight: FontWeight.w500,
-  //                                       ),
-  //                                     ),
-  //                                     if (isDefault)
-  //                                       Padding(
-  //                                         padding:
-  //                                         EdgeInsets.only(top: 4),
-  //                                         child: Text(
-  //                                           'Mặc định',
-  //                                           style: TextStyle(
-  //                                             fontSize: 12,
-  //                                             color: ColorConfig.textPrimary,
-  //                                           ),
-  //                                         ),
-  //                                       ),
-  //                                   ],
-  //                                 ),
-  //                               ),
-  //
-  //                               /// CHECK
-  //                               if (isSelected)
-  //                                 Icon(
-  //                                   Icons.check_circle,
-  //                                   color: ColorConfig.primary,
-  //                                 ),
-  //                             ],
-  //                           ),
-  //                         ),
-  //                       );
-  //                     },
-  //                   ),
-  //                 ),
-  //
-  //                 /// 👇 BUTTON
-  //                 SafeArea(
-  //                   child: Padding(
-  //                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-  //                     child: ElevatedButton.icon(
-  //                       onPressed: () {
-  //                         context.push(CustomerRouterConfig.addAddress);
-  //                       },
-  //                       icon: Icon(Icons.add, color: ColorConfig.white,),
-  //                       label: Text('Thêm địa chỉ mới', style: TextStyle(color: ColorConfig.textWhite),),
-  //                       style: ElevatedButton.styleFrom(
-  //                         minimumSize: const Size.fromHeight(52),
-  //                         elevation: 0,
-  //                         backgroundColor: ColorConfig.primary,
-  //                         shape: RoundedRectangleBorder(
-  //                           borderRadius: BorderRadius.circular(14),
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           );
-  //         },
-  //       );
-  //     },
-  //   );
-  // }
 
   void _showAddressPicker() async {
     final selectedAddress = await showAddressPickerSheet(
@@ -1015,7 +839,13 @@ class _CreateBookOrderScreenState
         ),
       ),
 
-      body: _loading
+      body:
+      GestureDetector(
+        onTap: () {
+          // Tắt bàn phím khi tap ra ngoài
+          FocusScope.of(context).unfocus();
+        },
+        child: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
         padding: const EdgeInsets.only(top: 0, right: 14, left: 14, bottom: 10),
@@ -1397,6 +1227,10 @@ class _CreateBookOrderScreenState
                   controller: _noteController,
                   focusNode: _noteFocusNode,
                   maxLines: 2,
+                  textInputAction: TextInputAction.done,         // Thêm dòng này
+                  onEditingComplete: () {                        // Thêm dòng này
+                    _noteFocusNode.unfocus();                    // Tắt bàn phím khi nhấn Done
+                  },
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     hintText: "Ví dụ: thời gian phù hợp, tình trạng cụ thể, lưu ý khi đến…",
@@ -1409,6 +1243,7 @@ class _CreateBookOrderScreenState
           ],
         ),
       ),
+      )
     );
   }
 

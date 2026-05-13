@@ -23,6 +23,7 @@ class RealtimeService {
   final void Function(Map<String, dynamic>)? onUserStatusUpdate;
   final void Function(Map<String, dynamic>)? onNewOrder;
   final void Function(String orderId)? onOrderExpired;
+  final void Function(String orderId)? onOrderRemoved;
   bool _isDisposed = false;
 
   // RealtimeService(this.context, {this.onUserStatusUpdate});
@@ -38,6 +39,7 @@ class RealtimeService {
     this.onUserStatusUpdate,
     this.onNewOrder,
     this.onOrderExpired,
+    this.onOrderRemoved,
   });
 
   void dispose() {
@@ -178,9 +180,7 @@ class RealtimeService {
             body: 'Nhân viên $technicianName đang hoạt động.',
           );
         }
-
         onUserStatusUpdate?.call(data);
-
       }
       else if (data is Map<String, dynamic> &&
           data['type'] == 'notification_from_admin') {
@@ -207,11 +207,22 @@ class RealtimeService {
         //   body: 'Bạn có một đơn việc mới',
         // );
       }
-
       else if (data['type'] == 'ORDER_EXPIRED') {
         final orderId = data['orderId'];
 
         onOrderExpired?.call(orderId);
+      }
+      else if (data['type'] == 'remove-order') {
+        final orderId = data['data']?['orderId'];
+
+        if (orderId != null) {
+          onOrderRemoved?.call(orderId);
+
+          _showNotification(
+            title: 'Đơn việc đã bị xoá',
+            body: data['data']?['message'] ?? '',
+          );
+        }
       }
 
     } catch (e) {

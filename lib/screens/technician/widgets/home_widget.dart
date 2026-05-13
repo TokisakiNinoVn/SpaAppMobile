@@ -9,6 +9,7 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/helper/shared_preferences_helper.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/routes/config/technician_router_config.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -351,8 +352,8 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
     final prefs = await SharedPreferences.getInstance();
     role = prefs.getString('role') ?? 'ktv';
     inforLogin = jsonDecode(prefs.getString('inforUserLogin') ?? '{}');
-    isTechnicianActive = prefs.getString('isTechnicianActive') == 'true';
-    isProfileActive = prefs.getString('isTechnicianActive') == 'true';
+    isTechnicianActive = prefs.getBool('isTechnicianActive') == true;
+    isProfileActive = prefs.getBool('isTechnicianActive') == true;
     statusAccount = prefs.getString('statusAccount') ?? 'inactive';
 
     idOrderWorking = await SharedPrefs.getValue(PrefType.string, "idOrderWorking") ?? "";
@@ -367,6 +368,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
       if (orderDetailRaw != null && orderDetailRaw.toString().isNotEmpty) {
         try {
           orderDetail = jsonDecode(orderDetailRaw.toString()) as Map<String, dynamic>;
+          appLog("Detail order: $orderDetailRaw");
         } catch (_) {
           orderDetail = null;
         }
@@ -489,29 +491,29 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
 
   bool get _isOnline => isTechnicianActive && isProfileActive && statusAccount == 'active';
 
-  void _navigateToNotifications() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(60),
-            child: AppBar(
-              title: const Text('Thông báo'),
-              centerTitle: true,
-              elevation: 0,
-            ),
-          ),
-          body: const Center(
-            child: Text(
-              'Danh sách thông báo sẽ hiển thị ở đây',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // void _navigateToNotifications() {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => Scaffold(
+  //         appBar: PreferredSize(
+  //           preferredSize: const Size.fromHeight(60),
+  //           child: AppBar(
+  //             title: const Text('Thông báo'),
+  //             centerTitle: true,
+  //             elevation: 0,
+  //           ),
+  //         ),
+  //         body: const Center(
+  //           child: Text(
+  //             'Danh sách thông báo sẽ hiển thị ở đây',
+  //             style: TextStyle(fontSize: 16, color: Colors.grey),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   // ─── Helpers lấy field từ orderDetail theo cấu trúc JSON thực tế ───
 
@@ -570,7 +572,15 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   String get _orderCustomerName {
     final customer = orderDetail?['customer'];
     if (customer == null) return 'Không rõ';
-    return customer['fullName'] ?? customer['name'] ?? 'Không rõ';
+    String fullNameCustomer = orderDetail?['customer']['fullname'] ?? "KHông có tên";
+    return fullNameCustomer;
+  }
+
+  String get _phoneCustomer {
+    final customer = orderDetail?['customer'];
+    if (customer == null) return 'Không rõ';
+    String phoneCustomer = orderDetail?['customer']['phone'] ?? "Không có SĐT";
+    return phoneCustomer;
   }
 
   /// Thời gian thực hiện từ serviceTimePrice
@@ -672,8 +682,13 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                   clipBehavior: Clip.none,
                   children: [
                     IconButton(
-                      onPressed: _navigateToNotifications,
-                      icon: const Icon(Icons.notifications_outlined, size: 28),
+                      onPressed: () {
+                        context.push(TechnicianRouterConfig.notifications);
+                      },
+                      icon: const Icon(
+                        Icons.notifications_outlined,
+                        size: 28,
+                      ),
                       color: Colors.grey.shade700,
                       tooltip: 'Thông báo',
                       padding: EdgeInsets.zero,
@@ -1015,6 +1030,12 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                   _buildInfoRow(
                     Icons.person_outline,
                     'Khách hàng: $_orderCustomerName',
+                  ),
+                  const SizedBox(height: 8),
+
+                  _buildInfoRow(
+                    Icons.phone,
+                    'SĐT: $_phoneCustomer',
                   ),
                   const SizedBox(height: 8),
 

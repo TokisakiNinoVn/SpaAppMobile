@@ -32,6 +32,7 @@ class _EditFeatureServiceState extends State<EditFeatureService> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   late TextEditingController _tagController;
+  late TextEditingController _startPriceController;
 
   Map<String, dynamic>? _currentImage;
   File? _newImageFile;
@@ -50,6 +51,7 @@ class _EditFeatureServiceState extends State<EditFeatureService> {
     _titleController = TextEditingController(text: data['title'] ?? '');
     _descriptionController = TextEditingController(text: data['description'] ?? '');
     _tagController = TextEditingController(text: data['tag'] ?? '');
+    _startPriceController = TextEditingController(text: data['startPrice'].toString() ?? "");
     _currentImage = data['fileId'] != null ? Map<String, dynamic>.from(data['fileId']) : null;
   }
 
@@ -58,6 +60,7 @@ class _EditFeatureServiceState extends State<EditFeatureService> {
     _titleController.dispose();
     _descriptionController.dispose();
     _tagController.dispose();
+    _startPriceController.dispose();
     super.dispose();
   }
 
@@ -229,6 +232,7 @@ class _EditFeatureServiceState extends State<EditFeatureService> {
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'tag': _tagController.text.trim(),
+        'startPrice': _startPriceController.text.trim(),
       };
 
       if (newImageData != null && newImageData['_id'] != null) {
@@ -325,6 +329,15 @@ class _EditFeatureServiceState extends State<EditFeatureService> {
                   controller: _tagController,
                   label: 'Tag',
                   hint: 'Ví dụ: Phổ biến, Mới, Đặc biệt...',
+                  icon: Icons.local_offer,
+                  maxLines: 1,
+                ),
+                
+                // Giá thấp nhất từ
+                _buildTextField(
+                  controller: _startPriceController,
+                  label: 'Giá thấp nhất từ',
+                  hint: '250.000',
                   icon: Icons.local_offer,
                   maxLines: 1,
                 ),

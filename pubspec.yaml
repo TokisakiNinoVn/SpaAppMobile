@@ -3,7 +3,7 @@ description: "Serene Spa"
 
 publish_to: 'none'
 
-version: 1.5.2+13
+version: 1.5.2+14
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
@@ -43,6 +43,7 @@ dependencies:
   latlong2: ^0.9.1
 #  fluttertoast: ^8.2.10
   lottie: ^3.3.1
+  provider: ^6.1.4
 
 #  image_gallery_saver: ^2.0.3
 #  saver_gallery: ^4.0.1

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'package:spa_app/services/realtime_service.dart';
 import 'package:spa_app/services/service_service.dart';
@@ -35,13 +36,30 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
   @override
   void initState() {
     super.initState();
+
     _loadBookOrders();
     _startCountdownTimer();
     _loadAllServices();
+
+    _realtimeService = RealtimeService(
+      onOrderRemoved: (orderId) {
+        if (!mounted) return;
+
+        setState(() {
+          listJobs.removeWhere((e) => e['_id'] == orderId);
+          filteredJobs.removeWhere((e) => e['_id'] == orderId);
+          _remainingTimes.remove(orderId);
+        });
+      },
+    );
+
+    _realtimeService.connect();
   }
 
   @override
   void dispose() {
+    _realtimeService.dispose();
+    _realtimeService.disconnect();
     super.dispose();
   }
 
@@ -126,9 +144,9 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
         _errorMessage = '';
       });
 
-      final queryParams = 'typeOrder=automatic-matching&timeRange=2d';
+      final queryParams = 'status=pending&typeOrder=automatic-matching&timeRange=2d';
       final response = await _orderService.listFilterOrder(queryParams);
-      // appLog("data: $response");
+      appLog("data: ${response['data']}");
 
       if (response['success'] == true) {
         final newOrders = response['data'] ?? [];
@@ -176,19 +194,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
   }
 
   void _acceptJob(Map<String, dynamic> job) {
-    // context.push()
-    _showSnackBar('Đã nhận việc thành công!', Colors.green);
-  }
-
-  void _showSnackBar(String message, Color color) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    SnackBarHelper.showWarning(context, 'Chức năng đang phát triển!');
   }
 
   String _formatRemainingTime(Duration duration) {
@@ -282,7 +288,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Việc làm mới',
+                      'Nhận việc',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -635,6 +641,21 @@ class JobCard extends StatelessWidget {
                     // Địa chỉ
                     Row(
                       children: [
+                        Icon(Icons.person, size: 16, color: Colors.grey.shade500),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "${job['customerId']['fullname'] ?? 'Đang cập nhật'} (${job['customerId']['gender'] == "male" ? "Nam" : "Nữ"})",
+                            style: TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
                         Icon(Icons.location_on_outlined, size: 16, color: Colors.grey.shade500),
                         const SizedBox(width: 8),
                         Expanded(
@@ -701,7 +722,7 @@ class JobCard extends StatelessWidget {
                                 Text(
                                   'Đã cọc trước: ${FormatHelper.formatPrice(job['deposit'])}',
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: 12,
                                     color: Colors.grey.shade600,
                                   ),
                                 ),
@@ -716,7 +737,7 @@ class JobCard extends StatelessWidget {
 
               // Nút nhận việc
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(10),
                 child: ElevatedButton(
                   onPressed: isExpired ? null : onAccept,
                   style: ElevatedButton.styleFrom(

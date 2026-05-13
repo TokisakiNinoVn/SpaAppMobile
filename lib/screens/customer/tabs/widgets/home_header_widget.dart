@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 
 class HomeHeaderWidget extends StatelessWidget {
@@ -37,13 +38,13 @@ class HomeHeaderWidget extends StatelessWidget {
                   'Xin chào 👋',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[400],
+                    color: Colors.black,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 Text(
                   isLogin
-                      ? (inforUser?['fullName'] ??
+                      ? (inforUser?['fullname'] ??
                       inforUser?['phone'] ??
                       'Quý khách')
                       : '${AppConfig.appName}',

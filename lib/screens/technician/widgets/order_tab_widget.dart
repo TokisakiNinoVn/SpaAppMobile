@@ -195,6 +195,7 @@ class _OrderTabState extends State<OrderTab> {
         _orderService.listApprovedBookOrder(),
       ]);
 
+
       final requestResponse = results[0];
       final bookResponse = results[1];
 
@@ -204,6 +205,7 @@ class _OrderTabState extends State<OrderTab> {
           final newOrders = requestResponse['data'] ?? [];
           setState(() {
             listRequestOrders = newOrders;
+            appLog("List request order: $listRequestOrders");
           });
           _startTimersForOrders(newOrders);
         } else {

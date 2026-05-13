@@ -16,4 +16,8 @@ class RateService {
   Future<Map<String, dynamic>> deleteRate(String id) async {
     return await ApiMethodsPrivate.getRequest("${RateApiRoutes.delete}/${id}");
   }
+
+  Future<Map<String, dynamic>> getByTechnicianId(String id) async {
+    return await ApiMethodsPrivate.getRequest("${RateApiRoutes.byTechnician}/${id}");
+  }
 }

@@ -11,7 +11,7 @@ class ColorConfig {
 
   static final Color textPrimary = Color(0xFF6B9171);
   static final Color textSecondary = Color(0xFFD4A373);
-  static final Color textWarning = Color(0xFFF6B751);
+  static final Color textWarning = Color(0xFFAC7E34);
   static final Color textError = Color(0xFFF83D3D);
   static final Color textSuccess = Color(0xFF01B501);
   static final Color textWhite = Color(0xFFFFFFFF);

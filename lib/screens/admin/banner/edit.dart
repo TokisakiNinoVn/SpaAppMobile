@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:spa_app/services/file_service.dart';
 import 'package:spa_app/services/upload_service.dart';
+import 'package:spa_app/utils/file_util.dart';
 
 import '../../../helper/snackbar_helper.dart';
 import '../../../services/banner_service.dart';
@@ -25,6 +26,7 @@ class _EditBannerScreenState extends State<EditBannerScreen>
   final BannerService bannerService = BannerService();
   final UploadService uploadService = UploadService();
   final ImagePicker _picker = ImagePicker();
+  final FileUtils _fileUtils = FileUtils();
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
@@ -84,9 +86,21 @@ class _EditBannerScreenState extends State<EditBannerScreen>
         maxHeight: 1080,
         imageQuality: 85,
       );
+
       if (pickedFile != null) {
-        setState(() => _selectedImage = File(pickedFile.path));
-        await _uploadImage();
+        final File? croppedImage = await _fileUtils.cropImage(
+            File(pickedFile.path),
+            16.0,
+            9.0
+        );
+
+        if (croppedImage != null) {
+          setState(() => _selectedImage = croppedImage);
+          await _uploadImage();
+        } else {
+          // Nếu người dùng hủy cắt, không upload ảnh
+          SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
+        }
       }
     } catch (e) {
       SnackBarHelper.showError(context, 'Lỗi khi chọn ảnh: $e');

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/routes/config/admin_router_config.dart';
 
 class GeneralManagementTab extends StatefulWidget {
@@ -40,10 +41,16 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
     },
     {
       'icon': Icons.airplane_ticket_outlined,
-      'title': 'Quản lý khuyến mãi',
+      'title': 'Q.lý mã Voucher/Ưu đãi',
       'route': AdminRouterConfig.managementDiscount,
       'color': Colors.redAccent,
     },
+    // {
+    //   'icon': Icons.airplane_ticket_outlined,
+    //   'title': 'Quản lý Ưu đãi',
+    //   'route': AdminRouterConfig.managementDiscount,
+    //   'color': Colors.redAccent,
+    // },
     {
       'icon': Icons.notifications_outlined,
       'title': 'Thông báo hệ thống',
@@ -173,67 +180,111 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
   }
 
   Widget _buildListItem(Map<String, dynamic> item) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            ColorConfig.primary,
+            ColorConfig.primary.withOpacity(.7),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: ListTile(
-        onTap: () {
-          context.push(item['route']);
-        },
-        leading: Stack(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
-              decoration: BoxDecoration(
-                color: item['color'].withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                item['icon'],
-                color: item['color'],
-              ),
-            ),
-            if (item.containsKey('badge'))
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 14,
-                    minHeight: 14,
-                  ),
-                  child: Text(
-                    item['badge'],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            context.push(item['route']);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                // ICON
+                Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: ColorConfig.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        item['icon'],
+                        color: item['color'],
+                        size: 22,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
+                    if (item.containsKey('badge'))
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            item['badge'],
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(width: 14),
+
+                // TITLE
+                Expanded(
+                  child: Text(
+                    item['title'],
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: ColorConfig.white
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
-        title: Text(
-          item['title'],
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 17
+
+                // ARROW
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 20,
-          color: Colors.grey,
         ),
       ),
     );
@@ -242,7 +293,7 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    // final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: SafeArea(
@@ -262,7 +313,7 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: theme.primaryColor.withOpacity(0.1),
+                      color: ColorConfig.primaryBackground,
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Row(

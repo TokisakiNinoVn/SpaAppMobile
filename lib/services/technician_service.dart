@@ -5,6 +5,8 @@
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/helper/api_methods_public.dart';
 import 'package:spa_app/apis/technician_api.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/storage/index.dart';
 
 class TechnicianService {
   Future<Map<String, dynamic>> getDetailsTechnicianService(String id) async {
@@ -87,11 +89,16 @@ class TechnicianService {
     );
   }
 
-  Future<Map<String, dynamic>> getListTechnicianForCustomer(double? lat, double? lng) async {
-    print("✅ $lat - $lng");
-    return await ApiMethodsPublic.getRequest(
-      "${TechnicianApiRoutes.listTechnicianForCustomer}?lat=${lat}&lng=${lng}"
-    );
+  Future<Map<String, dynamic>> getListTechnicianForCustomer(double? lat, double? lng, String typeOrder) async {
+    // print("✅ $lat - $lng");
+    bool isLogin = await SharedPrefs.getValue(PrefType.bool, "isLogin") ?? false;
+    String fullUrl = "${TechnicianApiRoutes.listTechnicianForCustomer}?lat=${lat}&lng=${lng}&isLogin=$isLogin&typeOrder=$typeOrder";
+    // appLog("$fullUrl");
+    if(isLogin) {
+      return await ApiMethodsPrivate.getRequest(fullUrl);
+    } else {
+      return await ApiMethodsPublic.getRequest(fullUrl);
+    }
   }
 
   Future<Map<String, dynamic>> filterTechnicianByIdProvince(int idProvince) async {

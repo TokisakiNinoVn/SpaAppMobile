@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 
 import 'package:spa_app/services/like_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -49,7 +52,7 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
         _errorMessage = '';
       });
 
-      final response = await _notificationService.listNotificationService();
+      final response = await _notificationService.listNotificationUserService();
 
       if (response['success'] == true) {
         setState(() {
@@ -70,19 +73,19 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
 
   Future<void> _deleteNotification(String notificationId, int index) async {
     try {
-      final response = await _notificationService.deleteNotificationService(notificationId);
+      final response = await _notificationService.deleteNotificationUserService(notificationId);
+      appLog("Response: $response");
 
       if (response['success'] == true) {
         setState(() {
           _notificationList.removeAt(index);
         });
+      SnackBarHelper.showSuccess(context, 'Xóa thông báo thành công!');
       } else {
         throw Exception(response['message'] ?? 'Không thể xóa thông báo');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Xóa thông báo thất bại')),
-      );
+      SnackBarHelper.showError(context, 'Xóa thông báo thất bại');
     }
   }
 
@@ -116,22 +119,28 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
   @override
   Widget build(BuildContext context) {
       return Scaffold(
-        backgroundColor: _backgroundColor,
+        backgroundColor: ColorConfig.primaryBackground,
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          backgroundColor: Colors.white,
+          backgroundColor: ColorConfig.primaryBackground,
           elevation: 0,
           title: Row(
             children: [
               InkWell(
-                onTap: () => Navigator.pop(context),
+                onTap: () => context.pop(),
+                borderRadius: BorderRadius.circular(40),
                 child: Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: _backgroundColor,
-                    shape: BoxShape.circle,
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(40),
                   ),
-                  child: Icon(Icons.arrow_back, color: _textColor),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 18,
+                    color: Color(0xFF1A1A1A),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -140,7 +149,7 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: _textColor,
+                  color: ColorConfig.textBlack,
                 ),
               ),
             ],
@@ -162,7 +171,7 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
             style: TextStyle(color: _textColor),
           ),
         )
-            : ListView.separated(
+        : ListView.separated(
           padding: const EdgeInsets.symmetric(vertical: 8),
           itemCount: _notificationList.length,
           separatorBuilder: (_, __) => Divider(
@@ -174,12 +183,7 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
             final bool isRead = noti['isRead'] == true;
 
             return InkWell(
-              onTap: () {
-                // context.push(
-                //   CustomerRoutes.notificationDetail,
-                //   extra: noti,
-                // );
-              },
+              onTap: () => _handleNotificationTap(noti),
               child: Container(
                 color: isRead
                     ? Colors.white
@@ -266,5 +270,154 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
           },
         ),
       );
+  }
+
+  Future<void> _handleNotificationTap(Map<String, dynamic> noti) async {
+    try {
+      // Đánh dấu đã đọc nếu chưa đọc
+      if (noti['isRead'] != true) {
+        await _notificationService.readNotificationService(noti['_id']);
+
+        setState(() {
+          noti['isRead'] = true;
+        });
+      }
+
+      final String? redirectTo = noti['redirectTo'];
+      final Map<String, dynamic>? data =
+      noti['data'] as Map<String, dynamic>?;
+
+      // Không có redirect -> mở bottom sheet detail
+      if (redirectTo == null || redirectTo.isEmpty) {
+        _showNotificationDetailBottomSheet(noti);
+        return;
+      }
+
+      switch (redirectTo) {
+        case 'detail-order':
+          final String? orderId = data?['orderId'];
+
+          if (orderId != null && orderId.isNotEmpty) {
+            // context.push(
+            //   '${CustomerRoutes.detailOrder}/$orderId',
+            // );
+            _showNotificationDetailBottomSheet(noti);
+
+          } else {
+            _showNotificationDetailBottomSheet(noti);
+          }
+          break;
+
+        default:
+          _showNotificationDetailBottomSheet(noti);
+      }
+    } catch (e) {
+      debugPrint('Handle notification error: $e');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể mở thông báo'),
+        ),
+      );
+    }
+  }
+
+  void _showNotificationDetailBottomSheet(
+      Map<String, dynamic> noti,
+      ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(24),
+        ),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 50,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: _secondaryColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      FontAwesomeIcons.bullhorn,
+                      color: _primaryColor,
+                      size: 22,
+                    ),
+                  ),
+
+                  const SizedBox(width: 14),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          noti['title'] ?? '',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: _textColor,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          FormatHelper.formatDateTime(
+                            noti['createdAt'],
+                          ),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _textColor.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              Text(
+                noti['content'] ?? '',
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.6,
+                  color: _textColor.withOpacity(0.8),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

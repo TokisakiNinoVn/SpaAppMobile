@@ -3,6 +3,7 @@ import 'package:spa_app/helper/logger_utils-ok.dart';
 import 'package:spa_app/screens/customer/address/add.dart';
 import 'package:spa_app/screens/customer/address/edit.dart';
 import 'package:spa_app/screens/customer/address/list.dart';
+import 'package:spa_app/screens/customer/order/canceled_screen.dart';
 import 'package:spa_app/screens/customer/rate/create_rate_screen.dart';
 import 'package:spa_app/screens/customer/rate/view_update_rate_screen.dart';
 import 'package:spa_app/screens/customer/services/automatic_matching/create_automatic_matching_order.dart';
@@ -19,6 +20,7 @@ import 'package:spa_app/screens/customer/services/automatic_matching/automatic_m
 import 'package:spa_app/screens/customer/services/books/book.dart';
 import 'package:spa_app/screens/customer/profile/update_profile.dart';
 import 'package:spa_app/screens/customer/services/now/order_now.dart';
+import 'package:spa_app/screens/customer/to_technician/create_profile_technician.dart';
 import 'package:spa_app/screens/customer/withdraw/confirm_request.dart';
 import 'package:spa_app/screens/customer/withdraw/create_request.dart';
 import 'package:spa_app/screens/customer/withdraw/history.dart';
@@ -40,6 +42,14 @@ final List<GoRoute> customerRoutes = [
           builder: (context, state) {
             final id = state.pathParameters['id']!;
             return DetailsOrderScreen(id: id);
+          },
+        ),
+
+        GoRoute(
+          path: 'cancel-order/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return CanceledOrderScreen(idOrder: id);
           },
         ),
 
@@ -93,6 +103,10 @@ final List<GoRoute> customerRoutes = [
         GoRoute(
           path: 'discounts',
           builder: (context, state) => ListDiscountScreen(),
+        ),
+        GoRoute(
+          path: 'create-profile-technician',
+          builder: (context, state) => CreateProfileTechnician(),
         ),
 
         GoRoute(

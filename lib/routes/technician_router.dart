@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import 'package:spa_app/screens/technician/add_technician_screen.dart';
+import 'package:spa_app/screens/technician/notification/technician_list_notification.dart';
 import 'package:spa_app/screens/technician/order/details_new_order.dart';
 import 'package:spa_app/screens/technician/service/technicianupdate_service.dart';
 import 'package:spa_app/screens/technician/technician/user_edit_technician.dart';
@@ -15,6 +16,10 @@ final List<GoRoute> technicianRoutes = [
         GoRoute(
           path: 'technician-update-service',
           builder: (context, state) => const TechnicianUpdateService(),
+        ),
+        GoRoute(
+          path: 'notifications',
+          builder: (context, state) => ListNotificationTechnician(),
         ),
         GoRoute(
           path: 'statistical',

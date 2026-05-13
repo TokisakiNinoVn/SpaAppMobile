@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +17,8 @@ import 'package:spa_app/services/tinhthanh_service_v2.dart';
 import 'package:spa_app/services/file_service.dart';
 import 'package:spa_app/services/service_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
+
+import '../storage/index.dart';
 
 class CreateTechnicianScreen extends StatefulWidget {
   const CreateTechnicianScreen({super.key});
@@ -266,29 +269,23 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       };
 
       final response = await technicianService.createTechnicianService(data);
+      // appLog("Response create technician: $response");
       if (response['success'] == true) {
         _uploadedImageIds.clear();
         _uploadedAvatarId = null;
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: const [
-                  Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                  SizedBox(width: 8),
-                  Text('Hồ sơ đã tạo thành công, chờ duyệt'),
-                ],
-              ),
-              backgroundColor: const Color(0xFF27AE60),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(40),
-              ),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          context.go(GlobalRouterConfig.login);
+          final isHaveTechnician = response['data']?['isHaveTechnician'] ?? false;
+
+          if (isHaveTechnician) {
+            await SharedPrefs.saveValue(PrefType.string, 'technician', response['data']?['technicianProfile']);
+            await SharedPrefs.saveValue(PrefType.string, 'serviceIds', response['data']?['technicianProfile']['serviceIds'] ?? []);
+            await SharedPrefs.saveValue(PrefType.string, 'inforService', response['data']?['inforService']);
+
+            SnackBarHelper.showSuccess(context, "Hồ sơ đã tạo thành công, chờ duyệt");
+            context.go('/home-technician');
+          }
+
         }
       } else {
         SnackBarHelper.showError(context, response['message'] ?? 'Có lỗi xảy ra khi tạo hồ sơ');

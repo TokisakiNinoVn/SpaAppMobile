@@ -668,7 +668,7 @@ class UserDetailWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Chi tiết tài khoản',
+                'Chi tiết tài khoản (Amin - v ok)',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

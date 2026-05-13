@@ -19,7 +19,13 @@ class FormatHelper {
 
   static String formatDateTime(String dateString) {
     final date = DateTime.parse(dateString);
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
+
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+
+    return '$day/$month/${date.year} $hour:$minute';
   }
 
   static String formatDate(String dateString) {

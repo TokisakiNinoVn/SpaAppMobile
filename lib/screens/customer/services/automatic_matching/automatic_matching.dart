@@ -49,7 +49,7 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
   Future<void> _loadAllServices() async {
     try {
       final response = await _serviceService.listBaseService();
-      appLog('List service: $response');
+      // appLog('List service: $response');
       setState(() {
         allServices = response['data'] ?? [];
         filteredServices = allServices;
