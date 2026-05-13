@@ -268,7 +268,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
         // }
 
         if (mounted) {
-          context.go('${GlobalRouterConfig.confirmLoginOTP}/$phone');
+          context.push('${GlobalRouterConfig.confirmLoginOTP}/$phone');
         }
       } else {
         final String errMsg = response?['message'] as String? ?? 'Có lỗi xảy ra';
@@ -313,7 +313,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
+                      Icons.home,
                       size: 18,
                       color: Color(0xFF333333),
                     ),
@@ -379,15 +379,15 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
                           filled: true,
                           fillColor: const Color(0xFFF8F8F8),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(40),
+                            borderRadius: BorderRadius.circular(10),
                             borderSide: BorderSide.none,
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(40),
+                            borderRadius: BorderRadius.circular(10),
                             borderSide: BorderSide.none,
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(40),
+                            borderRadius: BorderRadius.circular(10),
                             borderSide: BorderSide(
                               color: ColorConfig.primary,
                               width: 1,
@@ -455,7 +455,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
                   child: Column(
                     children: [
                       TextButton(
-                        onPressed: () => context.go('/login'),
+                        onPressed: () => context.push(GlobalRouterConfig.login),
                         child: const Text(
                           'Đăng nhập bằng mật khẩu',
                           style: TextStyle(
@@ -467,7 +467,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
                       ),
                       const SizedBox(height: 8),
                       TextButton(
-                        onPressed: () => context.go('/get-otp'),
+                        onPressed: () => context.push('/get-otp'),
                         child: const Text(
                           'Quên mật khẩu?',
                           style: TextStyle(
@@ -490,7 +490,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
                           ),
                           const SizedBox(width: 4),
                           GestureDetector(
-                            onTap: () => context.go(GlobalRouterConfig.register),
+                            onTap: () => context.push(GlobalRouterConfig.register),
                             child: Text(
                               'Đăng ký ngay',
                               style: TextStyle(

@@ -3,252 +3,261 @@ import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/routes/config/admin_router_config.dart';
 
+// ─── Data Model ───────────────────────────────────────────────────
+class _MenuItem {
+  final IconData icon;
+  final String title;
+  final String route;
+  final Color color;
+  final bool hasBadge;
+
+  const _MenuItem({
+    required this.icon,
+    required this.title,
+    required this.route,
+    required this.color,
+    this.hasBadge = false,
+  });
+}
+
+class _MenuGroup {
+  final String label;
+  final List<_MenuItem> items;
+
+  const _MenuGroup({required this.label, required this.items});
+}
+
+// ─── Widget ───────────────────────────────────────────────────────
 class GeneralManagementTab extends StatefulWidget {
   const GeneralManagementTab({super.key});
 
   @override
-  State<GeneralManagementTab> createState() => _AccountAdminTabState();
+  State<GeneralManagementTab> createState() => _GeneralManagementTabState();
 }
 
-class _AccountAdminTabState extends State<GeneralManagementTab> {
+class _GeneralManagementTabState extends State<GeneralManagementTab>
+    with SingleTickerProviderStateMixin {
   bool _isGridView = false;
+  late AnimationController _animController;
+  late Animation<double> _fadeAnim;
 
-  final List<Map<String, dynamic>> _menuItems = [
-    {
-      'icon': Icons.person_outline,
-      'title': 'Quản lý tài khoản',
-      'route': AdminRouterConfig.technicianManagementAccount,
-      'color': Colors.blue,
-    },
-    {
-      'icon': Icons.payment,
-      'title': 'Quản lý ngân hàng',
-      'route': AdminRouterConfig.managementBank,
-      'color': Colors.purple,
-    },
-    {
-      'icon': Icons.outbond,
-      'title': 'Yêu cầu rút tiền',
-      'route': AdminRouterConfig.listWithdraw,
-      'color': Color(0xFFF3A4A4),
-      'badge': '',
-    },
-    {
-      'icon': Icons.menu_open,
-      'title': 'Quản lý dịch vụ',
-      'route': AdminRouterConfig.managementService,
-      'color': Colors.pink,
-    },
-    {
-      'icon': Icons.airplane_ticket_outlined,
-      'title': 'Q.lý mã Voucher/Ưu đãi',
-      'route': AdminRouterConfig.managementDiscount,
-      'color': Colors.redAccent,
-    },
-    // {
-    //   'icon': Icons.airplane_ticket_outlined,
-    //   'title': 'Quản lý Ưu đãi',
-    //   'route': AdminRouterConfig.managementDiscount,
-    //   'color': Colors.redAccent,
-    // },
-    {
-      'icon': Icons.notifications_outlined,
-      'title': 'Thông báo hệ thống',
-      'route': AdminRouterConfig.notificationManagement,
-      'color': Colors.red,
-      'badge': '',
-    },
-    {
-      'icon': Icons.airplay_sharp,
-      'title': 'Quản lý banner',
-      'route': AdminRouterConfig.managementBanner,
-      'color': Colors.greenAccent,
-    },
-    {
-      'icon': Icons.airplay_sharp,
-      'title': 'Cài đặt hiển thị dịch vụ',
-      'route': AdminRouterConfig.listFeatureService,
-      'color': Color(0x69680B75),
-    },
-    {
-      'icon': Icons.bar_chart_outlined,
-      'title': "Thống kê",
-      'route': AdminRouterConfig.statistical,
-      'color': Colors.green,
-    },
-
-    {
-      'icon': Icons.report_gmailerrorred,
-      'title': "Báo cáo",
-      'route': AdminRouterConfig.listReport,
-      'color': Colors.red,
-      'badge': '',
-    },
-    // {
-    //   'icon': Icons.settings_outlined,
-    //   'title': 'Cài đặt hệ thống',
-    //   'route': AdminRouterConfig.settingApp,
-    //   'color': Colors.orange,
-    // },
+  // ── Menu phân nhóm ──────────────────────────────────────────────
+  static List<_MenuGroup> _groups = [
+    _MenuGroup(
+      label: 'Tài khoản & Tài chính',
+      items: [
+        _MenuItem(
+          icon: Icons.person_outline_rounded,
+          title: 'Quản lý tài khoản',
+          route: AdminRouterConfig.technicianManagementAccount,
+          color: const Color(0xFF6C63FF),
+        ),
+         _MenuItem(
+          icon: Icons.account_balance_outlined,
+          title: 'Quản lý ngân hàng',
+          route: AdminRouterConfig.managementBank,
+          color: Color(0xFF9B59B6),
+        ),
+         _MenuItem(
+          icon: Icons.outbond_outlined,
+          title: 'Yêu cầu rút tiền',
+          route: AdminRouterConfig.listWithdraw,
+          color: Color(0xFFE74C3C),
+          hasBadge: true,
+        ),
+      ],
+    ),
+     _MenuGroup(
+      label: 'Dịch vụ & Ưu đãi',
+      items: [
+        _MenuItem(
+          icon: Icons.menu_book_outlined,
+          title: 'Quản lý dịch vụ, giá',
+          route: AdminRouterConfig.managementService,
+          color: Color(0xFFE91E8C),
+        ),
+        _MenuItem(
+          icon: Icons.airplane_ticket_outlined,
+          title: 'Voucher / Ưu đãi',
+          route: AdminRouterConfig.managementDiscount,
+          color: Color(0xFFF44336),
+        ),
+      ],
+    ),
+     _MenuGroup(
+      label: 'Nội dung & Hiển thị',
+      items: [
+        _MenuItem(
+          icon: Icons.image_outlined,
+          title: 'Quản lý banner',
+          route: AdminRouterConfig.managementBanner,
+          color: Color(0xFF27AE60),
+        ),
+        _MenuItem(
+          icon: Icons.tune_rounded,
+          title: 'Cài đặt hiển thị dịch vụ nổi bật',
+          route: AdminRouterConfig.listFeatureService,
+          color: Color(0xFF7C4DFF),
+        ),
+      ],
+    ),
+     _MenuGroup(
+      label: 'Thông báo & Thống kê',
+      items: [
+        _MenuItem(
+          icon: Icons.notifications_outlined,
+          title: 'Thông báo hệ thống',
+          route: AdminRouterConfig.notificationManagement,
+          color: Color(0xFFE67E22),
+          hasBadge: true,
+        ),
+        _MenuItem(
+          icon: Icons.bar_chart_rounded,
+          title: 'Thống kê',
+          route: AdminRouterConfig.statistical,
+          color: Color(0xFF2E7D32),
+        ),
+      ],
+    ),
   ];
 
   @override
   void initState() {
     super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _fadeAnim = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOut,
+    );
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
   }
 
   void _toggleViewMode() {
-    setState(() {
-      _isGridView = !_isGridView;
-    });
+    setState(() => _isGridView = !_isGridView);
+    _animController.forward(from: 0);
   }
 
-  Widget _buildGridItem(Map<String, dynamic> item) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () {
-          // Chuyển đến màn hình tương ứng
-          context.push(item['route']);
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Stack(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: item['color'].withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      item['icon'],
-                      size: 32,
-                      color: item['color'],
-                    ),
+  // ── Header ──────────────────────────────────────────────────────
+  Widget _buildHeader() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Admin Panel',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade400,
+                    letterSpacing: .6,
+                    fontWeight: FontWeight.w500,
                   ),
-                  if (item.containsKey('badge'))
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          item['badge'],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                item['title'],
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+                const SizedBox(height: 2),
+                const Text(
+                  'Quản lý chung',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A2E),
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
           ),
+          _ViewToggle(
+            isGridView: _isGridView,
+            onToggle: _toggleViewMode,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Section label ───────────────────────────────────────────────
+  Widget _buildSectionLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 2, bottom: 8, top: 4),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: Colors.black,
+          letterSpacing: .9,
         ),
       ),
     );
   }
 
-  Widget _buildListItem(Map<String, dynamic> item) {
+  // ── List item ───────────────────────────────────────────────────
+  Widget _buildListItem(_MenuItem item) {
+    final bgColor = item.color.withOpacity(0.1);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [
-            ColorConfig.primary,
-            ColorConfig.primary.withOpacity(.7),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.only(bottom: 5),
       child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            context.push(item['route']);
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => context.push(item.route),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 11,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFFEAEAEA),
+                width: .8,
+              ),
+            ),
             child: Row(
               children: [
-                // ICON
+                // Icon
                 Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      width: 42,
+                      height: 42,
                       decoration: BoxDecoration(
-                        color: ColorConfig.white,
-                        shape: BoxShape.circle,
+                        color: bgColor,
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        item['icon'],
-                        color: item['color'],
-                        size: 22,
+                        item.icon,
+                        color: item.color,
+                        size: 20,
                       ),
                     ),
-                    if (item.containsKey('badge'))
+
+                    if (item.hasBadge)
                       Positioned(
-                        right: 0,
-                        top: 0,
+                        right: -2,
+                        top: -2,
                         child: Container(
-                          padding: const EdgeInsets.all(3),
+                          width: 9,
+                          height: 9,
                           decoration: const BoxDecoration(
-                            color: Colors.red,
+                            color: Color(0xFFFF4D4D),
                             shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            item['badge'],
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
@@ -257,30 +266,23 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
 
                 const SizedBox(width: 14),
 
-                // TITLE
+                // Title
                 Expanded(
                   child: Text(
-                    item['title'],
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
+                    item.title,
+                    style: const TextStyle(
                       fontSize: 16,
-                      color: ColorConfig.white
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A2E),
                     ),
                   ),
                 ),
 
-                // ARROW
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.05),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 16,
-                    color: Colors.white,
-                  ),
+                // Arrow
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 13,
+                  color: Colors.grey,
                 ),
               ],
             ),
@@ -290,110 +292,222 @@ class _AccountAdminTabState extends State<GeneralManagementTab> {
     );
   }
 
+  // ── Grid item ───────────────────────────────────────────────────
+  Widget _buildGridItem(_MenuItem item) {
+    final bgColor = item.color.withOpacity(0.1);
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => context.push(item.route),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFEAEAEA), width: .8),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(item.icon, color: item.color, size: 22),
+                  ),
+                  if (item.hasBadge)
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFF4D4D),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                item.title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A2E),
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── List view ───────────────────────────────────────────────────
+  Widget _buildListView() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: _groups.map((group) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionLabel(group.label),
+            ...group.items.map(_buildListItem),
+            const SizedBox(height: 8),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  // ── Grid view ───────────────────────────────────────────────────
+  Widget _buildGridView() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: _groups.map((group) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionLabel(group.label),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.1,
+              children: group.items.map(_buildGridItem).toList(),
+            ),
+            const SizedBox(height: 16),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F8FA),
       body: SafeArea(
         child: Column(
           children: [
-            // Header với title và nút chuyển đổi
-            Container(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Quản lý chung',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: ColorConfig.primaryBackground,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildViewModeButton(
-                          icon: Icons.grid_view,
-                          isSelected: _isGridView,
-                          onTap: _toggleViewMode,
-                        ),
-                        _buildViewModeButton(
-                          icon: Icons.view_list,
-                          isSelected: !_isGridView,
-                          onTap: _toggleViewMode,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Nội dung chính
+            _buildHeader(),
+            const SizedBox(height: 1),
             Expanded(
-              child: _isGridView ? _buildGridView() : _buildListView(),
+              child: FadeTransition(
+                opacity: _fadeAnim,
+                child: _isGridView ? _buildGridView() : _buildListView(),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildViewModeButton({
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(30),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(30),
+// ─── Toggle Button Component ─────────────────────────────────────
+class _ViewToggle extends StatelessWidget {
+  final bool isGridView;
+  final VoidCallback onToggle;
+
+  const _ViewToggle({required this.isGridView, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    const activeColor = Color(0xFF6C63FF);
+    const activeBg = Color(0xFF6C63FF);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F0F5),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      padding: const EdgeInsets.all(3),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ToggleBtn(
+            icon: Icons.view_list_rounded,
+            label: 'List',
+            isActive: !isGridView,
+            activeBg: activeBg,
+            onTap: !isGridView ? null : onToggle,
           ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: isSelected ? Colors.white : Colors.grey,
+          _ToggleBtn(
+            icon: Icons.grid_view_rounded,
+            label: 'Grid',
+            isActive: isGridView,
+            activeBg: activeBg,
+            onTap: isGridView ? null : onToggle,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToggleBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final Color activeBg;
+  final VoidCallback? onTap;
+
+  const _ToggleBtn({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.activeBg,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isActive ? activeBg : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: isActive ? Colors.white : Colors.grey.shade500,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isActive ? Colors.white : Colors.grey.shade500,
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildGridView() {
-    return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, // 2 cột
-        childAspectRatio: 0.9, // Tỷ lệ chiều cao/rộng
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: _menuItems.length,
-      itemBuilder: (context, index) {
-        return _buildGridItem(_menuItems[index]);
-      },
-    );
-  }
-
-  Widget _buildListView() {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 30),
-      itemCount: _menuItems.length,
-      itemBuilder: (context, index) {
-        return _buildListItem(_menuItems[index]);
-      },
     );
   }
 }

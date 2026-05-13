@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/handlers/auth_response_handler.dart';
 import 'package:spa_app/helper/check_login_helper.dart';
 import 'package:spa_app/helper/shared_preferences_helper.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
+import 'package:spa_app/services/auth_service.dart';
 import 'package:spa_app/services/user_service.dart';
 
 import '../../../../storage/index.dart';
@@ -19,6 +21,7 @@ class FeatureSection extends StatefulWidget {
 
 class _FeatureSectionState extends State<FeatureSection> {
   final UserService _userService = UserService();
+  final AuthService _authService = AuthService();
 
   bool _isLogin = false;
   bool _isSwitchingRole = false;
@@ -39,23 +42,31 @@ class _FeatureSectionState extends State<FeatureSection> {
   Future<void> _changeRole() async {
     setState(() => _isSwitchingRole = true);
     try {
-      final response = await _userService.changeRoleService({
-
+      final response = await _authService.switchRoleAccount({
+        "roleChangeTo": "ktv",
       });
       if (!mounted) return;
 
-      if (response['success'] == true) {
-        SnackBarHelper.showSuccess(context, "Chuyển đổi vai trò thành công!");
-        await SharedPreferencesHelper.logOut();
-        if (mounted) {
-          context.go(GlobalRouterConfig.loginOTP);
-        }
-      } else {
-        SnackBarHelper.showError(
-          context,
-          response['message'] ?? "Lỗi chuyển đổi vai trò!",
-        );
-      }
+      await SharedPreferencesHelper.logOut();
+
+      await AuthResponseHandler.handleLoginResponse(
+        context: context,
+        response: response,
+      );
+
+
+      // if (response['success'] == true) {
+      //   SnackBarHelper.showSuccess(context, "Chuyển đổi vai trò thành công!");
+      //   await SharedPreferencesHelper.logOut();
+      //   if (mounted) {
+      //     context.go(GlobalRouterConfig.loginOTP);
+      //   }
+      // } else {
+      //   SnackBarHelper.showError(
+      //     context,
+      //     response['message'] ?? "Lỗi chuyển đổi vai trò!",
+      //   );
+      // }
     } catch (e) {
       if (mounted) {
         SnackBarHelper.showError(context, "Lỗi: $e");

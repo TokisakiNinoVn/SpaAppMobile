@@ -139,74 +139,6 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => isLoading = false);
       }
     }
-
-    // try {
-    //   final response = await authService.loginService({
-    //     "phone": phone,
-    //     "password": password,
-    //     "fcm_token": fcm,
-    //     "device_type": "android",
-    //   });
-    //
-    //   final prefs = await SharedPreferences.getInstance();
-    //
-    //   if (response['token'] != null) {
-    //     await prefs.setString('token', response['token']);
-    //     await prefs.setBool('isLogin', true);
-    //     await prefs.setString('inforUserLogin', jsonEncode(response['data']));
-    //     await prefs.setString('role', jsonEncode(response['data']?['rolesActive']));
-    //     await prefs.setBool('rememberMe', rememberMe);
-    //
-    //     await prefs.setString('statusAccount', jsonEncode(response['data']?['status']));
-    //     await prefs.setString('isTechnicianActive', jsonEncode(response['data']?['isTechnicianActive'] ?? false));
-    //
-    //     if (rememberMe) {
-    //       await prefs.setString('loginData', jsonEncode({
-    //         'phone': phone,
-    //         'password': password,
-    //       }));
-    //     } else {
-    //       await prefs.remove('loginData');
-    //     }
-    //
-    //     final role = response['data']?['rolesActive'];
-    //     final isHaveTechnician = response['data']?['isHaveTechnician'] ?? false;
-    //
-    //     if (role == 'admin') {
-    //       context.go('/home-admin');
-    //     } else if (role == 'ktv') {
-    //       if (isHaveTechnician) {
-    //         await prefs.setString('technician', jsonEncode(response['data']?['technicianProfile']));
-    //         await prefs.setString('serviceIds', jsonEncode(response['data']?['technicianProfile']?['serviceIds'] ?? []));
-    //         await prefs.setString(
-    //           'inforService',
-    //           jsonEncode(response['data']?['inforService'] ?? []),
-    //         );
-    //
-    //         context.go('/home-technician');
-    //       } else {
-    //         SnackBarHelper.showWarning(context, "Bạn đã đăng ký tài khoản nhưng chưa tạo hồ sơ!");
-    //         context.go('/create-technician');
-    //       }
-    //     } else if (role == 'quanly') {
-    //       context.go('/home-quanly');
-    //     } else if (role == 'customer') {
-    //       await prefs.setString('customerProfile', jsonEncode(response['data']?['customerProfile']));
-    //       await SharedPrefs.saveValue(PrefType.bool, "isHaveTechnician", isHaveTechnician);
-    //
-    //       context.go('/home-customer');
-    //     }
-    //   } else {
-    //     SnackBarHelper.showError(context, response['message'] ?? "Đăng nhập thất bại");
-    //   }
-    // } catch (e) {
-    //   debugPrint('Lỗi đăng nhập: $e');
-    //   SnackBarHelper.showError(context, "Lỗi kết nối hoặc hệ thống. Vui lòng thử lại!");
-    // } finally {
-    //   if (mounted) {
-    //     setState(() => isLoading = false);
-    //   }
-    // }
   }
 
   @override
@@ -262,6 +194,49 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: ColorConfig.primaryBackground,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: ColorConfig.primaryBackground,
+        elevation: 0,
+        title: Row(
+          children: [
+            InkWell(
+              onTap: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.push(GlobalRouterConfig.loginOTP);
+                }
+              },
+              borderRadius: BorderRadius.circular(40),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+            ),
+            // const SizedBox(width: 16),
+            // const Expanded(
+            //   child: Text(
+            //     "Đăng nhập bằng OTP",
+            //     style: TextStyle(
+            //       color: Color(0xFF1A1A1A),
+            //       fontWeight: FontWeight.w600,
+            //       fontSize: 16,
+            //     ),
+            //   ),
+            // ),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -399,7 +374,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(width: 4),
                   GestureDetector(
-                    onTap: () => context.go(GlobalRouterConfig.loginOTP),
+                    onTap: () => context.push(GlobalRouterConfig.loginOTP),
                     child: Text(
                       'OTP',
                       style: TextStyle(
@@ -426,7 +401,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(width: 4),
                   GestureDetector(
-                    onTap: () => context.go(GlobalRouterConfig.register),
+                    onTap: () => context.push(GlobalRouterConfig.register),
                     child: Text(
                       'Đăng ký',
                       style: TextStyle(
@@ -440,7 +415,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
 
               TextButton(
-                onPressed: () => context.go(GlobalRouterConfig.getOptForgotPassword),
+                onPressed: () => context.push(GlobalRouterConfig.getOptForgotPassword),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                 ),

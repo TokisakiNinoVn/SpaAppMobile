@@ -375,7 +375,7 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8F8F8),
-                  borderRadius: BorderRadius.circular(40),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
                   children: [
