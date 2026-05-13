@@ -580,8 +580,7 @@ class _AccountTabState extends State<AccountTab> {
                   ),
                 ),
 
-                // const SizedBox(height: 20),
-                if(!isAdmin)...[
+                const SizedBox(height: 20),
                   Column(
                     children: [
                       _buildActionButton(
@@ -611,7 +610,6 @@ class _AccountTabState extends State<AccountTab> {
                   ),
 
                   const SizedBox(height: 24),
-                ],
 
 
                 // Các nút hành động
