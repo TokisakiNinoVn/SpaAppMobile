@@ -1,6 +1,6 @@
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/notification_api.dart';
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 
 class NotificationService {
   Future<Map<String, dynamic>> createNotificationService( Map<String, dynamic> data) async {

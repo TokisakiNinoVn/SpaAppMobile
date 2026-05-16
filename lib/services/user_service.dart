@@ -3,7 +3,7 @@
 
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/user_api.dart';
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 
 class UserService {
   Future<Map<String, dynamic>> getAllUserService() async {
@@ -51,6 +51,7 @@ class UserService {
   }
 
   Future<Map<String, dynamic>> loadDetailUserService() async {
+    // appLog("Url: ${UserApiRoutes.detailUser}");
     return await ApiMethodsPrivate.getRequest(
       '${UserApiRoutes.detailUser}',
     );

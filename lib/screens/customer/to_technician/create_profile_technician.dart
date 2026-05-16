@@ -1,23 +1,22 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
 
 import 'package:spa_app/config/color_config.dart';
-import 'package:spa_app/config/theme_config.dart';
+import 'package:spa_app/helper/fcm_helper.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
-import 'package:spa_app/routes/config/global_router_config.dart';
+import 'package:spa_app/screens/widgets/district_picker_bottom_sheet.dart';
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
 import 'package:spa_app/services/tinhthanh_service_v2.dart';
 import 'package:spa_app/services/file_service.dart';
 import 'package:spa_app/services/service_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
-
+import 'package:spa_app/screens/widgets/date_of_birth_picker_bottom_sheet.dart';
+import 'package:spa_app/utils/file_util.dart';
 import '../../../storage/index.dart';
 
 class CreateProfileTechnician extends StatefulWidget {
@@ -36,19 +35,22 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
   final technicianService = TechnicianService();
   final tinhThanhService = TinhThanhService();
   final fileService = FileService();
+  final FileUtils _fileUtils = FileUtils();
 
   bool isLoading = false;
   List<dynamic> provinces = [];
   List<dynamic> districts = [];
   dynamic selectedProvince;
   List<dynamic> selectedDistricts = [];
-  String? selectedYear;
   String? experience;
   List<Map<String, dynamic>> images = [];
   Map<String, dynamic>? avatarImage;
 
   List<String> _uploadedImageIds = [];
   String? _uploadedAvatarId;
+  String? fcmToken;
+
+  DateTime? selectedDate;
 
   final _provinceSearchController = TextEditingController();
   final _districtSearchController = TextEditingController();
@@ -57,7 +59,6 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
   List<dynamic> filteredProvinces = [];
   List<dynamic> filteredDistricts = [];
   List<dynamic> filteredServices = [];
-
   List<dynamic> selectedServiceIds = [];
   List<dynamic>? allServices = [];
 
@@ -76,7 +77,8 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
     _serviceSearchController.addListener(_filterServices);
     _loadProvinces();
     _loadAllServices();
-    _generateYearsList();
+    // _generateYearsList();
+    _initFCM();
   }
 
   @override
@@ -89,15 +91,13 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
     super.dispose();
   }
 
-  void _generateYearsList() {
-    final currentYear = DateTime.now().year;
-    final minYear = currentYear - 100;
-    final maxYear = currentYear - 18;
+  Future<void> _initFCM() async {
+    final token = await FcmHelper.getFCMToken();
 
-    years = List.generate(
-      maxYear - minYear + 1,
-          (index) => (minYear + index).toString(),
-    ).reversed.toList(); // Đảo ngược để năm gần nhất lên đầu
+    if (token != null) {
+      // appLog('FCM TOKEN: $token');
+      fcmToken = token;
+    }
   }
 
   void _filterProvinces() {
@@ -219,11 +219,8 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
       SnackBarHelper.showWarning(context, 'Vui lòng nhập họ tên');
       return;
     }
-
-    final currentYear = DateTime.now().year;
-    final selectedYearInt = int.tryParse(selectedYear!);
-    if (selectedYearInt == null || (currentYear - selectedYearInt) < 18) {
-      SnackBarHelper.showWarning(context, 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký');
+    if (avatarImage == null) {
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn ảnh đại diện');
       return;
     }
 
@@ -235,8 +232,13 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
       SnackBarHelper.showWarning(context, 'Vui lòng nhập địa chỉ nơi ở');
       return;
     }
-    if (selectedYear == null) {
-      SnackBarHelper.showWarning(context, 'Vui lòng chọn năm sinh');
+    if (selectedDate == null) {
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn ngày sinh');
+      return;
+    }
+    final age = DateTime.now().difference(selectedDate!).inDays ~/ 365;
+    if (age < 18) {
+      SnackBarHelper.showWarning(context, 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký');
       return;
     }
     if (experience == null) {
@@ -261,15 +263,16 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
         'province': selectedProvince['name'],
         'districts': selectedDistricts.map((d) => d['name']).toList(),
         'address': address,
-        'yearOfBirth': int.tryParse(selectedYear.toString()),
+        'dateOfBirth': selectedDate?.toUtc().toIso8601String(),
         'experience': experience,
         'images': images,
         'serviceIds': selectedServiceIds.map((s) => s['_id']).toList(),
         'gender': selectedGender,
+        "fcm_token": fcmToken,
       };
 
       final response = await technicianService.createTechnicianService(data);
-      // appLog("Response create technician: $response");
+      appLog("Response create technician: $response");
       if (response['success'] == true) {
         _uploadedImageIds.clear();
         _uploadedAvatarId = null;
@@ -335,33 +338,19 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      await _cropImage(File(pickedFile.path), isAvatar: isAvatar);
-    }
-  }
-
-  Future<void> _cropImage(File imageFile, {bool isAvatar = false}) async {
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: imageFile.path,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Cắt ảnh',
-          toolbarColor: const Color(0xFF1A1A1A),
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.square,
-          lockAspectRatio: true,
-        ),
-        IOSUiSettings(
-          title: 'Cắt ảnh',
-          aspectRatioLockEnabled: true,
-          resetAspectRatioEnabled: false,
-          aspectRatioPickerButtonHidden: true,
-        ),
-      ],
-    );
-
-    if (croppedFile != null) {
-      await uploadImage(croppedFile.path, isAvatar: isAvatar);
+      // Tỉ lệ crop: avatar 1:1, ảnh thường 16:9
+      final double ratioX = isAvatar ? 1.0 : 1.0;
+      final double ratioY = isAvatar ? 1.0 : 1.0;
+      final File? croppedImage = await _fileUtils.cropImage(
+        File(pickedFile.path),
+        ratioX,
+        ratioY,
+      );
+      if (croppedImage != null) {
+        await uploadImage(croppedImage.path, isAvatar: isAvatar);
+      } else {
+        SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
+      }
     }
   }
 
@@ -447,7 +436,6 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
   }
 
   // ── Bottom sheets ──────────────────────────────────────────────
-
   void _showProvinceBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -474,83 +462,32 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
     );
   }
 
-  void _showDistrictBottomSheet() {
+  void _showDistrictBottomSheet() async {
     if (selectedProvince == null) {
       SnackBarHelper.showWarning(context, 'Vui lòng chọn tỉnh/thành phố trước');
       return;
     }
 
-    showModalBottomSheet(
+    // Chuyển districts (List<dynamic>) thành List<District>
+    final districtList = districts.map((d) => District.fromJson(d)).toList();
+
+    // Lấy danh sách id đã chọn từ selectedDistricts
+    final Set<int> selectedIds = selectedDistricts.map((d) => d['id'] as int).toSet();
+
+    // Chọn đúng các đối tượng District từ districtList dựa trên id
+    final initialSelectedList = districtList.where((d) => selectedIds.contains(d.id)).toList();
+
+    final result = await showDistrictPickerBottomSheet(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-      ),
-      builder: (context) => FractionallySizedBox(
-        heightFactor: 0.8,
-        child: StatefulBuilder(
-          builder: (context, setStateModal) {
-            return Container(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 20,
-                right: 20,
-                top: 20,
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  _buildSheetHandle(),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Chọn quận/huyện',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSearchField(_districtSearchController, 'Tìm kiếm quận/huyện'),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: filteredDistricts.length,
-                      itemBuilder: (context, index) {
-                        final district = filteredDistricts[index];
-                        final isSelected = selectedDistricts.contains(district);
-                        return CheckboxListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            district['name'],
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFF666666),
-                            ),
-                          ),
-                          value: isSelected,
-                          activeColor: const Color(0xFF1A1A1A),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-                          onChanged: (bool? value) {
-                            setStateModal(() {
-                              if (value == true) {
-                                selectedDistricts.add(district);
-                              } else {
-                                selectedDistricts.remove(district);
-                              }
-                            });
-                            setState(() {});
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildConfirmButton(() => Navigator.pop(context)),
-                  const SizedBox(height: 10),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
+      districts: districtList,
+      initialSelected: initialSelectedList,
     );
+
+    if (result != null) {
+      setState(() {
+        selectedDistricts = result.map((d) => d.rawData ?? d.toJson()).toList();
+      });
+    }
   }
 
   void _showServicesBottomSheet() {
@@ -682,80 +619,50 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
     );
   }
 
-  void _showYearBottomSheet() {
-    final currentYear = DateTime.now().year;
-    final maxYear = currentYear - 18; // Chỉ cho phép đến 18 tuổi
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-      ),
-      builder: (context) => Container(
-        height: 350,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Chọn năm sinh',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
-                ),
-                // Thêm indicator tuổi
-                Text(
-                  'Phải >= 18 tuổi',
-                  style: TextStyle(fontSize: 12, color: ColorConfig.primary),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Được chọn năm sinh từ 19xx đến $maxYear',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: years.length,
-                itemBuilder: (context, index) {
-                  final year = years[index];
-                  final yearInt = int.tryParse(year) ?? 0;
-                  final isDisabled = yearInt > maxYear; // Vô hiệu hóa năm không hợp lệ
-
-                  return Opacity(
-                    opacity: isDisabled ? 0.5 : 1.0,
-                    child: ListTile(
-                      title: Text(
-                        year,
-                        style: TextStyle(
-                          color: isDisabled ? Colors.grey : null,
-                        ),
-                      ),
-                      onTap: isDisabled
-                          ? null
-                          : () {
-                        setState(() => selectedYear = year);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // void _showDateOfBirthBottomSheet() {
+  //   final currentDate = DateTime.now();
+  //   final minDate = DateTime(currentDate.year - 100, currentDate.month, currentDate.day);
+  //   final maxDate = DateTime(currentDate.year - 18, currentDate.month, currentDate.day);
+  //
+  //   showModalBottomSheet(
+  //     context: context,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  //     ),
+  //     builder: (context) => Container(
+  //       height: 380,
+  //       padding: const EdgeInsets.all(20),
+  //       child: Column(
+  //         children: [
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               const Text(
+  //                 'Chọn ngày sinh',
+  //                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+  //               ),
+  //             ],
+  //           ),
+  //           const SizedBox(height: 16),
+  //           Expanded(
+  //             child: CupertinoDatePicker(
+  //               mode: CupertinoDatePickerMode.date,
+  //               initialDateTime: selectedDate ?? maxDate,
+  //               minimumDate: minDate,
+  //               maximumDate: maxDate,
+  //               onDateTimeChanged: (DateTime newDate) {
+  //                 setState(() => selectedDate = newDate);
+  //               },
+  //             ),
+  //           ),
+  //           const SizedBox(height: 12),
+  //           _buildConfirmButton(() => Navigator.pop(context)),
+  //           const SizedBox(height: 10),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   // ── Shared helpers ─────────────────────────────────────────────
   Widget _buildSheetHandle() {
@@ -872,7 +779,7 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                   margin: EdgeInsets.only(
                     right: option['value'] != 'other' ? 10 : 0,
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
                   decoration: BoxDecoration(
                     color: isSelected ? ColorConfig.primary : const Color(0xFFF8F8F8),
                     borderRadius: BorderRadius.circular(40),
@@ -1051,7 +958,7 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
           color: const Color(0xFFF8F8F8),
           borderRadius: BorderRadius.circular(40),
@@ -1088,48 +995,52 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: ColorConfig.primaryBackground,
+          elevation: 0,
+          title: Row(
+            children: [
+              InkWell(
+                // onTap: () => context.pop(),
+                onTap: () async {
+                  final shouldPop = await _onWillPop();
+                  if (shouldPop) context.go('/login');
+                },
+                borderRadius: BorderRadius.circular(40),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 18,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Tạo hồ sơ kỹ thuật viên',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: ColorConfig.black,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: ColorConfig.primaryBackground,
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
             child: Column(
               children: [
-                // Back button
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    onTap: () async {
-                      final shouldPop = await _onWillPop();
-                      if (shouldPop) context.go('/login');
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5F5F5),
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 18,
-                        color: Color(0xFF333333),
-                      ),
-                    ),
-                  ),
-                ),
-
-                Text(
-                  'Tạo hồ sơ kỹ thuật viên',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: ColorConfig.primary,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
                 const Text(
                   'Hoàn tất hồ sơ để trở thành đối tác',
                   style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
@@ -1139,7 +1050,7 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
 
                 _buildAvatarSection(),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 0),
 
                 _buildTextField(
                   controller: fullnameController,
@@ -1147,7 +1058,7 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                   hint: 'Nguyễn Văn A',
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
 
                 _buildGenderSection(),
 
@@ -1164,7 +1075,7 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                             style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
                           const SizedBox(height: 6),
                           _buildLocationField(
-                            label: 'Chọn tỉnh/thành phố',
+                            label: 'Chọn',
                             value: selectedProvince?['name'],
                             onTap: _showProvinceBottomSheet,
                             isLoading: isProvincesLoading,
@@ -1181,7 +1092,7 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                               style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
                           const SizedBox(height: 6),
                           _buildLocationField(
-                            label: 'Chọn quận/huyện',
+                            label: 'Chọn',
                             value: selectedDistricts.isEmpty
                                 ? null
                                 : '${selectedDistricts.length} đã chọn',
@@ -1222,10 +1133,27 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                             ],
                           ),
                           const SizedBox(height: 6),
+
                           _buildLocationField(
-                            label: 'Chọn năm sinh',
-                            value: selectedYear,
-                            onTap: _showYearBottomSheet,
+                            label: 'Chọn ngày sinh',
+                            value: selectedDate != null
+                                ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                                : null,
+                            onTap: () async {
+                              final currentDate = DateTime.now();
+                              final minDate = DateTime(currentDate.year - 100, currentDate.month, currentDate.day);
+                              final maxDate = DateTime(currentDate.year - 18, currentDate.month, currentDate.day);
+
+                              final picked = await showDateOfBirthPickerBottomSheet(
+                                context: context,
+                                initialDate: selectedDate ?? maxDate,
+                                minimumDate: minDate,
+                                maximumDate: maxDate,
+                              );
+                              if (picked != null) {
+                                setState(() => selectedDate = picked);
+                              }
+                            },
                           ),
                         ],
                       ),
@@ -1239,7 +1167,7 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                               style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
                           const SizedBox(height: 6),
                           _buildLocationField(
-                            label: 'Chọn kinh nghiệm',
+                            label: 'Chọn',
                             value: experience,
                             onTap: _showExperienceBottomSheet,
                           ),
@@ -1298,7 +1226,7 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                       child: OutlinedButton(
                         onPressed: isLoading ? null : () async {
                           final shouldPop = await _onWillPop();
-                          if (shouldPop) context.go('/login');
+                          if (shouldPop) context.pop();
                         },
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),

@@ -20,7 +20,8 @@ void appLog(String message, {Object? data}) {
   if (data != null) {
     try {
       // Pretty JSON – KHÔNG bị ...
-      dataString = '\nDATA:\n${const JsonEncoder.withIndent('  ').convert(data)}';
+      dataString =
+      '\nDATA:\n${const JsonEncoder.withIndent('  ').convert(data)}';
     } catch (_) {
       // Fallback nếu object không encode được
       dataString = '\nDATA:\n${data.toString()}';
@@ -31,8 +32,17 @@ void appLog(String message, {Object? data}) {
 [$callerInfo] $message$dataString
 ''';
 
-  developer.log(
-    fullMessage,
-    name: 'APP_LOG',
-  );
+  // Chia nhỏ log để không bị truncate
+  const chunkSize = 800;
+
+  for (var i = 0; i < fullMessage.length; i += chunkSize) {
+    final end = (i + chunkSize < fullMessage.length)
+        ? i + chunkSize
+        : fullMessage.length;
+
+    developer.log(
+      fullMessage.substring(i, end),
+      name: 'APP_LOG',
+    );
+  }
 }

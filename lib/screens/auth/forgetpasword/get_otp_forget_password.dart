@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/services/auth_service.dart';
 

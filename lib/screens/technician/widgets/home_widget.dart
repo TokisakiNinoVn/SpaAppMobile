@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:spa_app/config/color_config.dart';
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/shared_preferences_helper.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/technician_router_config.dart';
@@ -33,12 +33,14 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   Map<String, dynamic>? technicianData;
   List<dynamic>? inforService;
   Map<String, dynamic>? inforLogin;
+
   bool isLoading = true;
   bool isUpdating = false;
   bool isUpdatingLocation = false;
   bool checkPermission = false;
   bool isTechnicianActive = false;
   bool isProfileActive = false;
+
   String role = '';
   String statusAccount = '';
   Map<String, dynamic>? userData;

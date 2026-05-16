@@ -8,7 +8,7 @@ import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/handlers/auth_response_handler.dart';
 import 'package:spa_app/helper/format_helper.dart';
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/shared_preferences_helper.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
@@ -167,7 +167,7 @@ class _AccountTabState extends State<AccountTab> {
   }
 
   Future<void> _loadUserDetail() async {
-    await SharedPreferencesHelper.listAllKeyValue();
+    // await SharedPreferencesHelper.listAllKeyValue();
     final userInfoJson = await SharedPrefs.getValue(PrefType.string, "inforUserLogin") ?? '';
     final rolesActiveStr = await SharedPrefs.getValue(PrefType.string, "rolesActive") ?? '';
     final rolesJsonStr = await SharedPrefs.getValue(PrefType.string, "roles") ?? '[]';
@@ -185,6 +185,8 @@ class _AccountTabState extends State<AccountTab> {
 
     try {
       final response = await userService.loadDetailUserService();
+      // appLog("${response}");
+
       if (response['success'] == true) {
         setState(() {
           userData = response['data'];

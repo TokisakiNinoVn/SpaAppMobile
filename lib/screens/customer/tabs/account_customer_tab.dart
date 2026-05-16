@@ -4,7 +4,7 @@ import 'package:spa_app/config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/handlers/auth_response_handler.dart';
 import 'package:spa_app/helper/format_helper.dart';
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/screens/widgets/role_switcher_card.dart';
 import 'package:spa_app/services/auth_service.dart';

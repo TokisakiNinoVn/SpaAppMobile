@@ -25,7 +25,7 @@ import '../screens/admin/service/service_management.dart';
 import '../screens/admin/service/update_service.dart';
 import '../screens/admin/setting/setting_screen.dart';
 import '../screens/admin/statistical/statistical_screen.dart';
-import '../screens/admin/account/technician/edit_technician.dart';
+import '../screens/admin/account/technician/admin_edit_technician.dart';
 
 final List<GoRoute> adminRoutes = [
   GoRoute(

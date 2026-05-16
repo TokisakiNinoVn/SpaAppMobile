@@ -11,6 +11,7 @@ import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
+import 'package:spa_app/screens/widgets/date_of_birth_picker_bottom_sheet.dart';
 import 'package:spa_app/screens/widgets/district_picker_bottom_sheet.dart';
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -46,7 +47,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
   List<dynamic> districts = [];
   dynamic selectedProvince;
   List<dynamic> selectedDistricts = [];
-  String? selectedYear;
+  // String? selectedYear;
   String? experience;
   List<Map<String, dynamic>> images = [];
   Map<String, dynamic>? avatarImage;
@@ -71,6 +72,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
   bool isProvincesLoading = false;
   bool isDistrictsLoading = false;
   late final List<String> years;
+  DateTime? selectedDate;
 
   @override
   void initState() {
@@ -224,10 +226,15 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       return;
     }
 
-    final currentYear = DateTime.now().year;
-    final selectedYearInt = int.tryParse(selectedYear!);
-    if (selectedYearInt == null || (currentYear - selectedYearInt) < 18) {
-      SnackBarHelper.showWarning(context, 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký');
+    // final currentYear = DateTime.now().year;
+    // final selectedYearInt = int.tryParse(selectedYear!);
+    // if (selectedYearInt == null || (currentYear - selectedYearInt) < 18) {
+    //   SnackBarHelper.showWarning(context, 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký');
+    //   return;
+    // }
+
+    if (avatarImage == null) {
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn ảnh đại diện');
       return;
     }
 
@@ -239,10 +246,20 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       SnackBarHelper.showWarning(context, 'Vui lòng nhập địa chỉ nơi ở');
       return;
     }
-    if (selectedYear == null) {
-      SnackBarHelper.showWarning(context, 'Vui lòng chọn năm sinh');
+    // if (selectedYear == null) {
+    //   SnackBarHelper.showWarning(context, 'Vui lòng chọn năm sinh');
+    //   return;
+    // }
+    if (selectedDate == null) {
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn ngày sinh');
       return;
     }
+    final age = DateTime.now().difference(selectedDate!).inDays ~/ 365;
+    if (age < 18) {
+      SnackBarHelper.showWarning(context, 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký');
+      return;
+    }
+
     if (experience == null) {
       SnackBarHelper.showWarning(context, 'Vui lòng chọn kinh nghiệm');
       return;
@@ -265,11 +282,12 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         'province': selectedProvince['name'],
         'districts': selectedDistricts.map((d) => d['name']).toList(),
         'address': address,
-        'yearOfBirth': int.tryParse(selectedYear.toString()),
+        // 'yearOfBirth': int.tryParse(selectedYear.toString()),
         'experience': experience,
         'images': images,
         'serviceIds': selectedServiceIds.map((s) => s['_id']).toList(),
         'gender': selectedGender,
+        'dateOfBirth': selectedDate?.toUtc().toIso8601String(),
       };
 
       final response = await technicianService.createTechnicianService(data);
@@ -645,80 +663,80 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     );
   }
 
-  void _showYearBottomSheet() {
-    final currentYear = DateTime.now().year;
-    final maxYear = currentYear - 18; // Chỉ cho phép đến 18 tuổi
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-      ),
-      builder: (context) => Container(
-        height: 350,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Chọn năm sinh',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
-                ),
-                // Thêm indicator tuổi
-                Text(
-                  'Phải >= 18 tuổi',
-                  style: TextStyle(fontSize: 12, color: ColorConfig.primary),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Được chọn năm sinh từ 19xx đến $maxYear',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: years.length,
-                itemBuilder: (context, index) {
-                  final year = years[index];
-                  final yearInt = int.tryParse(year) ?? 0;
-                  final isDisabled = yearInt > maxYear; // Vô hiệu hóa năm không hợp lệ
-
-                  return Opacity(
-                    opacity: isDisabled ? 0.5 : 1.0,
-                    child: ListTile(
-                      title: Text(
-                        year,
-                        style: TextStyle(
-                          color: isDisabled ? Colors.grey : null,
-                        ),
-                      ),
-                      onTap: isDisabled
-                          ? null
-                          : () {
-                        setState(() => selectedYear = year);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // void _showYearBottomSheet() {
+  //   final currentYear = DateTime.now().year;
+  //   final maxYear = currentYear - 18; // Chỉ cho phép đến 18 tuổi
+  //
+  //   showModalBottomSheet(
+  //     context: context,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+  //     ),
+  //     builder: (context) => Container(
+  //       height: 350,
+  //       padding: const EdgeInsets.all(20),
+  //       child: Column(
+  //         children: [
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               const Text(
+  //                 'Chọn năm sinh',
+  //                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+  //               ),
+  //               // Thêm indicator tuổi
+  //               Text(
+  //                 'Phải >= 18 tuổi',
+  //                 style: TextStyle(fontSize: 12, color: ColorConfig.primary),
+  //               ),
+  //             ],
+  //           ),
+  //           const SizedBox(height: 8),
+  //           Container(
+  //             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  //             decoration: BoxDecoration(
+  //               color: Colors.grey.shade100,
+  //               borderRadius: BorderRadius.circular(20),
+  //             ),
+  //             child: Text(
+  //               'Được chọn năm sinh từ 19xx đến $maxYear',
+  //               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+  //             ),
+  //           ),
+  //           const SizedBox(height: 16),
+  //           Expanded(
+  //             child: ListView.builder(
+  //               itemCount: years.length,
+  //               itemBuilder: (context, index) {
+  //                 final year = years[index];
+  //                 final yearInt = int.tryParse(year) ?? 0;
+  //                 final isDisabled = yearInt > maxYear; // Vô hiệu hóa năm không hợp lệ
+  //
+  //                 return Opacity(
+  //                   opacity: isDisabled ? 0.5 : 1.0,
+  //                   child: ListTile(
+  //                     title: Text(
+  //                       year,
+  //                       style: TextStyle(
+  //                         color: isDisabled ? Colors.grey : null,
+  //                       ),
+  //                     ),
+  //                     onTap: isDisabled
+  //                         ? null
+  //                         : () {
+  //                       setState(() => selectedYear = year);
+  //                       Navigator.pop(context);
+  //                     },
+  //                   ),
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   // ── Shared helpers ─────────────────────────────────────────────
   Widget _buildSheetHandle() {
@@ -1185,10 +1203,32 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                             ],
                           ),
                           const SizedBox(height: 6),
+                          // _buildLocationField(
+                          //   label: 'Chọn năm sinh',
+                          //   value: selectedYear,
+                          //   onTap: _showYearBottomSheet,
+                          // ),
+
                           _buildLocationField(
-                            label: 'Chọn năm sinh',
-                            value: selectedYear,
-                            onTap: _showYearBottomSheet,
+                            label: 'Chọn ngày sinh',
+                            value: selectedDate != null
+                                ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                                : null,
+                            onTap: () async {
+                              final currentDate = DateTime.now();
+                              final minDate = DateTime(currentDate.year - 100, currentDate.month, currentDate.day);
+                              final maxDate = DateTime(currentDate.year - 18, currentDate.month, currentDate.day);
+
+                              final picked = await showDateOfBirthPickerBottomSheet(
+                                context: context,
+                                initialDate: selectedDate ?? maxDate,
+                                minimumDate: minDate,
+                                maximumDate: maxDate,
+                              );
+                              if (picked != null) {
+                                setState(() => selectedDate = picked);
+                              }
+                            },
                           ),
                         ],
                       ),

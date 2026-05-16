@@ -3,7 +3,7 @@
 
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/customer_api.dart';
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 
 class CustomerService {
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {

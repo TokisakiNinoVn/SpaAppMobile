@@ -5,7 +5,9 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:spa_app/helper/format_helper.dart';
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/screens/widgets/date_of_birth_picker_bottom_sheet.dart';
+import 'package:spa_app/screens/widgets/district_picker_bottom_sheet.dart';
 import 'package:spa_app/services/file_service.dart';
 import 'package:spa_app/services/service_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -52,6 +54,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     'female': 'Nữ',
     'other': 'Khác'
   };
+  DateTime? selectedDate;
 
   bool isProvincesLoading = false;
   bool isDistrictsLoading = false;
@@ -109,12 +112,13 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     setState(() => isLoading = true);
     try {
       final response = await userService.loadDetailUserService();
-      appLog("User detail response: $response");
+      // appLog("User detail response: $response");
 
       if (response['success'] == true) {
         setState(() {
           dataUser = response['data'];
           technicianData = response['data']['technician'];
+          appLog("Technician data: $technicianData");
           _initializeData();
         });
         await _loadProvinces();
@@ -136,7 +140,15 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     fullnameController.text = technicianData?['fullName'] ?? '';
     addressController.text = technicianData?['address'] ?? '';
     experience = technicianData?['experience'] ?? '1 năm';
-    yearOfBirth = technicianData?['yearOfBirth'];
+    // yearOfBirth = technicianData?['yearOfBirth'];
+    // selectedDate = technicianData?['selectedDate'];
+    if (technicianData?['dateOfBirth'] != null) {
+      selectedDate = DateTime.parse(technicianData!['dateOfBirth']).toLocal();
+      appLog("Select date: $selectedDate");
+    } else {
+      appLog("technicianData!['dateOfBirth']: ${technicianData!['dateOfBirth']}");
+      selectedDate = null;
+    }
 
     // Parse gender from technician data or user data
     if (technicianData?['gender'] != null) {
@@ -232,7 +244,19 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
 
     final fullname = fullnameController.text.trim();
     final address = addressController.text.trim();
-
+    if (avatarImage == null) {
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn ảnh đại diện');
+      return;
+    }
+    if (selectedDate == null) {
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn ngày sinh');
+      return;
+    }
+    final age = DateTime.now().difference(selectedDate!).inDays ~/ 365;
+    if (age < 18) {
+      SnackBarHelper.showWarning(context, 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký');
+      return;
+    }
     // Validation
     if (fullname.isEmpty) {
       _showSnack('Vui lòng nhập họ tên');
@@ -254,10 +278,6 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       _showSnack('Vui lòng tải lên ít nhất 3 hình ảnh');
       return;
     }
-    if (yearOfBirth == null) {
-      _showSnack('Vui lòng chọn năm sinh');
-      return;
-    }
 
     setState(() => isLoading = true);
 
@@ -277,7 +297,8 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
         'address': address,
         'experience': experience,
         'gender': selectedGender,
-        'yearOfBirth': yearOfBirth,
+        'dateOfBirth': selectedDate?.toUtc().toIso8601String(),
+
         // 'serviceIds': serviceIdList,
       };
 
@@ -483,23 +504,6 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     );
   }
 
-  // String _getDistrictsDisplayText() {
-  //   if (selectedDistricts.isEmpty) return 'Chọn quận/huyện';
-  //   final districtNames = selectedDistricts.map((d) => d['name']).toList();
-  //   final displayText = districtNames.join(', ');
-  //   return displayText.length > 30 ? '${displayText.substring(0, 27)}...' : displayText;
-  // }
-  //
-  // String _getProvinceDisplayText() {
-  //   if (selectedProvince == null) return 'Chọn tỉnh/thành';
-  //   return selectedProvince['name'];
-  // }
-
-  String _getYearOfBirthDisplayText() {
-    if (yearOfBirth == null) return 'Chọn năm sinh';
-    return yearOfBirth.toString();
-  }
-
   String _getExperienceDisplayText() {
     if (experience == null) return 'Chọn kinh nghiệm';
     return experience!;
@@ -609,86 +613,114 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     );
   }
 
-  void _showDistrictBottomSheet() {
+  // void _showDistrictBottomSheet() {
+  //   if (selectedProvince == null) {
+  //     _showSnack('Vui lòng chọn tỉnh/thành trước');
+  //     return;
+  //   }
+  //
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  //     ),
+  //     builder: (BuildContext context) {
+  //       return StatefulBuilder(
+  //         builder: (context, setModalState) {
+  //           return Container(
+  //             padding: const EdgeInsets.only(bottom: 20),
+  //             child: Column(
+  //               mainAxisSize: MainAxisSize.min,
+  //               children: [
+  //                 _buildBottomSheetHandle(),
+  //                 const Padding(
+  //                   padding: EdgeInsets.all(16.0),
+  //                   child: Text(
+  //                     "Chọn Quận/Huyện",
+  //                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  //                   ),
+  //                 ),
+  //                 Expanded(
+  //                   child: ListView.builder(
+  //                     itemCount: districts.length,
+  //                     itemBuilder: (context, index) {
+  //                       final district = districts[index];
+  //                       final isSelected = selectedDistricts.any((d) => d['id'] == district['id']);
+  //
+  //                       return CheckboxListTile(
+  //                         title: Text(district['name']),
+  //                         value: isSelected,
+  //                         activeColor: const Color(0xFF8B5E3C),
+  //                         onChanged: (bool? value) {
+  //                           setModalState(() {
+  //                             if (value == true) {
+  //                               selectedDistricts.add(district);
+  //                             } else {
+  //                               selectedDistricts.removeWhere((d) => d['id'] == district['id']);
+  //                             }
+  //                           });
+  //                           setState(() {});
+  //                         },
+  //                       );
+  //                     },
+  //                   ),
+  //                 ),
+  //                 Padding(
+  //                   padding: const EdgeInsets.all(16.0),
+  //                   child: SizedBox(
+  //                     width: double.infinity,
+  //                     child: ElevatedButton(
+  //                       onPressed: () {
+  //                         Navigator.pop(context);
+  //                       },
+  //                       style: ElevatedButton.styleFrom(
+  //                         backgroundColor: const Color(0xFF8B5E3C),
+  //                         foregroundColor: Colors.white,
+  //                         padding: const EdgeInsets.symmetric(vertical: 14),
+  //                         shape: RoundedRectangleBorder(
+  //                           borderRadius: BorderRadius.circular(40),
+  //                         ),
+  //                       ),
+  //                       child: const Text('Xác nhận', style: TextStyle(fontSize: 16)),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
+
+  void _showDistrictBottomSheet() async {
     if (selectedProvince == null) {
-      _showSnack('Vui lòng chọn tỉnh/thành trước');
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn tỉnh/thành phố trước');
       return;
     }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildBottomSheetHandle(),
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text(
-                      "Chọn Quận/Huyện",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: districts.length,
-                      itemBuilder: (context, index) {
-                        final district = districts[index];
-                        final isSelected = selectedDistricts.any((d) => d['id'] == district['id']);
+    // Chuyển districts (List<dynamic>) thành List<District>
+    final districtList = districts.map((d) => District.fromJson(d)).toList();
 
-                        return CheckboxListTile(
-                          title: Text(district['name']),
-                          value: isSelected,
-                          activeColor: const Color(0xFF8B5E3C),
-                          onChanged: (bool? value) {
-                            setModalState(() {
-                              if (value == true) {
-                                selectedDistricts.add(district);
-                              } else {
-                                selectedDistricts.removeWhere((d) => d['id'] == district['id']);
-                              }
-                            });
-                            setState(() {});
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8B5E3C),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(40),
-                          ),
-                        ),
-                        child: const Text('Xác nhận', style: TextStyle(fontSize: 16)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+    // Lấy danh sách id đã chọn từ selectedDistricts
+    final Set<int> selectedIds = selectedDistricts.map((d) => d['id'] as int).toSet();
+
+    // Chọn đúng các đối tượng District từ districtList dựa trên id
+    final initialSelectedList = districtList.where((d) => selectedIds.contains(d.id)).toList();
+
+    final result = await showDistrictPickerBottomSheet(
+      context: context,
+      districts: districtList,
+      initialSelected: initialSelectedList,
     );
+
+    if (result != null) {
+      setState(() {
+        selectedDistricts = result.map((d) => d.rawData ?? d.toJson()).toList();
+      });
+    }
   }
 
   void _showYearOfBirthBottomSheet() {
@@ -1130,7 +1162,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
             ),
             const SizedBox(width: 12),
             const Text(
-              "Cập nhật hồ sơ KTV",
+              "Cập nhật hồ sơ",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -1177,10 +1209,31 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          _buildSelectionField(
-                            label: 'Chọn năm sinh',
-                            value: _getYearOfBirthDisplayText(),
-                            onTap: _showYearOfBirthBottomSheet,
+                          // _buildSelectionField(
+                          //   label: 'Chọn năm sinh',
+                          //   value: _getYearOfBirthDisplayText(),
+                          //   onTap: _showYearOfBirthBottomSheet,
+                          // ),
+                          _buildLocationField(
+                            label: 'Chọn ngày sinh',
+                            value: selectedDate != null
+                                ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                                : null,
+                            onTap: () async {
+                              final currentDate = DateTime.now();
+                              final minDate = DateTime(currentDate.year - 100, currentDate.month, currentDate.day);
+                              final maxDate = DateTime(currentDate.year - 18, currentDate.month, currentDate.day);
+
+                              final picked = await showDateOfBirthPickerBottomSheet(
+                                context: context,
+                                initialDate: selectedDate ?? maxDate,
+                                minimumDate: minDate,
+                                maximumDate: maxDate,
+                              );
+                              if (picked != null) {
+                                setState(() => selectedDate = picked);
+                              }
+                            },
                           ),
                         ],
                       ),

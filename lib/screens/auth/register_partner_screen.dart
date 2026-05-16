@@ -1,3 +1,5 @@
+import 'package:firebase_app_installations/firebase_app_installations.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +8,8 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/services/auth_service.dart';
+
+import '../../helper/logger_utils.dart';
 
 class RegisterPartnerScreen extends StatefulWidget {
   const RegisterPartnerScreen({super.key});
@@ -23,6 +27,54 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
   bool isLoading = false;
   bool showPassword = false;
   bool showConfirmPassword = false;
+
+  String? _fcmToken;
+
+  @override
+  void initState() {
+    super.initState();
+    _getFCMToken();
+  }
+
+  Future<void> _getFCMToken() async {
+    final isSupport = FirebaseMessaging.instance.isSupported();
+    final idHii = await FirebaseInstallations.instance.getId();
+    try {
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      final token = await FirebaseMessaging.instance.getToken();
+
+      if (token != null) {
+        setState(() {
+          _fcmToken = token;
+        });
+      }
+
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+        _fcmToken = newToken;
+        debugPrint('FCM Token refreshed: $newToken');
+        _updateFCMTokenIfLoggedIn(newToken);
+      });
+    } catch (e) {
+      appLog("Lỗi lấy FCM token: $e");
+    }
+  }
+
+  Future<void> _updateFCMTokenIfLoggedIn(String newToken) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token != null) {
+      try {
+        // await authService.updateFCMToken(newToken);
+      } catch (e) {
+        debugPrint('Lỗi cập nhật FCM token khi refresh: $e');
+      }
+    }
+  }
 
   Future<void> handleRegister() async {
     final phone = phoneController.text.trim();
@@ -49,6 +101,7 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
       _showSnack('Mật khẩu xác nhận không khớp');
       return;
     }
+    final fcm = _fcmToken ?? '';
 
     setState(() => isLoading = true);
 
@@ -56,7 +109,9 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
       final response = await authService.registerService({
         "phone": phone,
         "password": password,
-        "roles": "ktv", // Fixed role as ktv
+        "roles": "ktv",
+        "fcm_token": fcm,
+        "device_type": "android",
       });
 
       if (response['status'] == 'success') {
@@ -82,7 +137,7 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
                 duration: const Duration(seconds: 2),
               ),
             );
-            context.go('/create-technician');
+            context.push('/create-technician');
           }
         }
       } else {

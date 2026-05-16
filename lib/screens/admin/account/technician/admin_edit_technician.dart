@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:collection/collection.dart';
 
 import 'package:spa_app/helper/format_helper.dart';
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/screens/widgets/date_of_birth_picker_bottom_sheet.dart';
 import 'package:spa_app/screens/widgets/district_picker_bottom_sheet.dart';
 import 'package:spa_app/services/file_service.dart';
@@ -85,8 +85,13 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
     // bioController.text = technicianData['bio'] ?? '';
     experience = technicianData['experience'] ?? '3 năm';
     gender = technicianData['gender'] ?? 'Nam';
-    // yearOfBirth = technicianData['yearOfBirth'];
-    selectedDate = technicianData['selectedDate'];
+    if (technicianData?['dateOfBirth'] != null) {
+      selectedDate = DateTime.parse(technicianData!['dateOfBirth']).toLocal();
+      appLog("Select date: $selectedDate");
+    } else {
+      selectedDate = null;
+    }
+
 
     services = List<String>.from(technicianData['services'] ?? []);
 
