@@ -15,6 +15,7 @@ import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
+import 'package:spa_app/utils/file_util.dart';
 
 class UserEditTechnicianScreen extends StatefulWidget {
   const UserEditTechnicianScreen({super.key});
@@ -26,6 +27,7 @@ class UserEditTechnicianScreen extends StatefulWidget {
 class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   final UserService userService = UserService();
   final ServiceService _serviceService = ServiceService();
+  final FileUtils _fileUtils = FileUtils();
 
   final fullnameController = TextEditingController();
   final addressController = TextEditingController();
@@ -341,13 +343,39 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   }
 
   Future<void> _pickImage({bool isAvatar = false}) async {
+    if (!isAvatar && images.length >= 5) {
+      SnackBarHelper.showError(context, 'Bạn chỉ được chọn tối đa 5 ảnh');
+      return;
+    }
+
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      await _cropImage(File(pickedFile.path), isAvatar: isAvatar);
+      // Tỉ lệ crop: avatar 1:1, ảnh thường 16:9
+      final double ratioX = isAvatar ? 1.0 : 1.0;
+      final double ratioY = isAvatar ? 1.0 : 1.0;
+      final File? croppedImage = await _fileUtils.cropImage(
+        File(pickedFile.path),
+        ratioX,
+        ratioY,
+      );
+      if (croppedImage != null) {
+        await uploadImage(croppedImage.path, isAvatar: isAvatar);
+      } else {
+        SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
+      }
     }
   }
+
+  // Future<void> _pickImage({bool isAvatar = false}) async {
+  //   final picker = ImagePicker();
+  //   final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  //
+  //   if (pickedFile != null) {
+  //     await _cropImage(File(pickedFile.path), isAvatar: isAvatar);
+  //   }
+  // }
 
   Future<void> _cropImage(File imageFile, {bool isAvatar = false}) async {
     final croppedFile = await ImageCropper().cropImage(
@@ -455,17 +483,17 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     );
   }
 
-  String _getDistrictsDisplayText() {
-    if (selectedDistricts.isEmpty) return 'Chọn quận/huyện';
-    final districtNames = selectedDistricts.map((d) => d['name']).toList();
-    final displayText = districtNames.join(', ');
-    return displayText.length > 30 ? '${displayText.substring(0, 27)}...' : displayText;
-  }
-
-  String _getProvinceDisplayText() {
-    if (selectedProvince == null) return 'Chọn tỉnh/thành';
-    return selectedProvince['name'];
-  }
+  // String _getDistrictsDisplayText() {
+  //   if (selectedDistricts.isEmpty) return 'Chọn quận/huyện';
+  //   final districtNames = selectedDistricts.map((d) => d['name']).toList();
+  //   final displayText = districtNames.join(', ');
+  //   return displayText.length > 30 ? '${displayText.substring(0, 27)}...' : displayText;
+  // }
+  //
+  // String _getProvinceDisplayText() {
+  //   if (selectedProvince == null) return 'Chọn tỉnh/thành';
+  //   return selectedProvince['name'];
+  // }
 
   String _getYearOfBirthDisplayText() {
     if (yearOfBirth == null) return 'Chọn năm sinh';
@@ -1102,11 +1130,11 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
             ),
             const SizedBox(width: 12),
             const Text(
-              "Cập nhật hồ sơ",
+              "Cập nhật hồ sơ KTV",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Colors.black54,
+                color: Colors.black,
               ),
             ),
           ],

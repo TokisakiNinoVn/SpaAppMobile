@@ -11,12 +11,14 @@ import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
+import 'package:spa_app/screens/widgets/district_picker_bottom_sheet.dart';
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
 import 'package:spa_app/services/tinhthanh_service_v2.dart';
 import 'package:spa_app/services/file_service.dart';
 import 'package:spa_app/services/service_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
+import 'package:spa_app/utils/file_util.dart';
 
 import '../storage/index.dart';
 
@@ -33,9 +35,11 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
 
   final fullnameController = TextEditingController();
   final addressController = TextEditingController();
+
   final technicianService = TechnicianService();
-  final tinhThanhService = TinhThanhService();
-  final fileService = FileService();
+  final TinhThanhService tinhThanhService = TinhThanhService();
+  final FileService fileService = FileService();
+  final FileUtils _fileUtils = FileUtils();
 
   bool isLoading = false;
   List<dynamic> provinces = [];
@@ -333,35 +337,47 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      await _cropImage(File(pickedFile.path), isAvatar: isAvatar);
+      // Tỉ lệ crop: avatar 1:1, ảnh thường 16:9
+      final double ratioX = isAvatar ? 1.0 : 1.0;
+      final double ratioY = isAvatar ? 1.0 : 1.0;
+      final File? croppedImage = await _fileUtils.cropImage(
+        File(pickedFile.path),
+        ratioX,
+        ratioY,
+      );
+      if (croppedImage != null) {
+        await uploadImage(croppedImage.path, isAvatar: isAvatar);
+      } else {
+        SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
+      }
     }
   }
 
-  Future<void> _cropImage(File imageFile, {bool isAvatar = false}) async {
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: imageFile.path,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Cắt ảnh',
-          toolbarColor: const Color(0xFF1A1A1A),
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.square,
-          lockAspectRatio: true,
-        ),
-        IOSUiSettings(
-          title: 'Cắt ảnh',
-          aspectRatioLockEnabled: true,
-          resetAspectRatioEnabled: false,
-          aspectRatioPickerButtonHidden: true,
-        ),
-      ],
-    );
-
-    if (croppedFile != null) {
-      await uploadImage(croppedFile.path, isAvatar: isAvatar);
-    }
-  }
+  // Future<void> _cropImage(File imageFile, {bool isAvatar = false}) async {
+  //   final croppedFile = await ImageCropper().cropImage(
+  //     sourcePath: imageFile.path,
+  //     aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+  //     uiSettings: [
+  //       AndroidUiSettings(
+  //         toolbarTitle: 'Cắt ảnh',
+  //         toolbarColor: const Color(0xFF1A1A1A),
+  //         toolbarWidgetColor: Colors.white,
+  //         initAspectRatio: CropAspectRatioPreset.square,
+  //         lockAspectRatio: true,
+  //       ),
+  //       IOSUiSettings(
+  //         title: 'Cắt ảnh',
+  //         aspectRatioLockEnabled: true,
+  //         resetAspectRatioEnabled: false,
+  //         aspectRatioPickerButtonHidden: true,
+  //       ),
+  //     ],
+  //   );
+  //
+  //   if (croppedFile != null) {
+  //     await uploadImage(croppedFile.path, isAvatar: isAvatar);
+  //   }
+  // }
 
   Future<bool> _onWillPop() async {
     if (_uploadedImageIds.isNotEmpty || _uploadedAvatarId != null) {
@@ -472,83 +488,32 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     );
   }
 
-  void _showDistrictBottomSheet() {
+  void _showDistrictBottomSheet() async {
     if (selectedProvince == null) {
       SnackBarHelper.showWarning(context, 'Vui lòng chọn tỉnh/thành phố trước');
       return;
     }
 
-    showModalBottomSheet(
+    // Chuyển districts (List<dynamic>) thành List<District>
+    final districtList = districts.map((d) => District.fromJson(d)).toList();
+
+    // Lấy danh sách id đã chọn từ selectedDistricts
+    final Set<int> selectedIds = selectedDistricts.map((d) => d['id'] as int).toSet();
+
+    // Chọn đúng các đối tượng District từ districtList dựa trên id
+    final initialSelectedList = districtList.where((d) => selectedIds.contains(d.id)).toList();
+
+    final result = await showDistrictPickerBottomSheet(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-      ),
-      builder: (context) => FractionallySizedBox(
-        heightFactor: 0.8,
-        child: StatefulBuilder(
-          builder: (context, setStateModal) {
-            return Container(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 20,
-                right: 20,
-                top: 20,
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  _buildSheetHandle(),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Chọn quận/huyện',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSearchField(_districtSearchController, 'Tìm kiếm quận/huyện'),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: filteredDistricts.length,
-                      itemBuilder: (context, index) {
-                        final district = filteredDistricts[index];
-                        final isSelected = selectedDistricts.contains(district);
-                        return CheckboxListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            district['name'],
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFF666666),
-                            ),
-                          ),
-                          value: isSelected,
-                          activeColor: const Color(0xFF1A1A1A),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-                          onChanged: (bool? value) {
-                            setStateModal(() {
-                              if (value == true) {
-                                selectedDistricts.add(district);
-                              } else {
-                                selectedDistricts.remove(district);
-                              }
-                            });
-                            setState(() {});
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildConfirmButton(() => Navigator.pop(context)),
-                  const SizedBox(height: 10),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
+      districts: districtList,
+      initialSelected: initialSelectedList,
     );
+
+    if (result != null) {
+      setState(() {
+        selectedDistricts = result.map((d) => d.rawData ?? d.toJson()).toList();
+      });
+    }
   }
 
   void _showServicesBottomSheet() {
