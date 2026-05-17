@@ -8,7 +8,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:spa_app/helper/format_helper.dart';
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 
 class ImageDownloadUtil {

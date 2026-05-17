@@ -5,7 +5,7 @@
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/helper/api_methods_public.dart';
 import 'package:spa_app/apis/technician_api.dart';
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/storage/index.dart';
 
 class TechnicianService {
@@ -24,8 +24,8 @@ class TechnicianService {
   Future<Map<String, dynamic>> createTechnicianService(
       Map<String, dynamic> data,
       ) async {
-    // final prettyJson = const JsonEncoder.withIndent('  ').convert(data);
-
+    // appLog("URL: ${TechnicianApiRoutes.createTechnician}");
+    // appLog("Data: ${data}");
     return await ApiMethodsPrivate.postRequest(
       TechnicianApiRoutes.createTechnician,
       data,

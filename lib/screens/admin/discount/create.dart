@@ -8,6 +8,7 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/services/file_service.dart';
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/discount_service.dart';
+import 'package:spa_app/utils/file_util.dart';
 
 import '../../../helper/snackbar_helper.dart';
 import '../../../helper/format_helper.dart';
@@ -21,6 +22,9 @@ class CreateDiscountScreen extends StatefulWidget {
 
 class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
   final DiscountService discountService = DiscountService();
+  final UploadService _uploadService = UploadService();
+  final FileUtils _fileUtils = FileUtils();
+  final FileService fileService = FileService();
 
   // Form controllers
   final TextEditingController _codeController = TextEditingController();
@@ -31,11 +35,15 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
 
   // Form state
   String? _selectedTypeDiscount = 'fixed';
+  String? _uploadedImageDiscountId;
+  
   DateTime? _startDate;
   DateTime? _expiresAt;
   bool _isActive = false;
   bool _isViewHome = false;
   bool _isLoading = false;
+
+  Map<String, dynamic>? discountImage;
 
   // Form validation
   final _formKey = GlobalKey<FormState>();
@@ -46,6 +54,10 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
   static const _border = Color(0xFFE2E8F0);
   static const _textPrimary = Color(0xFF0F172A);
   static const _textSecondary = Color(0xFF64748B);
+  // Bổ sung các hằng số màu bị thiếu
+  static const _success = Color(0xFF10B981);   // green-500
+  static const _successLight = Color(0xFFD1FAE5);
+  static const _error = Color(0xFFEF4444);      // red-500
 
   List<TextInputFormatter> _valueFormatters = [];
 
@@ -93,6 +105,12 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
       return;
     }
 
+    // Kiểm tra ảnh khi bật hiển thị Home
+    if (_isViewHome && discountImage == null) {
+      SnackBarHelper.showError(context, 'Vui lòng tải lên ảnh trước khi bật "Hiển thị trên màn hình Home".');
+      return;
+    }
+
     if (_startDate == null) {
       SnackBarHelper.showError(context, 'Vui lòng chọn ngày bắt đầu');
       return;
@@ -122,7 +140,8 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
         'startAt': _startDate!.toUtc().toIso8601String(),
         'expiresAt': _expiresAt!.toUtc().toIso8601String(),
         'isActive': _isActive,
-        'isViewHome': _isViewHome
+        'isViewHome': _isViewHome,
+        'fileImage': discountImage,
       };
 
       final response = await discountService.createDiscount(discountData);
@@ -153,6 +172,25 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
     }
   }
 
+  Future<void> _deleteImage() async {
+    if (_uploadedImageDiscountId == null) return;
+    // Không cho xóa ảnh nếu đang bật hiển thị Home
+    if (_isViewHome) {
+      SnackBarHelper.showError(context, 'Không thể xóa ảnh khi đang bật "Hiển thị trên màn hình Home". Vui lòng tắt trước.');
+      return;
+    }
+    try {
+      await fileService.deleteFileService(_uploadedImageDiscountId!);
+      setState(() {
+        discountImage = null;
+        _uploadedImageDiscountId = null;
+      });
+      SnackBarHelper.showSuccess(context, 'Đã xóa ảnh');
+    } catch (e) {
+      SnackBarHelper.showError(context, 'Xóa ảnh thất bại: $e');
+    }
+  }
+
   Future<void> _selectExpiryDate() async {
     final date = await showDatePicker(
       context: context,
@@ -165,6 +203,82 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
         _expiresAt = date;
       });
     }
+  }
+
+  Future<void> uploadImage(String filePath) async {
+    try {
+      final response = await _uploadService.uploadSingleFileService(filePath);
+      final imageData = response['data'];
+
+      if (imageData != null) {
+        setState(() {
+            if (_uploadedImageDiscountId != null) {
+              fileService.deleteFileService(_uploadedImageDiscountId!);
+            }
+            discountImage = imageData;
+            _uploadedImageDiscountId = imageData['_id'];
+        });
+      } else {
+        SnackBarHelper.showError(context, 'Không thể tải lên hình ảnh');
+      }
+    } catch (e) {
+      SnackBarHelper.showError(context, 'Lỗi tải lên hình ảnh: $e');
+    }
+  }
+
+  Future<void> _pickImage() async {
+
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final double ratioX = 1.0;
+      final double ratioY = 1.0;
+      final File? croppedImage = await _fileUtils.cropImage(
+        File(pickedFile.path),
+        ratioX,
+        ratioY,
+      );
+      if (croppedImage != null) {
+        await uploadImage(croppedImage.path);
+      } else {
+        SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
+      }
+    }
+  }
+
+  Future<void> _recropImage() async {
+    // Nếu chưa có ảnh thì gọi pick mới
+    if (discountImage == null) {
+      await _pickImage();
+      return;
+    }
+    // Nếu có ảnh rồi, có thể cho phép cắt lại từ file đã lưu?
+    // Nhưng vì không lưu file gốc, giải pháp đơn giản: mở gallery chọn lại.
+    // Hoặc nếu muốn dùng ảnh hiện tại: cần download về -> crop -> upload lại.
+    // Dưới đây là cách mở gallery để chọn ảnh mới (thay thế):
+    await _pickImage();
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      color: Colors.grey.shade100,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.add_photo_alternate, size: 40, color: _textSecondary),
+          const SizedBox(height: 8),
+          Text(
+            'Nhấn để chọn ảnh',
+            style: TextStyle(color: _textSecondary, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showImagePickerDialog() {
+    _pickImage();
   }
 
   @override
@@ -201,6 +315,9 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildImageSection(),
+              const SizedBox(height: 10),
+
               // Code field
               _buildTextField(
                 controller: _codeController,
@@ -399,6 +516,10 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
                     Switch(
                       value: _isViewHome,
                       onChanged: (value) {
+                        if (value == true && discountImage == null) {
+                          SnackBarHelper.showError(context, 'Vui lòng tải lên ảnh trước khi bật "Hiển thị trên màn hình Home".');
+                          return;
+                        }
                         setState(() {
                           _isViewHome = value;
                         });
@@ -491,6 +612,184 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildImageSection() {
+    return Column(
+      children: [
+        // TEXT
+        if (discountImage != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 10,
+            ),
+            decoration: BoxDecoration(
+              color: _successLight,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 16,
+                  color: _success,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Đã tải lên ảnh thành công',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _success,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
+        ],
+
+        // IMAGE
+        Center(
+          child: GestureDetector(
+            onTap: _showImagePickerDialog,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: 170,
+              width: 170,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: discountImage != null ? _primary : _border,
+                  width: discountImage != null ? 2 : 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: discountImage != null &&
+                    discountImage!['url'] != null
+                    ? Image.network(
+                  FormatHelper.formatNetworkImageUrl(
+                    discountImage!['url'],
+                  ),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      _buildPlaceholder(),
+                )
+                    : _buildPlaceholder(),
+              ),
+            ),
+          ),
+        ),
+
+        // BUTTONS
+        if (discountImage != null) ...[
+          const SizedBox(height: 20),
+
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                // XÓA
+                Container(
+                  decoration: BoxDecoration(
+                    color: _error.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: TextButton.icon(
+                    onPressed: _deleteImage,
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 16,
+                    ),
+                    label: const Text('Xóa ảnh'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: _error,
+                      textStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // CẮT LẠI
+                Container(
+                  decoration: BoxDecoration(
+                    color: _primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: TextButton.icon(
+                    onPressed: _recropImage,
+                    icon: const Icon(
+                      Icons.crop_rounded,
+                      size: 16,
+                    ),
+                    label: const Text('Cắt lại'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: _primary,
+                      textStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // THAY ẢNH
+                Container(
+                  decoration: BoxDecoration(
+                    color: _primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: TextButton.icon(
+                    onPressed: _showImagePickerDialog,
+                    icon: const Icon(
+                      Icons.edit_rounded,
+                      size: 16,
+                    ),
+                    label: const Text('Thay ảnh'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: _primary,
+                      textStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -595,6 +894,43 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
         fontSize: 14,
       ),
     );
+  }
+
+  Future<bool> _onWillPop() async {
+    // Kiểm tra nếu có ảnh đã upload (và chưa tạo discount thành công)
+    if (discountImage != null && !_isLoading) {
+      final shouldExit = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Xác nhận thoát'),
+          content: const Text('Bạn đã tải lên ảnh mới nhưng chưa tạo mã giảm giá. Bạn có muốn thoát không?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Ở lại', style: TextStyle(color: _textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Thoát'),
+            ),
+          ],
+        ),
+      );
+      if (shouldExit == true) {
+        if (_uploadedImageDiscountId != null) {
+          await fileService.deleteFileService(_uploadedImageDiscountId!);
+        }
+        return true;
+      }
+      return false;
+    }
+    return true;
   }
 }
 

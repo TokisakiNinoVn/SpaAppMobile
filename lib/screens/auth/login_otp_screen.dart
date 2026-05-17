@@ -9,7 +9,7 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/config/theme_config.dart';
 import 'package:flutter/foundation.dart';
 
-import 'package:spa_app/helper/logger_utils-ok.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/services/auth_service.dart';
@@ -320,7 +320,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
                   ),
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
                 // Logo/Brand - simple and clean
                 Column(

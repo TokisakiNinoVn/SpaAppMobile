@@ -4,7 +4,7 @@ import 'package:spa_app/screens/technician/add_technician_screen.dart';
 import 'package:spa_app/screens/technician/notification/technician_list_notification.dart';
 import 'package:spa_app/screens/technician/order/details_new_order.dart';
 import 'package:spa_app/screens/technician/service/technicianupdate_service.dart';
-import 'package:spa_app/screens/technician/technician/user_edit_technician.dart';
+import 'package:spa_app/screens/technician/technician/update_profile_technician.dart';
 import '../screens/technician/home_technician_screen.dart';
 import '../screens/technician/statistical/statistical_screen.dart';
 

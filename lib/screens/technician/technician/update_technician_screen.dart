@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 // import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -11,6 +12,7 @@ import 'package:spa_app/services/tinhthanh_service.dart';
 import 'package:spa_app/services/file_service.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
+import 'package:spa_app/utils/file_util.dart';
 
 import '../../../config/color_config.dart';
 
@@ -28,6 +30,7 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
   final bioController = TextEditingController();
   final technicianService = TechnicianService();
   final tinhThanhService = TinhThanhService();
+  final FileUtils _fileUtils = FileUtils();
 
   // State variables
   bool isLoading = false;
@@ -190,44 +193,70 @@ class _UserUpdateTechnicianScreen extends State<UserUpdateTechnicianScreen> {
     }
   }
 
+  // Future<void> _pickImage({bool isAvatar = false}) async {
+  //   final picker = ImagePicker();
+  //   final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  //
+  //   if (pickedFile != null) {
+  //     if (isAvatar) {
+  //       await _cropImage(File(pickedFile.path), isAvatar: true);
+  //     } else {
+  //       await uploadImage(pickedFile.path);
+  //     }
+  //   }
+  // }
+
   Future<void> _pickImage({bool isAvatar = false}) async {
+    if (!isAvatar && images.length >= 5) {
+      SnackBarHelper.showError(context, 'Bạn chỉ được chọn tối đa 5 ảnh');
+      return;
+    }
+
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      if (isAvatar) {
-        await _cropImage(File(pickedFile.path), isAvatar: true);
+      // Tỉ lệ crop: avatar 1:1, ảnh thường 16:9
+      final double ratioX = isAvatar ? 1.0 : 1.0;
+      final double ratioY = isAvatar ? 1.0 : 1.0;
+      final File? croppedImage = await _fileUtils.cropImage(
+        File(pickedFile.path),
+        ratioX,
+        ratioY,
+      );
+      if (croppedImage != null) {
+        await uploadImage(croppedImage.path, isAvatar: isAvatar);
       } else {
-        await uploadImage(pickedFile.path);
+        SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
       }
     }
   }
 
-  Future<void> _cropImage(File imageFile, {bool isAvatar = false}) async {
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: imageFile.path,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Cắt ảnh',
-          toolbarColor: const Color(0xFF8B5E3C),
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.square,
-          lockAspectRatio: true,
-        ),
-        IOSUiSettings(
-          title: 'Cắt ảnh',
-          aspectRatioLockEnabled: true,
-          resetAspectRatioEnabled: false,
-          aspectRatioPickerButtonHidden: true,
-        ),
-      ],
-    );
-
-    if (croppedFile != null) {
-      await uploadImage(croppedFile.path, isAvatar: isAvatar);
-    }
-  }
+  // Future<void> _cropImage(File imageFile, {bool isAvatar = false}) async {
+  //   final croppedFile = await ImageCropper().cropImage(
+  //     sourcePath: imageFile.path,
+  //     aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+  //     uiSettings: [
+  //       AndroidUiSettings(
+  //         toolbarTitle: 'Cắt ảnh',
+  //         toolbarColor: const Color(0xFF8B5E3C),
+  //         toolbarWidgetColor: Colors.white,
+  //         initAspectRatio: CropAspectRatioPreset.square,
+  //         lockAspectRatio: true,
+  //       ),
+  //       IOSUiSettings(
+  //         title: 'Cắt ảnh',
+  //         aspectRatioLockEnabled: true,
+  //         resetAspectRatioEnabled: false,
+  //         aspectRatioPickerButtonHidden: true,
+  //       ),
+  //     ],
+  //   );
+  //
+  //   if (croppedFile != null) {
+  //     await uploadImage(croppedFile.path, isAvatar: isAvatar);
+  //   }
+  // }
 
   Future<void> deleteImage(String idImage) async {
     try {

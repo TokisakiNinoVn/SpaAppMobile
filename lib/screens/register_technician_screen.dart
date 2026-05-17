@@ -11,12 +11,15 @@ import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
+import 'package:spa_app/screens/widgets/date_of_birth_picker_bottom_sheet.dart';
+import 'package:spa_app/screens/widgets/district_picker_bottom_sheet.dart';
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
 import 'package:spa_app/services/tinhthanh_service_v2.dart';
 import 'package:spa_app/services/file_service.dart';
 import 'package:spa_app/services/service_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
+import 'package:spa_app/utils/file_util.dart';
 
 import '../storage/index.dart';
 
@@ -33,16 +36,18 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
 
   final fullnameController = TextEditingController();
   final addressController = TextEditingController();
+
   final technicianService = TechnicianService();
-  final tinhThanhService = TinhThanhService();
-  final fileService = FileService();
+  final TinhThanhService tinhThanhService = TinhThanhService();
+  final FileService fileService = FileService();
+  final FileUtils _fileUtils = FileUtils();
 
   bool isLoading = false;
   List<dynamic> provinces = [];
   List<dynamic> districts = [];
   dynamic selectedProvince;
   List<dynamic> selectedDistricts = [];
-  String? selectedYear;
+  // String? selectedYear;
   String? experience;
   List<Map<String, dynamic>> images = [];
   Map<String, dynamic>? avatarImage;
@@ -67,6 +72,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
   bool isProvincesLoading = false;
   bool isDistrictsLoading = false;
   late final List<String> years;
+  DateTime? selectedDate;
 
   @override
   void initState() {
@@ -220,10 +226,15 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       return;
     }
 
-    final currentYear = DateTime.now().year;
-    final selectedYearInt = int.tryParse(selectedYear!);
-    if (selectedYearInt == null || (currentYear - selectedYearInt) < 18) {
-      SnackBarHelper.showWarning(context, 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký');
+    // final currentYear = DateTime.now().year;
+    // final selectedYearInt = int.tryParse(selectedYear!);
+    // if (selectedYearInt == null || (currentYear - selectedYearInt) < 18) {
+    //   SnackBarHelper.showWarning(context, 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký');
+    //   return;
+    // }
+
+    if (avatarImage == null) {
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn ảnh đại diện');
       return;
     }
 
@@ -235,10 +246,20 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       SnackBarHelper.showWarning(context, 'Vui lòng nhập địa chỉ nơi ở');
       return;
     }
-    if (selectedYear == null) {
-      SnackBarHelper.showWarning(context, 'Vui lòng chọn năm sinh');
+    // if (selectedYear == null) {
+    //   SnackBarHelper.showWarning(context, 'Vui lòng chọn năm sinh');
+    //   return;
+    // }
+    if (selectedDate == null) {
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn ngày sinh');
       return;
     }
+    final age = DateTime.now().difference(selectedDate!).inDays ~/ 365;
+    if (age < 18) {
+      SnackBarHelper.showWarning(context, 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký');
+      return;
+    }
+
     if (experience == null) {
       SnackBarHelper.showWarning(context, 'Vui lòng chọn kinh nghiệm');
       return;
@@ -261,11 +282,12 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         'province': selectedProvince['name'],
         'districts': selectedDistricts.map((d) => d['name']).toList(),
         'address': address,
-        'yearOfBirth': int.tryParse(selectedYear.toString()),
+        // 'yearOfBirth': int.tryParse(selectedYear.toString()),
         'experience': experience,
         'images': images,
         'serviceIds': selectedServiceIds.map((s) => s['_id']).toList(),
         'gender': selectedGender,
+        'dateOfBirth': selectedDate?.toUtc().toIso8601String(),
       };
 
       final response = await technicianService.createTechnicianService(data);
@@ -333,35 +355,47 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      await _cropImage(File(pickedFile.path), isAvatar: isAvatar);
+      // Tỉ lệ crop: avatar 1:1, ảnh thường 16:9
+      final double ratioX = isAvatar ? 1.0 : 1.0;
+      final double ratioY = isAvatar ? 1.0 : 1.0;
+      final File? croppedImage = await _fileUtils.cropImage(
+        File(pickedFile.path),
+        ratioX,
+        ratioY,
+      );
+      if (croppedImage != null) {
+        await uploadImage(croppedImage.path, isAvatar: isAvatar);
+      } else {
+        SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
+      }
     }
   }
 
-  Future<void> _cropImage(File imageFile, {bool isAvatar = false}) async {
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: imageFile.path,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Cắt ảnh',
-          toolbarColor: const Color(0xFF1A1A1A),
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.square,
-          lockAspectRatio: true,
-        ),
-        IOSUiSettings(
-          title: 'Cắt ảnh',
-          aspectRatioLockEnabled: true,
-          resetAspectRatioEnabled: false,
-          aspectRatioPickerButtonHidden: true,
-        ),
-      ],
-    );
-
-    if (croppedFile != null) {
-      await uploadImage(croppedFile.path, isAvatar: isAvatar);
-    }
-  }
+  // Future<void> _cropImage(File imageFile, {bool isAvatar = false}) async {
+  //   final croppedFile = await ImageCropper().cropImage(
+  //     sourcePath: imageFile.path,
+  //     aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+  //     uiSettings: [
+  //       AndroidUiSettings(
+  //         toolbarTitle: 'Cắt ảnh',
+  //         toolbarColor: const Color(0xFF1A1A1A),
+  //         toolbarWidgetColor: Colors.white,
+  //         initAspectRatio: CropAspectRatioPreset.square,
+  //         lockAspectRatio: true,
+  //       ),
+  //       IOSUiSettings(
+  //         title: 'Cắt ảnh',
+  //         aspectRatioLockEnabled: true,
+  //         resetAspectRatioEnabled: false,
+  //         aspectRatioPickerButtonHidden: true,
+  //       ),
+  //     ],
+  //   );
+  //
+  //   if (croppedFile != null) {
+  //     await uploadImage(croppedFile.path, isAvatar: isAvatar);
+  //   }
+  // }
 
   Future<bool> _onWillPop() async {
     if (_uploadedImageIds.isNotEmpty || _uploadedAvatarId != null) {
@@ -472,83 +506,32 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     );
   }
 
-  void _showDistrictBottomSheet() {
+  void _showDistrictBottomSheet() async {
     if (selectedProvince == null) {
       SnackBarHelper.showWarning(context, 'Vui lòng chọn tỉnh/thành phố trước');
       return;
     }
 
-    showModalBottomSheet(
+    // Chuyển districts (List<dynamic>) thành List<District>
+    final districtList = districts.map((d) => District.fromJson(d)).toList();
+
+    // Lấy danh sách id đã chọn từ selectedDistricts
+    final Set<int> selectedIds = selectedDistricts.map((d) => d['id'] as int).toSet();
+
+    // Chọn đúng các đối tượng District từ districtList dựa trên id
+    final initialSelectedList = districtList.where((d) => selectedIds.contains(d.id)).toList();
+
+    final result = await showDistrictPickerBottomSheet(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-      ),
-      builder: (context) => FractionallySizedBox(
-        heightFactor: 0.8,
-        child: StatefulBuilder(
-          builder: (context, setStateModal) {
-            return Container(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 20,
-                right: 20,
-                top: 20,
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  _buildSheetHandle(),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Chọn quận/huyện',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSearchField(_districtSearchController, 'Tìm kiếm quận/huyện'),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: filteredDistricts.length,
-                      itemBuilder: (context, index) {
-                        final district = filteredDistricts[index];
-                        final isSelected = selectedDistricts.contains(district);
-                        return CheckboxListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            district['name'],
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFF666666),
-                            ),
-                          ),
-                          value: isSelected,
-                          activeColor: const Color(0xFF1A1A1A),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-                          onChanged: (bool? value) {
-                            setStateModal(() {
-                              if (value == true) {
-                                selectedDistricts.add(district);
-                              } else {
-                                selectedDistricts.remove(district);
-                              }
-                            });
-                            setState(() {});
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildConfirmButton(() => Navigator.pop(context)),
-                  const SizedBox(height: 10),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
+      districts: districtList,
+      initialSelected: initialSelectedList,
     );
+
+    if (result != null) {
+      setState(() {
+        selectedDistricts = result.map((d) => d.rawData ?? d.toJson()).toList();
+      });
+    }
   }
 
   void _showServicesBottomSheet() {
@@ -680,80 +663,80 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     );
   }
 
-  void _showYearBottomSheet() {
-    final currentYear = DateTime.now().year;
-    final maxYear = currentYear - 18; // Chỉ cho phép đến 18 tuổi
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-      ),
-      builder: (context) => Container(
-        height: 350,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Chọn năm sinh',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
-                ),
-                // Thêm indicator tuổi
-                Text(
-                  'Phải >= 18 tuổi',
-                  style: TextStyle(fontSize: 12, color: ColorConfig.primary),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Được chọn năm sinh từ 19xx đến $maxYear',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: years.length,
-                itemBuilder: (context, index) {
-                  final year = years[index];
-                  final yearInt = int.tryParse(year) ?? 0;
-                  final isDisabled = yearInt > maxYear; // Vô hiệu hóa năm không hợp lệ
-
-                  return Opacity(
-                    opacity: isDisabled ? 0.5 : 1.0,
-                    child: ListTile(
-                      title: Text(
-                        year,
-                        style: TextStyle(
-                          color: isDisabled ? Colors.grey : null,
-                        ),
-                      ),
-                      onTap: isDisabled
-                          ? null
-                          : () {
-                        setState(() => selectedYear = year);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // void _showYearBottomSheet() {
+  //   final currentYear = DateTime.now().year;
+  //   final maxYear = currentYear - 18; // Chỉ cho phép đến 18 tuổi
+  //
+  //   showModalBottomSheet(
+  //     context: context,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+  //     ),
+  //     builder: (context) => Container(
+  //       height: 350,
+  //       padding: const EdgeInsets.all(20),
+  //       child: Column(
+  //         children: [
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               const Text(
+  //                 'Chọn năm sinh',
+  //                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+  //               ),
+  //               // Thêm indicator tuổi
+  //               Text(
+  //                 'Phải >= 18 tuổi',
+  //                 style: TextStyle(fontSize: 12, color: ColorConfig.primary),
+  //               ),
+  //             ],
+  //           ),
+  //           const SizedBox(height: 8),
+  //           Container(
+  //             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  //             decoration: BoxDecoration(
+  //               color: Colors.grey.shade100,
+  //               borderRadius: BorderRadius.circular(20),
+  //             ),
+  //             child: Text(
+  //               'Được chọn năm sinh từ 19xx đến $maxYear',
+  //               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+  //             ),
+  //           ),
+  //           const SizedBox(height: 16),
+  //           Expanded(
+  //             child: ListView.builder(
+  //               itemCount: years.length,
+  //               itemBuilder: (context, index) {
+  //                 final year = years[index];
+  //                 final yearInt = int.tryParse(year) ?? 0;
+  //                 final isDisabled = yearInt > maxYear; // Vô hiệu hóa năm không hợp lệ
+  //
+  //                 return Opacity(
+  //                   opacity: isDisabled ? 0.5 : 1.0,
+  //                   child: ListTile(
+  //                     title: Text(
+  //                       year,
+  //                       style: TextStyle(
+  //                         color: isDisabled ? Colors.grey : null,
+  //                       ),
+  //                     ),
+  //                     onTap: isDisabled
+  //                         ? null
+  //                         : () {
+  //                       setState(() => selectedYear = year);
+  //                       Navigator.pop(context);
+  //                     },
+  //                   ),
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   // ── Shared helpers ─────────────────────────────────────────────
   Widget _buildSheetHandle() {
@@ -1220,10 +1203,32 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                             ],
                           ),
                           const SizedBox(height: 6),
+                          // _buildLocationField(
+                          //   label: 'Chọn năm sinh',
+                          //   value: selectedYear,
+                          //   onTap: _showYearBottomSheet,
+                          // ),
+
                           _buildLocationField(
-                            label: 'Chọn năm sinh',
-                            value: selectedYear,
-                            onTap: _showYearBottomSheet,
+                            label: 'Chọn ngày sinh',
+                            value: selectedDate != null
+                                ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                                : null,
+                            onTap: () async {
+                              final currentDate = DateTime.now();
+                              final minDate = DateTime(currentDate.year - 100, currentDate.month, currentDate.day);
+                              final maxDate = DateTime(currentDate.year - 18, currentDate.month, currentDate.day);
+
+                              final picked = await showDateOfBirthPickerBottomSheet(
+                                context: context,
+                                initialDate: selectedDate ?? maxDate,
+                                minimumDate: minDate,
+                                maximumDate: maxDate,
+                              );
+                              if (picked != null) {
+                                setState(() => selectedDate = picked);
+                              }
+                            },
                           ),
                         ],
                       ),

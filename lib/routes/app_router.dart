@@ -14,7 +14,7 @@ import 'package:spa_app/screens/splash_screen.dart';
 
 import 'package:spa_app/screens/auth/forgetpasword/confirm_otp_screen.dart';
 import 'package:spa_app/screens/auth/login_otp_screen.dart';
-import 'package:spa_app/screens/create_technician_screen.dart';
+import 'package:spa_app/screens/register_technician_screen.dart';
 import 'package:spa_app/screens/auth/forgetpasword/get_otp_forget_password.dart';
 import 'package:spa_app/screens/otp_confirm_screen.dart';
 import 'package:spa_app/screens/quanly/home_quanly_screen.dart';
@@ -26,7 +26,7 @@ import 'package:spa_app/screens/technician/edit_add_technician.dart';
 import 'package:spa_app/screens/technician/home_technician_screen.dart';
 import 'package:spa_app/screens/technician/order/details_new_order.dart';
 import 'package:spa_app/screens/technician/service/technicianupdate_service.dart';
-import 'package:spa_app/screens/technician/technician/user_edit_technician.dart';
+import 'package:spa_app/screens/technician/technician/update_profile_technician.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 

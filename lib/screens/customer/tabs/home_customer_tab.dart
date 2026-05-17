@@ -1068,10 +1068,11 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                                   : _displayDiscounts.asMap().entries.map((entry) {
                                 final index = entry.key;
                                 final discount = entry.value;
+                                final urlImage = discount['image']?['url'] ?? "";
+                                final fullUrlImage = FormatHelper.formatNetworkImageUrl(urlImage);
+                                // appLog("${fullUrlImage}");
 
-                                final isPercent =
-                                    discount['type'] == 'percentage';
-
+                                final isPercent = discount['type'] == 'percentage';
                                 final value = discount['value'] ?? 0;
 
                                 // Ảnh xen kẽ:
@@ -1090,7 +1091,10 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                                     .trim();
 
                                 return PromoCard(
-                                  image: image,
+                                  // image: urlImage.isNotEmpty ? fullUrlImage : image,
+                                  image: (urlImage.trim().isNotEmpty)
+                                      ? fullUrlImage
+                                      : image,
 
                                   title: code.isNotEmpty
                                       ? "Mã: $code"
