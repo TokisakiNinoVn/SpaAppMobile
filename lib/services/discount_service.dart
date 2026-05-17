@@ -30,10 +30,12 @@ class DiscountService {
   }
 
   Future<Map<String, dynamic>> createDiscount(Map<String, dynamic> data) async {
+    // appLog("Data create: $data");
     return await ApiMethodsPrivate.postRequest('${DiscountApi.createDiscount}', data);
   }
 
   Future<Map<String, dynamic>> updateDiscount(String id, Map<String, dynamic> data) async {
+    // appLog("Data create: $data");
     return await ApiMethodsPrivate.putRequest('${DiscountApi.updateDiscount}/$id', data);
   }
 

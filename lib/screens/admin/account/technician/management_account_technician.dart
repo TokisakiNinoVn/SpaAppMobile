@@ -736,13 +736,13 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.history),
-                              tooltip: 'Lịch sử hoạt động',
-                              onPressed: () {
-                                _showChangePasswordDialog(user['_id']);
-                              },
-                            ),
+                            // IconButton(
+                            //   icon: const Icon(Icons.history),
+                            //   tooltip: 'Lịch sử hoạt động',
+                            //   onPressed: () {
+                            //     _showChangePasswordDialog(user['_id']);
+                            //   },
+                            // ),
                             IconButton(
                               icon: const Icon(Icons.key),
                               tooltip: 'Đổi mật khẩu',

@@ -83,22 +83,22 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
 
     // Validation
     if (phone.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      _showSnack('Vui lòng nhập đầy đủ thông tin bắt buộc');
+      SnackBarHelper.showWarning(context, 'Vui lòng nhập đầy đủ thông tin bắt buộc');
       return;
     }
 
     if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
-      _showSnack('Số điện thoại phải có đúng 10 chữ số');
+      SnackBarHelper.showWarning(context, 'Số điện thoại phải có đúng 10 chữ số');
       return;
     }
 
     if (password.length < 6) {
-      _showSnack('Mật khẩu phải có ít nhất 6 ký tự');
+      SnackBarHelper.showWarning(context, 'Mật khẩu phải có ít nhất 6 ký tự');
       return;
     }
 
     if (password != confirmPassword) {
-      _showSnack('Mật khẩu xác nhận không khớp');
+      SnackBarHelper.showWarning(context, 'Mật khẩu xác nhận không khớp');
       return;
     }
     final fcm = _fcmToken ?? '';
@@ -149,19 +149,6 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
     } finally {
       setState(() => isLoading = false);
     }
-  }
-
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFFE74C3C),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(40),
-        ),
-      ),
-    );
   }
 
   @override

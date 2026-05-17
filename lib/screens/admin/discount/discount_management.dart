@@ -751,37 +751,40 @@ class _DiscountManagementState extends State<DiscountManagement> {
 
           // Discount list
           Expanded(
+            child: RefreshIndicator(
+            onRefresh: fetchDiscounts,   // gọi lại hàm tải danh sách
             child: isLoading
+            // child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : filteredDiscounts.isEmpty
                 ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.discount_outlined,
-                    size: 80,
-                    color: Colors.grey[400],
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.discount_outlined,
+                        size: 80,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Không có khuyến mãi nào',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Hãy thử thay đổi bộ lọc hoặc thêm khuyến mãi mới',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Không có khuyến mãi nào',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Hãy thử thay đổi bộ lọc hoặc thêm khuyến mãi mới',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ),
-            )
+                )
                 : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: filteredDiscounts.length,
@@ -790,6 +793,7 @@ class _DiscountManagementState extends State<DiscountManagement> {
                 return _buildDiscountCard(discount);
               },
             ),
+          ),
           ),
         ],
       ),
@@ -1015,7 +1019,13 @@ class _DiscountManagementState extends State<DiscountManagement> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton.icon(
-                    onPressed: () => context.push(AdminRouterConfig.editDiscount, extra: discount),
+                    // onPressed: () => context.push(AdminRouterConfig.editDiscount, extra: discount),
+                    onPressed: () async {
+                      final result = await context.push(AdminRouterConfig.editDiscount, extra: discount);
+                      if (result == true) {
+                        fetchDiscounts();   // reload danh sách nếu chỉnh sửa thành công
+                      }
+                    },
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     label: const Text('Sửa'),
                     style: TextButton.styleFrom(
