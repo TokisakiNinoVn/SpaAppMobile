@@ -1,0 +1,4 @@
+enum LoginTypeRole {
+  customer,
+  staff,
+}
