@@ -1,4 +1,6 @@
 enum LoginTypeRole {
   customer,
-  staff,
+  ktv,
+  admin,
+  quanly,
 }

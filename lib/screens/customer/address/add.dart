@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/user_service.dart';
 
 class AddAddressScreen extends StatefulWidget {
@@ -39,58 +40,17 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
     try {
       final response = await _userService.addAddressService(addressData);
 
-      // if (response['success'] == true || response['status'] == 'success') {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(
-      //       content: Row(
-      //         children: const [
-      //           Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-      //           SizedBox(width: 8),
-      //           Text('Thêm địa chỉ thành công'),
-      //         ],
-      //       ),
-      //       backgroundColor: const Color(0xFF27AE60),
-      //       behavior: SnackBarBehavior.floating,
-      //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-      //       duration: const Duration(seconds: 2),
-      //     ),
-      //   );
-      //
-      //   Navigator.pop(context, true);
-      // }
       if (response['success'] == true || response['status'] == 'success') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('Thêm địa chỉ thành công'),
-              ],
-            ),
-            backgroundColor: const Color(0xFF27AE60),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        SnackBarHelper.showSuccess(context, "Thêm địa chỉ thành công");
 
-        // Thêm delay 1 giây trước khi quay lại màn hình trước
         await Future.delayed(const Duration(seconds: 1));
 
         if (mounted) {
-          Navigator.pop(context, true);
+          context.pop(true);
         }
       }
       else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'Thêm địa chỉ thất bại'),
-            backgroundColor: const Color(0xFFE74C3C),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-          ),
-        );
+        SnackBarHelper.showError(context, response['message'] ?? 'Thêm địa chỉ thất bại');
         setState(() {
           _isLoading = false;
         });
@@ -238,7 +198,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(40),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: SwitchListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12),

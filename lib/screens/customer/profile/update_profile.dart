@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 
 import '../../../helper/logger_utils.dart';
 import 'package:spa_app/services/customer_service.dart';
@@ -88,32 +89,15 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
 
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cập nhật thông tin thành công'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
+        SnackBarHelper.showSuccess(context, 'Cập nhật thông tin thành công');
         context.go(CustomerRouterConfig.homeCustomer);
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'Không thể cập nhật thông tin'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackBarHelper.showSuccess(context, response['message'] ?? 'Không thể cập nhật thông tin');
       }
     } catch (e) {
-      // LoggerUtils.error('Update profile failed', e);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lỗi kết nối, vui lòng thử lại'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      SnackBarHelper.showSuccess(context, 'Lỗi kết nối, vui lòng thử lại');
     } finally {
       if (mounted) {
         setState(() => _isUpdating = false);

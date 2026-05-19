@@ -58,6 +58,12 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
           route: AdminRouterConfig.managementBank,
           color: Color(0xFF9B59B6),
         ),
+        _MenuItem(
+          icon: Icons.monetization_on,
+          title: 'Cài đặt mức thu dịch vụ',
+          route: AdminRouterConfig.managePlatformFees,
+          color: Color(0xFFE1337C),
+        ),
          _MenuItem(
           icon: Icons.outbond_outlined,
           title: 'Yêu cầu rút tiền',

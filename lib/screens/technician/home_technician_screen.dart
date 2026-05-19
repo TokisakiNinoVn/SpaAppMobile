@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
 
-import 'package:spa_app/screens/technician/widgets/account_widget.dart';
-import 'package:spa_app/screens/technician/widgets/home_widget.dart';
-import 'package:spa_app/screens/technician/widgets/job_tab_widget.dart';
-import 'package:spa_app/screens/technician/widgets/management_technician_widget_tab.dart';
-import 'package:spa_app/screens/technician/widgets/order_tab_widget.dart';
-import 'package:spa_app/screens/technician/widgets/policy_tab_widget.dart';
-import 'package:spa_app/screens/technician/widgets/support_tab_widget.dart';
+import 'package:spa_app/screens/technician/tabs/account_widget.dart';
+import 'package:spa_app/screens/technician/tabs/home_widget.dart';
+import 'package:spa_app/screens/technician/tabs/job_tab_widget.dart';
+import 'package:spa_app/screens/technician/tabs/management_technician_widget_tab.dart';
+import 'package:spa_app/screens/technician/tabs/order_tab_widget.dart';
+import 'package:spa_app/screens/technician/tabs/policy_tab_widget.dart';
+import 'package:spa_app/screens/technician/tabs/support_tab_widget.dart';
 // import 'package:spa_app/services/realtime_service.dart';
 
 class HomeTechnicianScreen extends StatefulWidget {

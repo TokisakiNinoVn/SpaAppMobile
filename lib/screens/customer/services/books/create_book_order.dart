@@ -8,6 +8,7 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/providers/user_provider.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
+import 'package:spa_app/screens/customer/services/widgets/discount_bottom_sheet.dart';
 import 'package:spa_app/services/user_discount_service.dart';
 
 import '../../../../helper/format_helper.dart';
@@ -81,7 +82,8 @@ class _CreateBookOrderScreenState
     super.initState();
     _paymentMethod = PaymentMethod.zenhome;
     _loadCustomerProfile();
-    _loadSavedDiscounts();
+    // _loadSavedDiscounts();
+    _loadDiscounts();
     _noteFocusNode.addListener(_onFocusChange);
   }
 
@@ -108,6 +110,37 @@ class _CreateBookOrderScreenState
       return _totalBeforeDiscount - amountDiscount;
     }
     return _totalBeforeDiscount;
+  }
+
+  Future<void> _loadDiscounts() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await _discountService.listPublic();
+      // appLog("${response}");
+      // appLog("${response['data']}");
+      if (response['success'] == true) {
+        setState(() {
+          _discounts = response['data'] ?? [];
+          // appLog("${_discounts}");
+          _isLoading = false;
+        });
+        // appLog("list discount: $_discounts");
+      } else {
+        setState(() {
+          _errorMessage = response['message'] ?? 'Không thể tải danh sách mã giảm giá';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Đã xảy ra lỗi: $e';
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _pickDateTime() async {
@@ -292,33 +325,33 @@ class _CreateBookOrderScreenState
     }
   }
 
-  Future<void> _loadSavedDiscounts() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final response = await _userDiscountService.listSaveDiscount();
-      if (response['status'] == 'success') {
-        setState(() {
-          _discounts = response['data']['discounts'] ?? [];
-          _isLoading = false;
-        });
-        appLog("list discount: $_discounts");
-      } else {
-        setState(() {
-          _errorMessage = response['message'] ?? 'Không thể tải danh sách mã giảm giá';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Đã xảy ra lỗi: $e';
-        _isLoading = false;
-      });
-    }
-  }
+  // Future<void> _loadSavedDiscounts() async {
+  //   setState(() {
+  //     _isLoading = true;
+  //     _errorMessage = null;
+  //   });
+  //
+  //   try {
+  //     final response = await _userDiscountService.listSaveDiscount();
+  //     if (response['status'] == 'success') {
+  //       setState(() {
+  //         _discounts = response['data']['discounts'] ?? [];
+  //         _isLoading = false;
+  //       });
+  //       appLog("list discount: $_discounts");
+  //     } else {
+  //       setState(() {
+  //         _errorMessage = response['message'] ?? 'Không thể tải danh sách mã giảm giá';
+  //         _isLoading = false;
+  //       });
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       _errorMessage = 'Đã xảy ra lỗi: $e';
+  //       _isLoading = false;
+  //     });
+  //   }
+  // }
 
   void _showAddressPicker() async {
     final selectedAddress = await showAddressPickerSheet(
@@ -332,235 +365,252 @@ class _CreateBookOrderScreenState
     }
   }
 
-  void _showDiscountBottomSheet() {
-    final TextEditingController couponController = TextEditingController();
-    couponController.text = _appliedDiscountCode ?? '';
+  // void _showDiscountBottomSheet() {
+  //   final TextEditingController couponController = TextEditingController();
+  //   couponController.text = _appliedDiscountCode ?? '';
+  //
+  //   String? localError;
+  //   bool localChecking = false;
+  //   String? selectedDiscountId;
+  //
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  //     ),
+  //     builder: (context) {
+  //       final height = MediaQuery.of(context).size.height * 0.7;
+  //
+  //       return StatefulBuilder(
+  //         builder: (context, setSheetState) {
+  //           return SizedBox(
+  //             height: height,
+  //             child: Padding(
+  //               padding: const EdgeInsets.all(20),
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.stretch,
+  //                 children: [
+  //                   const Text(
+  //                     'Chọn / nhập mã giảm giá',
+  //                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+  //                     textAlign: TextAlign.center,
+  //                   ),
+  //
+  //                   const SizedBox(height: 10),
+  //                   Row(
+  //                     children: [
+  //                       Expanded(
+  //                         child: TextField(
+  //                           controller: couponController,
+  //                           textCapitalization: TextCapitalization.characters,
+  //                           style: const TextStyle(
+  //                             fontSize: 14,
+  //                           ),
+  //                           decoration: InputDecoration(
+  //                             hintText: 'Mã giảm giá',
+  //                             isDense: true,
+  //                             contentPadding: const EdgeInsets.symmetric(
+  //                               vertical: 10,
+  //                               horizontal: 12,
+  //                             ),
+  //                             border: OutlineInputBorder(
+  //                               borderRadius: BorderRadius.circular(30),
+  //                             ),
+  //                             enabledBorder: OutlineInputBorder(
+  //                               borderRadius: BorderRadius.circular(30),
+  //                             ),
+  //                             focusedBorder: OutlineInputBorder(
+  //                               borderRadius: BorderRadius.circular(30),
+  //                             ),
+  //                             errorText: localError,
+  //                           ),
+  //                           onChanged: (_) {
+  //                             if (localError != null) {
+  //                               setSheetState(() => localError = null);
+  //                             }
+  //                           },
+  //                         ),
+  //                       ),
+  //
+  //                       const SizedBox(width: 10),
+  //                       ElevatedButton(
+  //                         onPressed: localChecking
+  //                             ? null
+  //                             : () async {
+  //                           final code = couponController.text
+  //                               .trim()
+  //                               .toUpperCase();
+  //
+  //                           if (code.isEmpty) {
+  //                             setSheetState(() =>
+  //                             localError = 'Vui lòng nhập mã');
+  //                             return;
+  //                           }
+  //
+  //                           setSheetState(() {
+  //                             localChecking = true;
+  //                             localError = null;
+  //                           });
+  //
+  //                           final price = (widget.data[
+  //                           'serviceTimePrice']['price'] as int);
+  //
+  //                           try {
+  //                             final response =
+  //                             await _discountService
+  //                                 .checkDiscountService({
+  //                               "code": code,
+  //                               "orderValue": price,
+  //                             });
+  //
+  //                             if (response['success'] == true) {
+  //                               setState(() {
+  //                                 _discountData = response['data'];
+  //                                 _appliedDiscountCode = code;
+  //                                 _discountError = null;
+  //                               });
+  //
+  //                               if (mounted) Navigator.pop(context);
+  //                             } else {
+  //                               setSheetState(() {
+  //                                 localError = response['message'] ??
+  //                                     'Mã không hợp lệ';
+  //                                 localChecking = false;
+  //                               });
+  //                             }
+  //                           } catch (e) {
+  //                             appLog("Lỗi kiểm tra mã: ", data: e);
+  //                             setSheetState(() {
+  //                               localError =
+  //                               'Không thể kiểm tra mã';
+  //                               localChecking = false;
+  //                             });
+  //                           }
+  //                         },
+  //                         style: ElevatedButton.styleFrom(
+  //                           backgroundColor: ColorConfig.primary,
+  //                           foregroundColor: ColorConfig.textWhite,
+  //                           padding: const EdgeInsets.symmetric(
+  //                               horizontal: 16, vertical: 7),
+  //                         ),
+  //                         child: localChecking
+  //                             ? const SizedBox(
+  //                           width: 18,
+  //                           height: 18,
+  //                           child:
+  //                           CircularProgressIndicator(strokeWidth: 2),
+  //                         )
+  //                             : const Text('Áp dụng'),
+  //                       ),
+  //                     ],
+  //                   ),
+  //
+  //                   const SizedBox(height: 20),
+  //
+  //                   /// 🔥 LIST DISCOUNT
+  //                   const Text(
+  //                     'Mã của bạn',
+  //                     style: TextStyle(
+  //                         fontSize: 16, fontWeight: FontWeight.w600),
+  //                   ),
+  //
+  //                   const SizedBox(height: 10),
+  //
+  //                   Expanded(
+  //                     child: (_discounts == null || _discounts.isEmpty)
+  //                         ? const Center(
+  //                       child: Text('Không có mã giảm giá'),
+  //                     )
+  //                         : ListView.builder(
+  //                       itemCount: _discounts.length,
+  //                       itemBuilder: (context, index) {
+  //                         final item = _discounts[index];
+  //                         final discount = item['discount'];
+  //
+  //                         final code = discount['code'];
+  //                         final int value = discount['value'];
+  //                         final int minOrder = discount['minOrderValue'];
+  //
+  //                         final isSelected =
+  //                             selectedDiscountId == item['id'];
+  //
+  //                         return GestureDetector(
+  //                           onTap: () {
+  //                             setSheetState(() {
+  //                               selectedDiscountId = item['id'];
+  //                               couponController.text = code;
+  //                             });
+  //                           },
+  //                           child: Container(
+  //                             margin:
+  //                             const EdgeInsets.only(bottom: 10),
+  //                             padding: const EdgeInsets.all(12),
+  //                             decoration: BoxDecoration(
+  //                               borderRadius:
+  //                               BorderRadius.circular(12),
+  //                               border: Border.all(
+  //                                 color: isSelected
+  //                                     ? Colors.amber
+  //                                     : Colors.grey.shade300,
+  //                                 width: isSelected ? 2 : 1,
+  //                               ),
+  //                             ),
+  //                             child: Column(
+  //                               crossAxisAlignment:
+  //                               CrossAxisAlignment.start,
+  //                               children: [
+  //                                 Text(
+  //                                   code,
+  //                                   style: const TextStyle(
+  //                                     fontWeight: FontWeight.bold,
+  //                                     fontSize: 16,
+  //                                   ),
+  //                                 ),
+  //                                 const SizedBox(height: 4),
+  //                                 Text(
+  //                                     'Giảm: ${FormatHelper.formatPrice(value)} đ'),
+  //                                 Text(
+  //                                     'Đơn tối thiểu: ${FormatHelper.formatPrice(minOrder)} đ'),
+  //                               ],
+  //                             ),
+  //                           ),
+  //                         );
+  //                       },
+  //                     ),
+  //                   ),
+  //
+  //                   const SizedBox(height: 10),
+  //
+  //                   TextButton(
+  //                     onPressed: () => Navigator.pop(context),
+  //                     child: const Text('Hủy'),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
 
-    String? localError;
-    bool localChecking = false;
-    String? selectedDiscountId;
-
-    showModalBottomSheet(
+  // Thay _showDiscountBottomSheet() cũ bằng:
+  void _showDiscountBottomSheet() async {
+    final result = await showDiscountBottomSheet(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        final height = MediaQuery.of(context).size.height * 0.7;
-
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return SizedBox(
-              height: height,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Chọn / nhập mã giảm giá',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: couponController,
-                            textCapitalization: TextCapitalization.characters,
-                            style: const TextStyle(
-                              fontSize: 14,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Mã giảm giá',
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                                horizontal: 12,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              errorText: localError,
-                            ),
-                            onChanged: (_) {
-                              if (localError != null) {
-                                setSheetState(() => localError = null);
-                              }
-                            },
-                          ),
-                        ),
-
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          onPressed: localChecking
-                              ? null
-                              : () async {
-                            final code = couponController.text
-                                .trim()
-                                .toUpperCase();
-
-                            if (code.isEmpty) {
-                              setSheetState(() =>
-                              localError = 'Vui lòng nhập mã');
-                              return;
-                            }
-
-                            setSheetState(() {
-                              localChecking = true;
-                              localError = null;
-                            });
-
-                            final price = (widget.data[
-                            'serviceTimePrice']['price'] as int);
-
-                            try {
-                              final response =
-                              await _discountService
-                                  .checkDiscountService({
-                                "code": code,
-                                "orderValue": price,
-                              });
-
-                              if (response['success'] == true) {
-                                setState(() {
-                                  _discountData = response['data'];
-                                  _appliedDiscountCode = code;
-                                  _discountError = null;
-                                });
-
-                                if (mounted) Navigator.pop(context);
-                              } else {
-                                setSheetState(() {
-                                  localError = response['message'] ??
-                                      'Mã không hợp lệ';
-                                  localChecking = false;
-                                });
-                              }
-                            } catch (e) {
-                              appLog("Lỗi kiểm tra mã: ", data: e);
-                              setSheetState(() {
-                                localError =
-                                'Không thể kiểm tra mã';
-                                localChecking = false;
-                              });
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ColorConfig.primary,
-                            foregroundColor: ColorConfig.textWhite,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 7),
-                          ),
-                          child: localChecking
-                              ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child:
-                            CircularProgressIndicator(strokeWidth: 2),
-                          )
-                              : const Text('Áp dụng'),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    /// 🔥 LIST DISCOUNT
-                    const Text(
-                      'Mã của bạn',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    Expanded(
-                      child: (_discounts == null || _discounts.isEmpty)
-                          ? const Center(
-                        child: Text('Không có mã giảm giá'),
-                      )
-                          : ListView.builder(
-                        itemCount: _discounts.length,
-                        itemBuilder: (context, index) {
-                          final item = _discounts[index];
-                          final discount = item['discount'];
-
-                          final code = discount['code'];
-                          final int value = discount['value'];
-                          final int minOrder = discount['minOrderValue'];
-
-                          final isSelected =
-                              selectedDiscountId == item['id'];
-
-                          return GestureDetector(
-                            onTap: () {
-                              setSheetState(() {
-                                selectedDiscountId = item['id'];
-                                couponController.text = code;
-                              });
-                            },
-                            child: Container(
-                              margin:
-                              const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                borderRadius:
-                                BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.amber
-                                      : Colors.grey.shade300,
-                                  width: isSelected ? 2 : 1,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    code,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                      'Giảm: ${FormatHelper.formatPrice(value)} đ'),
-                                  Text(
-                                      'Đơn tối thiểu: ${FormatHelper.formatPrice(minOrder)} đ'),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Hủy'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      orderValue: _totalBeforeDiscount,
+      discounts: _discounts,
+      appliedCode: _appliedDiscountCode,
     );
+    if (result != null) {
+      setState(() {
+        _discountData = result.data;
+        _appliedDiscountCode = result.code;
+        _discountError = null;
+      });
+    }
   }
 
   void _removeDiscount() {
@@ -816,7 +866,7 @@ class _CreateBookOrderScreenState
                           context.push(CustomerRouterConfig.choosePackage);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: ColorConfig.primary,
                           foregroundColor: Colors.white,
                         ),
                         child: const Text("Nạp tiền"),

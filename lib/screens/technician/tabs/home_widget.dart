@@ -57,24 +57,11 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   Timer? _timer;
   int _remainingSeconds = 0;
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _loadUserDetail();
-  //   loadServiceInfor();
-  //   _getCurrentLocation();
-  // }
-
   @override
   void initState() {
     super.initState();
     _loadUserDetail();
     loadServiceInfor();
-    // Không gọi _getCurrentLocation trực tiếp ở đây nữa
-    // Mà dùng WidgetsBinding để gọi sau khi build
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   _getCurrentLocation(context);
-    // });
   }
 
   @override
@@ -422,24 +409,12 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
       await prefs.setString('statusAccount', response['data']['status']);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Đã chuyển sang trạng thái: ${newStatus == 'inactive' ? 'Offline' : 'Online'}',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+        SnackBarHelper.showSuccess(context, 'Chuyển trạng thái: ${newStatus == 'inactive' ? 'Offline' : 'Online'}');
       }
     } else {
       setState(() => isUpdating = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Thay đổi thất bại: ${response['message'] ?? 'Lỗi không xác định'}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackBarHelper.showSuccess(context, 'Lỗi đổi trạng thái: ${response['message'] ?? 'Lỗi không xác định'}');
       }
     }
   }
@@ -492,30 +467,6 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   }
 
   bool get _isOnline => isTechnicianActive && isProfileActive && statusAccount == 'active';
-
-  // void _navigateToNotifications() {
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => Scaffold(
-  //         appBar: PreferredSize(
-  //           preferredSize: const Size.fromHeight(60),
-  //           child: AppBar(
-  //             title: const Text('Thông báo'),
-  //             centerTitle: true,
-  //             elevation: 0,
-  //           ),
-  //         ),
-  //         body: const Center(
-  //           child: Text(
-  //             'Danh sách thông báo sẽ hiển thị ở đây',
-  //             style: TextStyle(fontSize: 16, color: Colors.grey),
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 
   // ─── Helpers lấy field từ orderDetail theo cấu trúc JSON thực tế ───
 
@@ -628,8 +579,8 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 70,
+                  height: 70,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -659,7 +610,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -673,10 +624,25 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        inforLogin?['phone'] ?? 'Không rõ',
-                        style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                      Row(
+                        children: [
+                          Text(
+                            'Trạng thái: ',
+                            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                          ),
+                          Text(
+                            statusAccount == 'inactive' ? 'Offline' : 'Online',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: statusAccount == 'inactive'
+                                  ? Colors.red.shade400
+                                  : Colors.green.shade500,
+                            ),
+                          ),
+                        ],
                       ),
+
                     ],
                   ),
                 ),
@@ -720,8 +686,8 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(20),
+                  color: ColorConfig.primaryBackground,
+                  borderRadius: BorderRadius.circular(40),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -740,7 +706,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                            : Tooltip(
+                        : Tooltip(
                           message: 'Bật/tắt nhận việc',
                           child: Switch(
                             value: statusAccount == 'active',
@@ -770,17 +736,6 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                           ],
                         ),
                         child: IconButton(
-                          // onPressed: isUpdatingLocation
-                          //     ? null
-                          //     : () async {
-                          //   // Hiển thị dialog xác nhận trước khi cập nhật vị trí
-                          //   final shouldUpdate = await _showLocationUpdateConfirmation();
-                          //   if (shouldUpdate == true) {
-                          //     await _getCurrentLocation(context);
-                          //     await _updateLocation();
-                          //   }
-                          // },
-                          // Đoạn code cũ trong onPressed của IconButton:
                           onPressed: isUpdatingLocation
                               ? null
                               : () async {
@@ -806,8 +761,45 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
+
+              Container(
+                // decoration: BoxDecoration(
+                //   color: Color(0xffdfd8d8),
+                //   border: Border.all(color: Colors.grey.shade100),
+                // ),
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildShortcutItem(
+                      icon: Icons.history,
+                      label: 'Lịch sử đơn',
+                      onTap: () => context.push(TechnicianRouterConfig.historyOrder),
+                    ),
+                    _buildShortcutItem(
+                      icon: Icons.attach_money,
+                      label: 'Doanh thu',
+                      onTap: () => context.push(TechnicianRouterConfig.statistical),
+                    ),
+                    _buildShortcutItem(
+                      icon: Icons.account_tree,
+                      label: 'Dịch vụ',
+                      onTap: () => context.push(TechnicianRouterConfig.updateTechnicianService),
+                    ),
+                    _buildShortcutItem(
+                      icon: Icons.person,
+                      label: 'Cập nhật',
+                      onTap: () => context.push(TechnicianRouterConfig.updateProfileTechnician),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
               _buildOrderCard(),
+
             ] else ...[
               // ── Inactive profile warning ──
               Container(
@@ -847,6 +839,45 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildShortcutItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(icon, size: 26, color: ColorConfig.secondary),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1153,11 +1184,6 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                 fontSize: 16,
                 color: Colors.grey.shade600,
                 fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Đơn hàng mới sẽ xuất hiện tại đây',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
           ),
         ],
       ),
