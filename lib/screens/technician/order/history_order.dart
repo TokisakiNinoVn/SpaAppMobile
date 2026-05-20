@@ -7,6 +7,8 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/routes/config/technician_router_config.dart';
+import 'package:spa_app/screens/components/dashed_divider_component.dart';
 import 'package:spa_app/services/order_service.dart';
 
 import '../../../helper/check_login_helper.dart';
@@ -27,10 +29,9 @@ class _HistoryOrderState extends State<HistoryOrder> {
   bool _isLogin = false;
   String _errorMessage = '';
 
-  Timer? _autoRefreshTimer;
-
-  String _selectedFilter = 'Đang làm';
-  final List<String> _filters = ['Tất cả', 'Đang chờ', 'Đang làm', 'Đã hoàn thành', 'Đã hủy', 'Hết thời gian chờ', ];
+  String _selectedFilter = 'Tất cả';
+  final List<String> _filters = ['Tất cả', 'Đã hoàn thành', 'Đã hủy', 'Hết thời gian chờ', ];
+  // final List<String> _filters = ['Tất cả', 'Đang chờ', 'Đang làm', 'Đã hoàn thành', 'Đã hủy', 'Hết thời gian chờ', ];
 
   List<dynamic> _orders = [];
 
@@ -126,7 +127,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Lịch sử các đơn",
+          "Lịch sử các đơn việc",
           style: TextStyle(
               fontSize: 20,
               color: ColorConfig.textBlack,
@@ -307,7 +308,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
                 backgroundColor: ColorConfig.primary,
               ),
               child: const Text(
-                'Cập nhật',
+                'Tải lại danh sách',
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -349,7 +350,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
   }
 
   Widget _buildOrderItem(Map<String, dynamic> order) {
-    appLog("$order");
+    // appLog("$order");
     final status = order['status'] ?? 'pending';
     final typeOrder = order['typeOrder'] ?? "";
     final price = order['price'] ?? 0;
@@ -505,7 +506,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          context.go('${CustomerRouterConfig.detailOrder}/${order['_id']}');
+          context.push('${TechnicianRouterConfig.detailsOrder}/${order['_id']}');
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -635,7 +636,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        const _DashedDivider(),
+                        const DashedDivider(),
                         const SizedBox(height: 4),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -667,7 +668,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const _DashedDivider(),
+                        const DashedDivider(),
 
                       ],
                     ),
@@ -987,35 +988,35 @@ class _OrderCountdownWidget extends StatefulWidget {
   State<_OrderCountdownWidget> createState() => _OrderCountdownWidgetState();
 }
 
-class _DashedDivider extends StatelessWidget {
-  const _DashedDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final dashWidth = 6.0;
-        final dashSpace = 4.0;
-        final dashCount =
-        (constraints.maxWidth / (dashWidth + dashSpace)).floor();
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(dashCount, (_) {
-            return Container(
-              width: dashWidth,
-              height: .3,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            );
-          }),
-        );
-      },
-    );
-  }
-}
+// class _DashedDivider extends StatelessWidget {
+//   const _DashedDivider();
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return LayoutBuilder(
+//       builder: (context, constraints) {
+//         final dashWidth = 6.0;
+//         final dashSpace = 4.0;
+//         final dashCount =
+//         (constraints.maxWidth / (dashWidth + dashSpace)).floor();
+//
+//         return Row(
+//           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//           children: List.generate(dashCount, (_) {
+//             return Container(
+//               width: dashWidth,
+//               height: .3,
+//               decoration: BoxDecoration(
+//                 color: Colors.grey.shade400,
+//                 borderRadius: BorderRadius.circular(2),
+//               ),
+//             );
+//           }),
+//         );
+//       },
+//     );
+//   }
+// }
 
 class _OrderCountdownWidgetState extends State<_OrderCountdownWidget> {
   late Timer _timer;

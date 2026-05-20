@@ -799,6 +799,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
               const SizedBox(height: 10),
 
               _buildOrderCard(),
+              _buildListNextBookOrder(),
 
             ] else ...[
               // ── Inactive profile warning ──
@@ -1185,6 +1186,23 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                 color: Colors.grey.shade600,
                 fontWeight: FontWeight.w500),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListNextBookOrder() {
+    return Container(
+      margin: EdgeInsets.only(top: 16),
+      padding: EdgeInsets.all(16),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: ColorConfig.primaryBackground,
+
+      ),
+      child: Column(
+        children: [
+          Text("Danh sách các đơn đặt trước đang có!")
         ],
       ),
     );

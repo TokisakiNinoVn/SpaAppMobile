@@ -4,7 +4,7 @@ import 'package:spa_app/config/color_config.dart';
 
 import 'package:spa_app/screens/technician/tabs/account_widget.dart';
 import 'package:spa_app/screens/technician/tabs/home_widget.dart';
-import 'package:spa_app/screens/technician/tabs/job_tab_widget.dart';
+import 'package:spa_app/screens/technician/tabs/get_job_tab_widget.dart';
 import 'package:spa_app/screens/technician/tabs/management_technician_widget_tab.dart';
 import 'package:spa_app/screens/technician/tabs/order_tab_widget.dart';
 import 'package:spa_app/screens/technician/tabs/policy_tab_widget.dart';

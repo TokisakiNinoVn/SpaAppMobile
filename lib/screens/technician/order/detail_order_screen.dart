@@ -6,15 +6,15 @@ import 'package:spa_app/helper/order_helper.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'package:spa_app/helper/format_helper.dart';
 
-class DetailsOrderScreen extends StatefulWidget {
+class DetailsOrderTechnician extends StatefulWidget {
   final String id;
-  const DetailsOrderScreen({super.key, required this.id});
+  const DetailsOrderTechnician({super.key, required this.id});
 
   @override
-  State<DetailsOrderScreen> createState() => _DetailsOrderScreenState();
+  State<DetailsOrderTechnician> createState() => _DetailsOrderTechnicianState();
 }
 
-class _DetailsOrderScreenState extends State<DetailsOrderScreen> {
+class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
   final OrderService _orderService = OrderService();
   Map<String, dynamic>? _orderDetails;
   bool _isLoading = true;
@@ -54,6 +54,7 @@ class _DetailsOrderScreenState extends State<DetailsOrderScreen> {
   Map<String, dynamic>? get _pricing => _orderDetails?['pricing'];
   Map<String, dynamic>? get _serviceTimePrice => _orderDetails?['serviceTimePrice'];
   Map<String, dynamic>? get _technician => _orderDetails?['technician'];
+  Map<String, dynamic>? get _customer => _orderDetails?['customer'];
 
   // Section builder with nice styling
   Widget _buildSection(String title, Widget child, {IconData? icon}) {
@@ -165,27 +166,117 @@ class _DetailsOrderScreenState extends State<DetailsOrderScreen> {
     );
   }
 
-  Widget _buildPriceRow(String label, int amount, {bool isTotal = false}) {
+  Widget _buildPriceRow(
+    String label,
+      int amount, {
+        bool isTotal = false,
+        bool isAdd = false,
+        bool isRemove = false,
+        bool toolTip = false,
+        String? textToolTip,
+      }
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
-              color: isTotal ? ColorConfig.primary : ColorConfig.textBlack.withOpacity(0.8),
-            ),
+          Row(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: isTotal ? 16 : 14,
+                  fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
+                  color: isTotal ? ColorConfig.primary : ColorConfig.textBlack.withOpacity(0.8),
+                ),
+              ),
+
+              if (toolTip && textToolTip != null) ...[
+                const SizedBox(width: 6),
+
+                Tooltip(
+                  message: textToolTip,
+                  triggerMode: TooltipTriggerMode.tap,
+                  preferBelow: false,
+                  waitDuration: const Duration(milliseconds: 100),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  textStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: ColorConfig.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 100,
+                    ),
+                    child: Icon(
+                      Icons.info_outline_rounded,
+                      size: 20,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-          Text(
-            FormatHelper.formatPrice(amount),
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-              color: isTotal ? ColorConfig.primary : ColorConfig.textBlack,
-            ),
+
+          Row(
+            children: [
+              if(isAdd)...[
+                Icon(Icons.add, size: 14, color: ColorConfig.primary),
+              ] else if(isRemove) ...[
+                Icon(Icons.remove, size: 14, color: ColorConfig.textError,),
+              ],
+              if(isTotal)...[
+                Text(
+                  FormatHelper.formatPrice(amount),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+                    // color: ColorConfig.primary : ColorConfig.textBlack,
+                    color: ColorConfig.primary
+                  ),
+                ),
+              ] else if(isAdd) ...[
+                Text(
+                  FormatHelper.formatPrice(amount),
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      // color: ColorConfig.primary : ColorConfig.textBlack,
+                      color: ColorConfig.primary
+                  ),
+                ),
+              ] else if(isRemove) ...[
+                Text(
+                  FormatHelper.formatPrice(amount),
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: ColorConfig.textError
+                  ),
+                ),
+              ] else ...[
+                Text(
+                  FormatHelper.formatPrice(amount),
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: ColorConfig.textBlack
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -299,40 +390,80 @@ class _DetailsOrderScreenState extends State<DetailsOrderScreen> {
             // Pricing Card
             if (_pricing != null)
               _buildSection(
-                'Bảng giá',
+                'Chi tiết hóa đơn',
                 Column(
                   children: [
+                    _buildPriceRow('Tổng thanh toán', _pricing!['finalAmount'] ?? 0, isTotal: true),
                     _buildPriceRow('Giá dịch vụ', _pricing!['serviceAmount'] ?? 0),
                     if ((_pricing!['discountAmount'] ?? 0) > 0)
-                      _buildPriceRow('Giảm giá', -(_pricing!['discountAmount'] ?? 0)),
-                    if ((_pricing!['extraAmount'] ?? 0) > 0)
-                      _buildPriceRow('Chi phí hỗ trợ: ', _pricing!['extraAmount'] ?? 0),
+                      _buildPriceRow('Ưu đãi', -(_pricing!['discountAmount'] ?? 0), isRemove: true),
+                    if ((_pricing!['extraAmount'] ?? 0) > 0)...[
+                      _buildPriceRow('Phụ phí hỗ trợ', _pricing!['extraAmount'] ?? 0, isAdd: true),
+                    ],
+                    if ((_pricing!['platformFeePercent'] ?? 0) > 0)
+                      _buildPriceRow(
+                        'Phí nền tảng ',
+                        _pricing!['platformFeeAmount'] ?? 0,
+                        isRemove: true,
+                        toolTip: true,
+                        textToolTip: "Khoản phí nền tảng được áp dụng cho mỗi đơn dịch vụ.\nPhí nền tảng áp dụng cho đơn dịch vụ này là: ${FormatHelper.formatPrice(_pricing!['platformFeeAmount'])}đ (${_pricing!['platformFeePercent']}%)"
+                      ),
                     const Divider(height: 20, thickness: 1),
-                    _buildPriceRow('Tổng thanh toán', _pricing!['finalAmount'] ?? 0, isTotal: true),
-                    // if (deposit > 0) ...[
-                    //   const SizedBox(height: 8),
-                    //   Container(
-                    //     padding: const EdgeInsets.all(8),
-                    //     decoration: BoxDecoration(
-                    //       color: ColorConfig.primary.withOpacity(0.08),
-                    //       borderRadius: BorderRadius.circular(12),
-                    //     ),
-                    //     child: Row(
-                    //       children: [
-                    //         Icon(Icons.account_balance_wallet, size: 18, color: ColorConfig.primary),
-                    //         const SizedBox(width: 8),
-                    //         Text(
-                    //           'Đã đặt cọc: ${FormatHelper.formatPrice(deposit)}',
-                    //           style: const TextStyle(fontWeight: FontWeight.w500),
-                    //         ),
-                    //       ],
-                    //     ),
-                    //   ),
-                    // ],
+                    _buildPriceRow(
+                      status == "done"
+                          ? 'Số tiền thực nhận'
+                          : 'Thu nhập dự kiến',
+                      _pricing!['technicianReceiveAmount'] ?? 0,
+                      isTotal: true,
+                    ),
                   ],
                 ),
                 icon: Icons.receipt_long,
               ),
+              // _buildSection(
+              //   'Chi tiết hóa đơn',
+              //   Column(
+              //     children: [
+              //       _buildPriceRow('Tổng thanh toán', _pricing!['finalAmount'] ?? 0, isTotal: true),
+              //       _buildPriceRow('Giá dịch vụ', _pricing!['serviceAmount'] ?? 0),
+              //       if ((_pricing!['discountAmount'] ?? 0) > 0)
+              //         _buildPriceRow('Ưu đãi', -(_pricing!['discountAmount'] ?? 0), isRemove: true),
+              //       if ((_pricing!['extraAmount'] ?? 0) > 0)
+              //         _buildPriceRow('Phụ phí hỗ trợ', _pricing!['extraAmount'] ?? 0, isAdd: true),
+              //       if ((_pricing!['platformFeePercent'] ?? 0) > 0)
+              //         _buildPriceRow('Phí nền tảng ', _pricing!['platformFeeAmount'] ?? 0, isRemove: true),
+              //       const Divider(height: 20, thickness: 1),
+              //       _buildPriceRow(
+              //         status == "done"
+              //             ? 'Số tiền thực nhận'
+              //             : 'Thu nhập dự kiến',
+              //         _pricing!['technicianReceiveAmount'] ?? 0,
+              //         isTotal: true,
+              //       ),
+              //       // if (deposit > 0) ...[
+              //       //   const SizedBox(height: 8),
+              //       //   Container(
+              //       //     padding: const EdgeInsets.all(8),
+              //       //     decoration: BoxDecoration(
+              //       //       color: ColorConfig.primary.withOpacity(0.08),
+              //       //       borderRadius: BorderRadius.circular(12),
+              //       //     ),
+              //       //     child: Row(
+              //       //       children: [
+              //       //         Icon(Icons.account_balance_wallet, size: 18, color: ColorConfig.primary),
+              //       //         const SizedBox(width: 8),
+              //       //         Text(
+              //       //           'Đã đặt cọc: ${FormatHelper.formatPrice(deposit)}',
+              //       //           style: const TextStyle(fontWeight: FontWeight.w500),
+              //       //         ),
+              //       //       ],
+              //       //     ),
+              //       //   ),
+              //       // ],
+              //     ],
+              //   ),
+              //   icon: Icons.receipt_long,
+              // ),
 
             // Service info
             _buildSection(
@@ -349,6 +480,88 @@ class _DetailsOrderScreenState extends State<DetailsOrderScreen> {
                 ],
               ),
               icon: Icons.spa,
+            ),
+            _buildSection(
+              'Thông tin khách hàng',
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.grey.shade300,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            status != 'done'
+                                ? (_customer?["gender"] == "male"
+                                ? "Khách hàng nam"
+                                : "Khách hàng nữ")
+                                : (_customer?["fullname"] ?? "Chưa có tên"),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+
+                          const SizedBox(height: 6),
+                          if(status == 'done') ...[
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.person_outline,
+                                  size: 16,
+                                  color: Colors.grey.shade600,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _customer?["gender"] == "male"
+                                      ? "Nam"
+                                      : "Nữ",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 6),
+                          ],
+
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.phone_outlined,
+                                size: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                status != 'done'
+                                    ? "Chưa xác định"
+                                    : (_customer?["phone"] ?? "Chưa có SĐT"),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // icon: Icons.person,
             ),
 
             // Technician

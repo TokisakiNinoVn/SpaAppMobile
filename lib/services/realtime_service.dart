@@ -115,10 +115,10 @@ class RealtimeService {
       path: '/api/private/ws/realtime',
     );
 
-    appLog("URI connect Wss: $uri");
+    // appLog("URI connect Wss: $uri");
 
     try {
-      appLog('[RealtimeService] 🔌 Connecting...');
+      // appLog('[RealtimeService] 🔌 Connecting...');
 
       final socket = await WebSocket.connect(
         uri.toString(),

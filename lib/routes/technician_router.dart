@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:spa_app/screens/technician/add_technician_screen.dart';
 import 'package:spa_app/screens/technician/notification/technician_list_notification.dart';
+import 'package:spa_app/screens/technician/order/detail_order_screen.dart';
 import 'package:spa_app/screens/technician/order/details_new_order.dart';
 import 'package:spa_app/screens/technician/service/technicianupdate_service.dart';
 import 'package:spa_app/screens/technician/technician/update_profile_technician.dart';
@@ -40,6 +41,14 @@ final List<GoRoute> technicianRoutes = [
           builder: (context, state) {
             final orderId = state.pathParameters['orderId']!;
             return DetailsNewOrderScreen(orderId: orderId);
+          },
+        ),
+
+        GoRoute(
+          path: 'details-orders/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return DetailsOrderTechnician(id: id);
           },
         ),
 
