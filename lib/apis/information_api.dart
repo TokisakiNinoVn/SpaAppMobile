@@ -12,4 +12,8 @@ class InformationApiRoutes {
   static const String listFeatureService = '${AppConfig.apiAdminUrlPrivate}/information/featured-services';
   static const String listFeatureServicePublic = '${AppConfig.apiUrlPublic}/information/featured-services';
   static const String updateFeatureService = '${AppConfig.apiAdminUrlPrivate}/information/featured-services';
+
+  // platform-fees
+  static const String listPlatformFees = '${AppConfig.apiAdminUrlPrivate}/information/platform-fees';
+  static const String updatePlatformFees = '${AppConfig.apiAdminUrlPrivate}/information/platform-fees';
 }

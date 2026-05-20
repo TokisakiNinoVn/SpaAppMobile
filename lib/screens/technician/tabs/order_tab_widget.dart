@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/screens/technician/tabs/components/request_order_card.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'dart:async';
 import 'package:spa_app/services/realtime_service.dart';
@@ -609,6 +611,7 @@ class _OrderTabState extends State<OrderTab> {
   }
 
   Widget _buildOrderItem(dynamic order) {
+    appLog("Data order: $order");
     final orderId = order['_id'] ?? '';
     final remainingTime = _remainingTimes[orderId];
     final isExpiringSoon = order['isExpiringSoon'] ?? false;
@@ -617,10 +620,19 @@ class _OrderTabState extends State<OrderTab> {
     final isPrioritize = order['isPrioritize'] ?? false;
 
     final isBookOrderTab = selectedTab == 1;
+    return RequestOrderCard(
+      order: order,
+      remainingTime: _remainingTimes[order['_id']],
+      showTimeline: true,
+      onApply: () {
+        appLog("Ứng tuyển");
+        SnackBarHelper.showWarning(context, "Chức năng đang được phát triển");
+      },
+    );
 
     return GestureDetector(
       onTap: () {
-        context.go('/home-technician/orders/$orderId');
+        context.push('/home-technician/orders/$orderId');
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

@@ -294,7 +294,7 @@ class _DetailsJobOrderScreenState extends State<DetailsJobOrderScreen> {
 
     if (orderDetail == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Chi tiết đơn')),
+        appBar: AppBar(title: const Text('Chi tiết đơn 123')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -1,5 +1,6 @@
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
+import 'package:spa_app/providers/information_provider.dart';
 import 'package:spa_app/providers/user_provider.dart';
 
 
@@ -13,6 +14,7 @@ class AppProviders extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => InformationProvider()),
       ],
       child: child,
     );

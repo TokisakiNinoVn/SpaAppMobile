@@ -180,11 +180,6 @@ final List<GoRoute> customerRoutes = [
           builder: (context, state) => AutomaticMatchingScreen(),
           routes: [
             GoRoute(
-              redirect: (context, state) async {
-                final loggedIn = await CheckLoginHelper.isLoggedIn();
-                if (!loggedIn) return '/login-otp';
-                return null;
-              },
               path: 'create-order',
               builder: (context, state) {
                 final data = state.extra as Map<String, dynamic>;

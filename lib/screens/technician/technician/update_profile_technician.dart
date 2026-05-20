@@ -5,6 +5,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/full_screen_single_image.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/screens/widgets/date_of_birth_picker_bottom_sheet.dart';
 import 'package:spa_app/screens/widgets/district_picker_bottom_sheet.dart';
@@ -118,17 +119,17 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
         setState(() {
           dataUser = response['data'];
           technicianData = response['data']['technician'];
-          appLog("Technician data: $technicianData");
+          // appLog("Technician data: $technicianData");
           _initializeData();
         });
         await _loadProvinces();
         await _loadAllServices();
       } else {
-        _showSnack(response['message'] ?? 'Không thể tải thông tin người dùng');
+        SnackBarHelper.showError(context, response['message'] ?? 'Không thể tải thông tin người dùng');
       }
     } catch (e) {
       appLog("Error loading user detail: $e");
-      _showSnack('Lỗi tải thông tin: $e');
+      SnackBarHelper.showError(context, 'Lỗi tải thông tin: $e');
     } finally {
       setState(() => isLoading = false);
     }
@@ -144,7 +145,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     // selectedDate = technicianData?['selectedDate'];
     if (technicianData?['dateOfBirth'] != null) {
       selectedDate = DateTime.parse(technicianData!['dateOfBirth']).toLocal();
-      appLog("Select date: $selectedDate");
+      // appLog("Select date: $selectedDate");
     } else {
       appLog("technicianData!['dateOfBirth']: ${technicianData!['dateOfBirth']}");
       selectedDate = null;
@@ -259,23 +260,23 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     }
     // Validation
     if (fullname.isEmpty) {
-      _showSnack('Vui lòng nhập họ tên');
+      SnackBarHelper.showWarning(context, 'Vui lòng nhập họ tên');
       return;
     }
     if (address.isEmpty) {
-      _showSnack('Vui lòng nhập địa chỉ cụ thể');
+      SnackBarHelper.showWarning(context, 'Vui lòng nhập địa chỉ cụ thể');
       return;
     }
     if (experience == null) {
-      _showSnack('Vui lòng chọn kinh nghiệm');
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn kinh nghiệm');
       return;
     }
     if (selectedDistricts.isEmpty) {
-      _showSnack('Vui lòng chọn ít nhất một quận/huyện');
+      SnackBarHelper.showWarning(context, 'Vui lòng chọn ít nhất một quận/huyện');
       return;
     }
     if (images.length < 3) {
-      _showSnack('Vui lòng tải lên ít nhất 3 hình ảnh');
+      SnackBarHelper.showWarning(context, 'Vui lòng tải lên ít nhất 3 hình ảnh');
       return;
     }
 
@@ -318,14 +319,14 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       appLog("Update response: $response");
 
       if (response['success'] == true) {
-        _showSnack('Cập nhật hồ sơ thành công', isError: false);
+        SnackBarHelper.showSuccess(context, 'Cập nhật hồ sơ thành công');
         context.pop(true);
       } else {
-        _showSnack(response['message'] ?? 'Có lỗi xảy ra khi cập nhật hồ sơ');
+        SnackBarHelper.showError(context, response['message'] ?? 'Có lỗi xảy ra khi cập nhật hồ sơ');
       }
     } catch (e) {
       appLog("Error updating technician: $e");
-      _showSnack('Lỗi hệ thống: $e');
+      SnackBarHelper.showError(context, 'Lỗi hệ thống: $e');
     } finally {
       setState(() => isLoading = false);
     }
@@ -353,19 +354,19 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
             });
           }
         });
-        _showSnack('Tải ảnh lên thành công', isError: false);
+        SnackBarHelper.showSuccess(context, 'Tải ảnh lên thành công');
       } else {
-        _showSnack(response['message'] ?? 'Không thể tải lên hình ảnh');
+        SnackBarHelper.showError(context, response['message'] ?? 'Không thể tải lên hình ảnh');
       }
     } catch (e) {
       appLog("Error uploading image: $e");
-      _showSnack('Lỗi tải lên hình ảnh: $e');
+      SnackBarHelper.showError(context, 'Lỗi tải lên hình ảnh: $e');
     }
   }
 
   Future<void> _pickImage({bool isAvatar = false}) async {
     if (!isAvatar && images.length >= 5) {
-      SnackBarHelper.showError(context, 'Bạn chỉ được chọn tối đa 5 ảnh');
+      SnackBarHelper.showWarning(context, 'Bạn chỉ được chọn tối đa 5 ảnh');
       return;
     }
 
@@ -398,31 +399,31 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
   //   }
   // }
 
-  Future<void> _cropImage(File imageFile, {bool isAvatar = false}) async {
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: imageFile.path,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Cắt ảnh',
-          toolbarColor: const Color(0xFF8B5E3C),
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.square,
-          lockAspectRatio: true,
-        ),
-        IOSUiSettings(
-          title: 'Cắt ảnh',
-          aspectRatioLockEnabled: true,
-          resetAspectRatioEnabled: false,
-          aspectRatioPickerButtonHidden: true,
-        ),
-      ],
-    );
-
-    if (croppedFile != null) {
-      await uploadImage(croppedFile.path, isAvatar: isAvatar);
-    }
-  }
+  // Future<void> _cropImage(File imageFile, {bool isAvatar = false}) async {
+  //   final croppedFile = await ImageCropper().cropImage(
+  //     sourcePath: imageFile.path,
+  //     aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+  //     uiSettings: [
+  //       AndroidUiSettings(
+  //         toolbarTitle: 'Cắt ảnh',
+  //         toolbarColor: const Color(0xFF8B5E3C),
+  //         toolbarWidgetColor: Colors.white,
+  //         initAspectRatio: CropAspectRatioPreset.square,
+  //         lockAspectRatio: true,
+  //       ),
+  //       IOSUiSettings(
+  //         title: 'Cắt ảnh',
+  //         aspectRatioLockEnabled: true,
+  //         resetAspectRatioEnabled: false,
+  //         aspectRatioPickerButtonHidden: true,
+  //       ),
+  //     ],
+  //   );
+  //
+  //   if (croppedFile != null) {
+  //     await uploadImage(croppedFile.path, isAvatar: isAvatar);
+  //   }
+  // }
 
   Future<void> deleteImage(String idImage) async {
     try {
@@ -433,13 +434,13 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
         setState(() {
           images.removeWhere((img) => img['_id'] == idImage);
         });
-        _showSnack('Hình ảnh đã được xóa', isError: false);
+        SnackBarHelper.showSuccess(context, 'Hình ảnh đã được xóa');
       } else {
-        _showSnack('Không thể xóa hình ảnh');
+        SnackBarHelper.showError(context, 'Không thể xóa hình ảnh');
       }
     } catch (e) {
       appLog("Error deleting image: $e");
-      _showSnack('Lỗi xóa hình ảnh: $e');
+      SnackBarHelper.showError(context, 'Lỗi xóa hình ảnh: $e');
     }
   }
 
@@ -451,10 +452,10 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
         setState(() {
           avatarImage = null;
         });
-        _showSnack('Ảnh đại diện đã được xóa', isError: false);
+        SnackBarHelper.showSuccess(context, 'Ảnh đại diện đã được xóa');
       } catch (e) {
         appLog("Error deleting avatar: $e");
-        _showSnack('Lỗi xóa ảnh đại diện: $e');
+        SnackBarHelper.showError(context, 'Lỗi xóa ảnh đại diện: $e');
       }
     } else {
       setState(() {
@@ -463,46 +464,46 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     }
   }
 
-  void _showFullScreenImage(String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog.fullscreen(
-        child: Stack(
-          children: [
-            Center(
-              child: InteractiveViewer(
-                minScale: 0.5,
-                maxScale: 4.0,
-                child: Image.network(
-                  FormatHelper.formatNetworkImageUrl(imageUrl),
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-            Positioned(
-              top: 40,
-              right: 20,
-              child: IconButton(
-                icon: const Icon(Icons.close, size: 30, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // void _showFullScreenImage(String imageUrl) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => Dialog.fullscreen(
+  //       child: Stack(
+  //         children: [
+  //           Center(
+  //             child: InteractiveViewer(
+  //               minScale: 0.5,
+  //               maxScale: 4.0,
+  //               child: Image.network(
+  //                 FormatHelper.formatNetworkImageUrl(imageUrl),
+  //                 fit: BoxFit.contain,
+  //               ),
+  //             ),
+  //           ),
+  //           Positioned(
+  //             top: 40,
+  //             right: 20,
+  //             child: IconButton(
+  //               icon: const Icon(Icons.close, size: 30, color: Colors.white),
+  //               onPressed: () => Navigator.pop(context),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  void _showSnack(String message, {bool isError = true}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-        backgroundColor: isError ? Colors.redAccent : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
+  // void _showSnack(String message, {bool isError = true}) {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Text(message, style: const TextStyle(color: Colors.white)),
+  //       backgroundColor: isError ? Colors.redAccent : Colors.green,
+  //       behavior: SnackBarBehavior.floating,
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  //     ),
+  //   );
+  // }
 
   String _getExperienceDisplayText() {
     if (experience == null) return 'Chọn kinh nghiệm';
@@ -818,155 +819,155 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     );
   }
 
-  void _showServicesBottomSheet() {
-    if (allServices == null || allServices!.isEmpty) {
-      _showSnack('Đang tải danh sách dịch vụ...');
-      return;
-    }
-
-    _serviceSearchController.clear();
-    setState(() {
-      filteredServices = List.from(allServices!);
-    });
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Container(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-              left: 20,
-              right: 20,
-              top: 20,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildBottomSheetHandle(),
-                const SizedBox(height: 20),
-                const Text(
-                  'Chọn dịch vụ',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Chọn các dịch vụ kỹ thuật viên có thể cung cấp',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _serviceSearchController,
-                  onChanged: (value) {
-                    setModalState(() {
-                      filteredServices = allServices!.where((service) {
-                        return service['name']
-                            .toLowerCase()
-                            .contains(value.toLowerCase());
-                      }).toList();
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Tìm kiếm dịch vụ',
-                    prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-                    filled: true,
-                    fillColor: Colors.grey[50],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(40),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Flexible(
-                  child: filteredServices.isEmpty
-                      ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.inbox, size: 48, color: Colors.grey[400]),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Không tìm thấy dịch vụ',
-                          style: TextStyle(color: Colors.grey[500]),
-                        ),
-                      ],
-                    ),
-                  )
-                      : ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: filteredServices.length,
-                    separatorBuilder: (_, __) => const Divider(height: 0),
-                    itemBuilder: (context, index) {
-                      final service = filteredServices[index];
-                      final isSelected = selectedServiceIds.any(
-                              (s) => s['_id'] == service['_id']
-                      );
-                      return CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          service['name'],
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                            color: isSelected ? ColorConfig.textBlack : Colors.grey[700],
-                          ),
-                        ),
-                        subtitle: service['description'] != null
-                            ? Text(
-                          service['description'],
-                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                            : null,
-                        value: isSelected,
-                        activeColor: ColorConfig.primary,
-                        onChanged: (bool? value) {
-                          setModalState(() {
-                            if (value == true) {
-                              selectedServiceIds.add(service);
-                            } else {
-                              selectedServiceIds.removeWhere(
-                                      (s) => s['_id'] == service['_id']
-                              );
-                            }
-                          });
-                          setState(() {});
-                        },
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ColorConfig.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                    ),
-                    child: const Text('Xác nhận', style: TextStyle(fontSize: 16)),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
+  // void _showServicesBottomSheet() {
+  //   if (allServices == null || allServices!.isEmpty) {
+  //     _showSnack('Đang tải danh sách dịch vụ...');
+  //     return;
+  //   }
+  //
+  //   _serviceSearchController.clear();
+  //   setState(() {
+  //     filteredServices = List.from(allServices!);
+  //   });
+  //
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  //     ),
+  //     builder: (context) => StatefulBuilder(
+  //       builder: (context, setModalState) {
+  //         return Container(
+  //           padding: EdgeInsets.only(
+  //             bottom: MediaQuery.of(context).viewInsets.bottom,
+  //             left: 20,
+  //             right: 20,
+  //             top: 20,
+  //           ),
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               _buildBottomSheetHandle(),
+  //               const SizedBox(height: 20),
+  //               const Text(
+  //                 'Chọn dịch vụ',
+  //                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+  //               ),
+  //               const SizedBox(height: 8),
+  //               Text(
+  //                 'Chọn các dịch vụ kỹ thuật viên có thể cung cấp',
+  //                 style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+  //               ),
+  //               const SizedBox(height: 16),
+  //               TextField(
+  //                 controller: _serviceSearchController,
+  //                 onChanged: (value) {
+  //                   setModalState(() {
+  //                     filteredServices = allServices!.where((service) {
+  //                       return service['name']
+  //                           .toLowerCase()
+  //                           .contains(value.toLowerCase());
+  //                     }).toList();
+  //                   });
+  //                 },
+  //                 decoration: InputDecoration(
+  //                   hintText: 'Tìm kiếm dịch vụ',
+  //                   prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
+  //                   filled: true,
+  //                   fillColor: Colors.grey[50],
+  //                   border: OutlineInputBorder(
+  //                     borderRadius: BorderRadius.circular(40),
+  //                     borderSide: BorderSide.none,
+  //                   ),
+  //                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 16),
+  //               Flexible(
+  //                 child: filteredServices.isEmpty
+  //                     ? Center(
+  //                   child: Column(
+  //                     mainAxisAlignment: MainAxisAlignment.center,
+  //                     children: [
+  //                       Icon(Icons.inbox, size: 48, color: Colors.grey[400]),
+  //                       const SizedBox(height: 12),
+  //                       Text(
+  //                         'Không tìm thấy dịch vụ',
+  //                         style: TextStyle(color: Colors.grey[500]),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 )
+  //                     : ListView.separated(
+  //                   shrinkWrap: true,
+  //                   itemCount: filteredServices.length,
+  //                   separatorBuilder: (_, __) => const Divider(height: 0),
+  //                   itemBuilder: (context, index) {
+  //                     final service = filteredServices[index];
+  //                     final isSelected = selectedServiceIds.any(
+  //                             (s) => s['_id'] == service['_id']
+  //                     );
+  //                     return CheckboxListTile(
+  //                       contentPadding: EdgeInsets.zero,
+  //                       title: Text(
+  //                         service['name'],
+  //                         style: TextStyle(
+  //                           fontSize: 15,
+  //                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+  //                           color: isSelected ? ColorConfig.textBlack : Colors.grey[700],
+  //                         ),
+  //                       ),
+  //                       subtitle: service['description'] != null
+  //                           ? Text(
+  //                         service['description'],
+  //                         style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+  //                         maxLines: 1,
+  //                         overflow: TextOverflow.ellipsis,
+  //                       )
+  //                           : null,
+  //                       value: isSelected,
+  //                       activeColor: ColorConfig.primary,
+  //                       onChanged: (bool? value) {
+  //                         setModalState(() {
+  //                           if (value == true) {
+  //                             selectedServiceIds.add(service);
+  //                           } else {
+  //                             selectedServiceIds.removeWhere(
+  //                                     (s) => s['_id'] == service['_id']
+  //                             );
+  //                           }
+  //                         });
+  //                         setState(() {});
+  //                       },
+  //                     );
+  //                   },
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 16),
+  //               SizedBox(
+  //                 width: double.infinity,
+  //                 child: ElevatedButton(
+  //                   onPressed: () => Navigator.pop(context),
+  //                   style: ElevatedButton.styleFrom(
+  //                     backgroundColor: ColorConfig.primary,
+  //                     foregroundColor: Colors.white,
+  //                     padding: const EdgeInsets.symmetric(vertical: 14),
+  //                     shape: RoundedRectangleBorder(
+  //                       borderRadius: BorderRadius.circular(40),
+  //                     ),
+  //                   ),
+  //                   child: const Text('Xác nhận', style: TextStyle(fontSize: 16)),
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 20),
+  //             ],
+  //           ),
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
 
   Widget _buildBottomSheetHandle() {
     return Container(
@@ -1008,7 +1009,15 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
         return Stack(
           children: [
             GestureDetector(
-              onTap: () => _showFullScreenImage(image['url']),
+              onTap: () {
+                final imageUrl = image['url'];
+                if (imageUrl != null && imageUrl.isNotEmpty) {
+                  showDialog(
+                    context: context,
+                    builder: (_) => FullScreenSingleImageViewer(imageUrl: FormatHelper.formatNetworkImageUrl(imageUrl)),
+                  );
+                }
+              },
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.network(
@@ -1056,9 +1065,21 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
     return Column(
       children: [
         GestureDetector(
+          // onTap: () {
+          //   if (avatarImage != null) {
+          //     _showFullScreenImage(avatarImage!['url']);
+          //
+          //
+          //   }
+          // },
+
           onTap: () {
-            if (avatarImage != null) {
-              _showFullScreenImage(avatarImage!['url']);
+            final imageUrl = avatarImage!['url'];
+            if (imageUrl != null && imageUrl.isNotEmpty) {
+              showDialog(
+                context: context,
+                builder: (_) => FullScreenSingleImageViewer(imageUrl: FormatHelper.formatNetworkImageUrl(imageUrl)),
+              );
             }
           },
           child: Stack(
@@ -1389,11 +1410,26 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           backgroundColor: ColorConfig.primary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(40),
+                          ),
                         ),
                         child: isLoading
-                            ? const CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                            : const Text('Cập nhật', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                            ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                            : const Text(
+                          'Cập nhật',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ],

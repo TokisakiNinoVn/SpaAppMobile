@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/services/user_service.dart';
 
 class EditAddressScreen extends StatefulWidget {
@@ -70,43 +71,14 @@ class _EditAddressScreenState extends State<EditAddressScreen> {
       final res = await _userService.updateAddressService(widget.id, data);
 
       if (res['success'] == true || res['status'] == 'success') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('Cập nhật địa chỉ thành công'),
-              ],
-            ),
-            backgroundColor: const Color(0xFF27AE60),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-
+        SnackBarHelper.showSuccess(context, 'Cập nhật địa chỉ thành công');
         context.pop(true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res['message'] ?? 'Cập nhật thất bại'),
-            backgroundColor: const Color(0xFFE74C3C),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-          ),
-        );
+        SnackBarHelper.showError(context, res['message'] ?? 'Cập nhật thất bại');
         setState(() => _isLoading = false);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Lỗi: ${e.toString()}'),
-          backgroundColor: const Color(0xFFE74C3C),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-        ),
-      );
+      SnackBarHelper.showError(context, 'Lỗi: ${e.toString()}');
       setState(() => _isLoading = false);
     }
   }
@@ -120,32 +92,10 @@ class _EditAddressScreenState extends State<EditAddressScreen> {
       final res = await _userService.deleteAddressService(widget.id);
 
       if (res['success'] == true || res['status'] == 'success') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('Xóa địa chỉ thành công'),
-              ],
-            ),
-            backgroundColor: const Color(0xFF27AE60),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-
+        SnackBarHelper.showSuccess(context, 'Xóa địa chỉ thành công');
         context.pop(true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res['message'] ?? 'Xóa thất bại'),
-            backgroundColor: const Color(0xFFE74C3C),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-          ),
-        );
+        SnackBarHelper.showSuccess(context, res['message'] ?? 'Xóa thất bại');
         setState(() => _isLoading = false);
       }
     } catch (e) {
@@ -363,7 +313,7 @@ class _EditAddressScreenState extends State<EditAddressScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(40),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: SwitchListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 6),

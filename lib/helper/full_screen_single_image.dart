@@ -8,6 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 
 class FullScreenSingleImageViewer extends StatefulWidget {
   final String imageUrl;
@@ -171,19 +173,13 @@ class _FullScreenSingleImageViewerState extends State<FullScreenSingleImageViewe
 
       if (result != null) {
         await _showNotification();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Tải ảnh thành công', style: TextStyle(color: Colors.white)),
-          backgroundColor: const Color(0xFFD4A373),
-        ));
+        SnackBarHelper.showError(context, "Tải ảnh thành công");
       } else {
         throw Exception("Không thể lưu ảnh vào MediaStore");
       }
     } catch (e) {
-      debugPrint("🛑 Lỗi tải ảnh: $e");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('❌ Lỗi: ${e.toString()}', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.redAccent,
-      ));
+      appLog("🛑 Lỗi tải ảnh: $e");
+      SnackBarHelper.showError(context, "❌ Lỗi: ${e.toString()}");
     } finally {
       setState(() => _isDownloading = false);
     }
@@ -214,7 +210,7 @@ class _FullScreenSingleImageViewerState extends State<FullScreenSingleImageViewe
           ),
           Positioned(
             top: 16,
-            right: 16,
+            left: 16,
             child: IconButton(
               icon: const Icon(Icons.close, color: Colors.white, size: 30),
               onPressed: () => Navigator.pop(context),

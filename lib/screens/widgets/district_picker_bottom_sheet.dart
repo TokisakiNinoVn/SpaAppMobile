@@ -71,8 +71,7 @@ class _DistrictPickerSheetContent extends StatefulWidget {
   });
 
   @override
-  State<_DistrictPickerSheetContent> createState() =>
-      _DistrictPickerSheetContentState();
+  State<_DistrictPickerSheetContent> createState() => _DistrictPickerSheetContentState();
 }
 
 class _DistrictPickerSheetContentState
@@ -184,6 +183,14 @@ class _DistrictPickerSheetContentState
               fontSize: 20,
               fontWeight: FontWeight.w600,
               color: Color(0xFF1A1A1A),
+            ),
+          ),
+          Text(
+            "Tích chọn những quận/huyện bạn muốn nhận việc",
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xEA1A1A1A),
             ),
           ),
           const SizedBox(height: 16),

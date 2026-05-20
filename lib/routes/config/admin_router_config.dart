@@ -43,4 +43,6 @@ class AdminRouterConfig {
   //FeatureService
   static String listFeatureService = "/home-admin/feature-service";
   static String editFeatureService = "/home-admin/feature-service/edit";
+
+  static String managePlatformFees = "/home-admin/manage-platform-fees";
 }

@@ -589,7 +589,7 @@ class _AccountTabState extends State<AccountTab> {
                         icon: Icons.edit_outlined,
                         label: 'Cập nhật thông tin',
                         onTap: () {
-                          context.push('/home-technician/update-profile');
+                          context.push(TechnicianRouterConfig.updateProfileTechnician);
                         },
                       ),
                       const SizedBox(height: 12),
@@ -597,7 +597,7 @@ class _AccountTabState extends State<AccountTab> {
                         icon: Icons.spa_outlined,
                         label: 'Các dịch vụ cung cấp',
                         onTap: () {
-                          context.go('/home-technician/technician-update-service');
+                          context.go(TechnicianRouterConfig.updateTechnicianService);
                         },
                       ),
                       const SizedBox(height: 12),

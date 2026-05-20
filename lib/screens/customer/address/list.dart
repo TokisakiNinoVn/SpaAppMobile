@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/services/user_service.dart';
 
@@ -32,61 +33,110 @@ class _ListAddressScreenState extends State<ListAddressScreen> {
     super.dispose();
   }
 
-  Future<void> _loadAddresses() async {
+  // Future<void> _loadAddresses() async {
+  //   setState(() {
+  //     _isLoading = true;
+  //     _errorMessage = null;
+  //   });
+  //
+  //   try {
+  //     final response = await _userService.listAddress();
+  //
+  //     if (response['success'] == true || response['status'] == 'success') {
+  //       setState(() {
+  //         _addresses = response['data'] ?? [];
+  //         _isLoading = false;
+  //       });
+  //     } else {
+  //       setState(() {
+  //         _errorMessage = response['message'] ?? 'Không thể tải danh sách địa chỉ';
+  //         _isLoading = false;
+  //       });
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       _errorMessage = 'Lỗi kết nối: ${e.toString()}';
+  //       _isLoading = false;
+  //     });
+  //   }
+  // }
+
+  Future<void> _loadAddresses({bool isRefresh = false}) async {
+    if (!mounted) return;
+
     setState(() {
-      _isLoading = true;
+      if (isRefresh) {
+        _isRefreshing = true;
+      } else {
+        _isLoading = true;
+      }
+
       _errorMessage = null;
     });
 
     try {
       final response = await _userService.listAddress();
 
-      if (response['success'] == true || response['status'] == 'success') {
+      if (!mounted) return;
+
+      if (response['success'] == true ||
+          response['status'] == 'success') {
         setState(() {
           _addresses = response['data'] ?? [];
-          _isLoading = false;
         });
       } else {
         setState(() {
-          _errorMessage = response['message'] ?? 'Không thể tải danh sách địa chỉ';
-          _isLoading = false;
+          _errorMessage =
+              response['message'] ?? 'Không thể tải danh sách địa chỉ';
         });
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Lỗi kết nối: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
-  }
+      if (!mounted) return;
 
-  Future<void> _onRefresh() async {
-    setState(() {
-      _isRefreshing = true;
-    });
-
-    try {
-      final response = await _userService.listAddress();
-
-      if (response['success'] == true || response['status'] == 'success') {
-        setState(() {
-          _addresses = response['data'] ?? [];
-          _errorMessage = null;
-        });
-      } else {
-        setState(() {
-          _errorMessage = response['message'] ?? 'Không thể tải danh sách địa chỉ';
-        });
-      }
-    } catch (e) {
       setState(() {
         _errorMessage = 'Lỗi kết nối: ${e.toString()}';
       });
     } finally {
+      if (!mounted) return;
+
       setState(() {
+        _isLoading = false;
         _isRefreshing = false;
       });
     }
+  }
+
+  // Future<void> _onRefresh() async {
+  //   setState(() {
+  //     _isRefreshing = true;
+  //   });
+  //
+  //   try {
+  //     final response = await _userService.listAddress();
+  //
+  //     if (response['success'] == true || response['status'] == 'success') {
+  //       setState(() {
+  //         _addresses = response['data'] ?? [];
+  //         _errorMessage = null;
+  //       });
+  //     } else {
+  //       setState(() {
+  //         _errorMessage = response['message'] ?? 'Không thể tải danh sách địa chỉ';
+  //       });
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       _errorMessage = 'Lỗi kết nối: ${e.toString()}';
+  //     });
+  //   } finally {
+  //     setState(() {
+  //       _isRefreshing = false;
+  //     });
+  //   }
+  // }
+
+  Future<void> _onRefresh() async {
+    await _loadAddresses(isRefresh: true);
   }
 
   Future<void> _deleteAddress(String id, String address) async {
@@ -129,93 +179,41 @@ class _ListAddressScreenState extends State<ListAddressScreen> {
 
       if (response['success'] == true || response['status'] == 'success') {
         _loadAddresses();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('Xóa địa chỉ thành công'),
-              ],
-            ),
-            backgroundColor: const Color(0xFF27AE60),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        SnackBarHelper.showSuccess(context, "Xóa địa chỉ thành công!");
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'Xóa địa chỉ thất bại'),
-            backgroundColor: const Color(0xFFE74C3C),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-          ),
-        );
+        SnackBarHelper.showError(context, response['message'] ?? 'Xóa địa chỉ thất bại');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Lỗi: ${e.toString()}'),
-          backgroundColor: const Color(0xFFE74C3C),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-        ),
-      );
+      SnackBarHelper.showError(context, 'Lỗi: ${e.toString()}');
     }
   }
 
   Future<void> _setDefaultAddress(String id) async {
     try {
       final response = await _userService.setDefaultAddressService(id, {});
-      appLog("response dat lai dia chi: $response");
+      // appLog("response dat lai dia chi: $response");
 
       if (response['success'] == true || response['status'] == 'success') {
         _loadAddresses();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('Đã đặt địa chỉ mặc định'),
-              ],
-            ),
-            backgroundColor: const Color(0xFF27AE60),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        SnackBarHelper.showSuccess(context, 'Đặt địa chỉ mặc định thành công!');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'Đặt địa chỉ mặc định thất bại'),
-            backgroundColor: const Color(0xFFE74C3C),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-          ),
-        );
+        SnackBarHelper.showError(context, response['message'] ?? 'Đặt địa chỉ mặc định thất bại');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Lỗi: ${e.toString()}'),
-          backgroundColor: const Color(0xFFE74C3C),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-        ),
-      );
+      SnackBarHelper.showError(context, 'Lỗi: ${e.toString()}');
     }
   }
 
-  void _navigateToAddAddress() async {
-    context.go(CustomerRouterConfig.addAddress);
+  Future<void> _navigateToAddAddress() async {
+    final result = await context.push(CustomerRouterConfig.addAddress);
+
+    if (result == true && mounted) {
+      _loadAddresses();
+    }
   }
 
-  void _navigateToEditAddress(Map<String, dynamic> address) {
-    context.go(
+  Future<void> _navigateToEditAddress(Map<String, dynamic> address) async {
+    final result = await context.push(
       CustomerRouterConfig.editAddress,
       extra: {
         "id": address["id"],
@@ -223,6 +221,10 @@ class _ListAddressScreenState extends State<ListAddressScreen> {
         "address": address,
       },
     );
+
+    if (result == true && mounted) {
+      _loadAddresses();
+    }
   }
 
   @override

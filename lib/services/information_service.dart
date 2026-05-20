@@ -33,4 +33,12 @@ class InformationService {
     return await ApiMethodsPrivate.putRequest('${InformationApiRoutes.updateFeatureService}/$id', data);
   }
 
+  // platform-fees
+  Future<Map<String, dynamic>> listPlatformFees() async {
+    return await ApiMethodsPrivate.getRequest(InformationApiRoutes.listPlatformFees);
+  }
+
+  Future<Map<String, dynamic>> updatePlatformFees(String id, Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.putRequest('${InformationApiRoutes.updatePlatformFees}/$id', data);
+  }
 }
