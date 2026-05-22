@@ -83,6 +83,12 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
           color: Color(0xFFE91E8C),
         ),
         _MenuItem(
+          icon: Icons.podcasts,
+          title: 'Quản lý bài đăng việc mới',
+          route: AdminRouterConfig.manageOrderPost,
+          color: Color(0xFF167C0A),
+        ),
+        _MenuItem(
           icon: Icons.airplane_ticket_outlined,
           title: 'Voucher / Ưu đãi',
           route: AdminRouterConfig.managementDiscount,

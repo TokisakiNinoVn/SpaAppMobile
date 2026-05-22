@@ -41,4 +41,8 @@ class InformationService {
   Future<Map<String, dynamic>> updatePlatformFees(String id, Map<String, dynamic> data) async {
     return await ApiMethodsPrivate.putRequest('${InformationApiRoutes.updatePlatformFees}/$id', data);
   }
+
+  Future<Map<String, dynamic>> searchPlatformFees(String query) async {
+    return await ApiMethodsPrivate.getRequest('${InformationApiRoutes.searchPlatformFees}?type=$query');
+  }
 }

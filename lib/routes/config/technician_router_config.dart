@@ -6,5 +6,6 @@ class TechnicianRouterConfig {
   static String updateProfileTechnician = '/home-technician/update-profile';
   static String updateTechnicianService = '/home-technician/technician-update-service';
   static String detailsOrder = '/home-technician/details-orders';
+  static String canceledOrder = '/home-technician/canceled-order';
 
 }

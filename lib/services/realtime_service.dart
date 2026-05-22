@@ -137,7 +137,7 @@ class RealtimeService {
           _reconnect();
         },
         onDone: () {
-          appLog('[RealtimeService] 🔴 Closed');
+          // appLog('[RealtimeService] 🔴 Closed');
           _reconnect();
         },
         cancelOnError: true,
@@ -151,7 +151,7 @@ class RealtimeService {
   void _reconnect() {
     if (_isDisposed) return;
 
-    appLog('[RealtimeService] 🔄 Reconnecting in ${_reconnectDelay / 1000}s');
+    // appLog('[RealtimeService] 🔄 Reconnecting in ${_reconnectDelay / 1000}s');
 
     Future.delayed(Duration(milliseconds: _reconnectDelay), () {
       if (_isDisposed) return;

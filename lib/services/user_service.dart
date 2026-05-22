@@ -35,6 +35,7 @@ class UserService {
       data,
     );
   }
+
   Future<Map<String, dynamic>> changeRoleService(
     Map<String, dynamic> data,
   ) async {
@@ -111,6 +112,16 @@ class UserService {
   Future<Map<String, dynamic>> listAddress() async {
     return await ApiMethodsPrivate.getRequest(
       '${UserApiRoutes.listAddress}',
+    );
+  }
+
+  // Admin
+  Future<Map<String, dynamic>> createManagementAccountService(
+    Map<String, dynamic> data,
+  ) async {
+    return await ApiMethodsPrivate.postRequest(
+      UserApiRoutes.createManagerAccount,
+      data,
     );
   }
 }

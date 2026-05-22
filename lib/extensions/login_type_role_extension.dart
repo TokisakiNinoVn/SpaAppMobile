@@ -13,6 +13,7 @@ extension LoginTypeRoleExtension on LoginTypeRole {
 
   /// Tên hiển thị UI
   String get displayName => config.display;
+  String get shortDisplay => config.shortDisplay;
 
   /// Kiểm tra role
   bool get isCustomer => this == LoginTypeRole.customer;

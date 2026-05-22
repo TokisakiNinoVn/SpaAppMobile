@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:spa_app/config/color_config.dart';
+import 'package:provider/provider.dart';
 
+import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/providers/selected_tab_provider.dart';
 import 'package:spa_app/screens/technician/tabs/account_widget.dart';
 import 'package:spa_app/screens/technician/tabs/home_widget.dart';
 import 'package:spa_app/screens/technician/tabs/get_job_tab_widget.dart';
@@ -9,10 +13,14 @@ import 'package:spa_app/screens/technician/tabs/management_technician_widget_tab
 import 'package:spa_app/screens/technician/tabs/order_tab_widget.dart';
 import 'package:spa_app/screens/technician/tabs/policy_tab_widget.dart';
 import 'package:spa_app/screens/technician/tabs/support_tab_widget.dart';
-// import 'package:spa_app/services/realtime_service.dart';
 
 class HomeTechnicianScreen extends StatefulWidget {
-  const HomeTechnicianScreen({super.key});
+
+  final int initialIndex;
+  const HomeTechnicianScreen({
+    super.key,
+    this.initialIndex = 0,
+  });
 
   @override
   State<HomeTechnicianScreen> createState() => _HomeTechnicianScreenState();
@@ -21,44 +29,44 @@ class HomeTechnicianScreen extends StatefulWidget {
 class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
   String? role;
   bool isLoading = true;
-  int _selectedIndex = 0;
   bool isTechnicianActive = false;
-  // late RealtimeService _realtimeService;
-
 
   @override
   void initState() {
     super.initState();
-    _loadRoleType();
 
-    // _realtimeService = RealtimeService(
-    //   context,
-    // );
-    // _realtimeService.connect();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SelectedTabProvider>()
+          .setIndex(widget.initialIndex);
+    });
+
+    _loadRoleType();
   }
 
   Future<void> _loadRoleType() async {
     final prefs = await SharedPreferences.getInstance();
+
     setState(() {
       role = prefs.getString('role') ?? 'Không rõ';
       isLoading = false;
-      isTechnicianActive = prefs.getBool('isTechnicianActive') == true;
+      isTechnicianActive =
+          prefs.getBool('isTechnicianActive') == true;
     });
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    context.read<SelectedTabProvider>().setIndex(index);
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(int selectedIndex) {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
     }
 
     if (isTechnicianActive) {
-      switch (_selectedIndex) {
+      switch (selectedIndex) {
         case 0:
           return const HomeTechnicianTab();
         case 1:
@@ -68,10 +76,12 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
         case 3:
           return const AccountTab();
         default:
-          return const Center(child: Text("Không tìm thấy tab."));
+          return const Center(
+            child: Text("Không tìm thấy tab."),
+          );
       }
     } else {
-      switch (_selectedIndex) {
+      switch (selectedIndex) {
         case 0:
           return const HomeTechnicianTab();
         case 1:
@@ -80,48 +90,188 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
           return const SupportTabWidget();
         case 3:
           return const AccountTab();
-      // case 3:
-      //   if (!isTechnicianActive) {
-      //     return const Center(child: Text("Hồ sơ chưa được duyệt"));
-      //   }
-      //   return const ManagementTechnicianTab();
         default:
-          return const Center(child: Text("Không tìm thấy tab."));
+          return const Center(
+            child: Text("Không tìm thấy tab."),
+          );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final selectedIndex =
+        context.watch<SelectedTabProvider>().selectedIndex;
+
     return Scaffold(
-      body: SafeArea(child: _buildBody()),
+      body: SafeArea(
+        child: _buildBody(selectedIndex),
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
+        currentIndex: selectedIndex,
         onTap: _onItemTapped,
         iconSize: 24.0,
         selectedFontSize: 12.0,
         unselectedFontSize: 10.0,
         selectedItemColor: ColorConfig.primary,
-        unselectedItemColor: ColorConfig.unselectedItemColor,
+        unselectedItemColor:
+        ColorConfig.unselectedItemColor,
         type: BottomNavigationBarType.fixed,
         items: isTechnicianActive
             ? const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.bike_scooter_outlined), label: 'Các đơn'),
-          BottomNavigationBarItem(icon: Icon(Icons.bookmark_added), label: 'Nhận việc'),
-          // BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Chính sách'),
-          // BottomNavigationBarItem(icon: Icon(Icons.phone), label: 'Hỗ trợ'),
-          // BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Hồ sơ'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Tài khoản'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long),
+            label: 'Đơn việc',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bookmark_added),
+            label: 'Nhận việc',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Tài khoản',
+          ),
         ]
             : const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          // BottomNavigationBarItem(icon: Icon(Icons.bookmark_added), label: 'Nhận việc'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Chính sách'),
-          BottomNavigationBarItem(icon: Icon(Icons.phone), label: 'Hỗ trợ'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Tài khoản'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.book),
+            label: 'Chính sách',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.phone),
+            label: 'Hỗ trợ',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Tài khoản',
+          ),
         ],
       ),
     );
   }
 }
+
+// class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
+//   String? role;
+//   bool isLoading = true;
+//   int _selectedIndex = 0;
+//   bool isTechnicianActive = false;
+//   // late RealtimeService _realtimeService;
+//
+//   @override
+//   void didChangeDependencies() {
+//     super.didChangeDependencies();
+//
+//     final extra = GoRouterState.of(context).extra;
+//
+//     if (extra is int && extra != _selectedIndex) {
+//       WidgetsBinding.instance.addPostFrameCallback((_) {
+//         if (mounted) {
+//           setState(() {
+//             _selectedIndex = extra;
+//           });
+//         }
+//       });
+//     }
+//   }
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     _selectedIndex = widget.initialIndex;
+//     appLog("tab _selectedIndex: ${widget.initialIndex}");
+//     _loadRoleType();
+//   }
+//
+//   Future<void> _loadRoleType() async {
+//     final prefs = await SharedPreferences.getInstance();
+//     setState(() {
+//       role = prefs.getString('role') ?? 'Không rõ';
+//       isLoading = false;
+//       isTechnicianActive = prefs.getBool('isTechnicianActive') == true;
+//     });
+//   }
+//
+//   void _onItemTapped(int index) {
+//     setState(() {
+//       _selectedIndex = index;
+//     });
+//   }
+//
+//   Widget _buildBody() {
+//     if (isLoading) {
+//       return const Center(child: CircularProgressIndicator());
+//     }
+//
+//     if (isTechnicianActive) {
+//       switch (_selectedIndex) {
+//         case 0:
+//           return const HomeTechnicianTab();
+//         case 1:
+//           return const OrderTab();
+//         case 2:
+//           return const JobApplicationTab();
+//         case 3:
+//           return const AccountTab();
+//         default:
+//           return const Center(child: Text("Không tìm thấy tab."));
+//       }
+//     } else {
+//       switch (_selectedIndex) {
+//         case 0:
+//           return const HomeTechnicianTab();
+//         case 1:
+//           return const PolicyTabWidget();
+//         case 2:
+//           return const SupportTabWidget();
+//         case 3:
+//           return const AccountTab();
+//       // case 3:
+//       //   if (!isTechnicianActive) {
+//       //     return const Center(child: Text("Hồ sơ chưa được duyệt"));
+//       //   }
+//       //   return const ManagementTechnicianTab();
+//         default:
+//           return const Center(child: Text("Không tìm thấy tab."));
+//       }
+//     }
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       body: SafeArea(child: _buildBody()),
+//       bottomNavigationBar: BottomNavigationBar(
+//         currentIndex: _selectedIndex,
+//         onTap: _onItemTapped,
+//         iconSize: 24.0,
+//         selectedFontSize: 12.0,
+//         unselectedFontSize: 10.0,
+//         selectedItemColor: ColorConfig.primary,
+//         unselectedItemColor: ColorConfig.unselectedItemColor,
+//         type: BottomNavigationBarType.fixed,
+//         items: isTechnicianActive
+//             ? const [
+//           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+//           BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Đơn việc'),
+//           BottomNavigationBarItem(icon: Icon(Icons.bookmark_added), label: 'Nhận việc'),
+//           BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Tài khoản'),
+//         ]
+//             : const [
+//           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+//           BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Chính sách'),
+//           BottomNavigationBarItem(icon: Icon(Icons.phone), label: 'Hỗ trợ'),
+//           BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Tài khoản'),
+//         ],
+//       ),
+//     );
+//   }
+// }

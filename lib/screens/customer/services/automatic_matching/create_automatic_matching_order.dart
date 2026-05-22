@@ -1534,6 +1534,31 @@ class _CreateAutoMatchingOrderScreenState
                 ],
               ),
             ),
+
+            const SizedBox(height: 10),
+
+            _Section(
+              title: "Ghi chú",
+              // icon: Icons.note,
+              child: _InputBox(
+                isFocused: _noteFocusNode.hasFocus,
+                child: TextField(
+                  controller: _noteController,
+                  focusNode: _noteFocusNode,
+                  maxLines: 2,
+                  textInputAction: TextInputAction.done,
+                  onEditingComplete: () {
+                    _noteFocusNode.unfocus();
+                  },
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    hintText: "Ví dụ: thời gian phù hợp, tình trạng cụ thể, lưu ý khi đến…",
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+            ),
+
             const SizedBox(height: 90),
           ],
         ),

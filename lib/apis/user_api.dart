@@ -20,4 +20,7 @@ class UserApiRoutes {
   static const String deleteAddress = '${AppConfig.apiUrlPrivate}/user-app/delete-address';
   static const String listAddress = '${AppConfig.apiUrlPrivate}/user-app/addresses';
   static const String setDefaultAddress = '${AppConfig.apiUrlPrivate}/user-app/set-default-address';
+
+  // Admin
+  static const String createManagerAccount = '${AppConfig.apiUrlPrivate}/user/create-manager-account';
 }

@@ -187,31 +187,31 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                 'Bạn có chắc chắn muốn xác nhận hoàn thành đơn việc này?',
                 style: TextStyle(fontSize: 16),
               ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.amber.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.amber.shade700, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Sau khi xác nhận, đơn việc sẽ được đánh dấu là hoàn thành và không thể thay đổi.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.amber.shade800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_orderPrice > 0) ...[
+              // const SizedBox(height: 12),
+              // Container(
+              //   padding: const EdgeInsets.all(12),
+              //   decoration: BoxDecoration(
+              //     color: Colors.amber.shade50,
+              //     borderRadius: BorderRadius.circular(12),
+              //     border: Border.all(color: Colors.amber.shade200),
+              //   ),
+              //   child: Row(
+              //     children: [
+              //       Icon(Icons.info_outline, color: Colors.amber.shade700, size: 20),
+              //       const SizedBox(width: 8),
+              //       Expanded(
+              //         child: Text(
+              //           'Sau khi xác nhận, đơn việc sẽ được đánh dấu là hoàn thành và không thể thay đổi.',
+              //           style: TextStyle(
+              //             fontSize: 13,
+              //             color: Colors.amber.shade800,
+              //           ),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
+              if (_expectedIncome > 0) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -223,14 +223,14 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Tổng tiền:',
+                        'Thu nhập dự kiến:',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       Text(
-                        '${FormatHelper.formatPrice(_orderPrice)}đ',
+                        '+${FormatHelper.formatPrice(_expectedIncome)}đ',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -357,7 +357,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
       if (orderDetailRaw != null && orderDetailRaw.toString().isNotEmpty) {
         try {
           orderDetail = jsonDecode(orderDetailRaw.toString()) as Map<String, dynamic>;
-          appLog("Detail order: $orderDetailRaw");
+          // appLog("Detail order: $orderDetailRaw");
         } catch (_) {
           orderDetail = null;
         }
@@ -428,7 +428,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
         'result': 'done'
       };
       final response = await _orderService.updateStatus(data);
-      appLog("$response");
+      // appLog("$response");
 
       if (response['success'] == true) {
         if (!mounted) return;
@@ -437,7 +437,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
         await SharedPrefs.remove("idOrderWorking");
         await SharedPrefs.remove("acceptedAt");
         await SharedPrefs.saveValue(PrefType.bool, "isWorking", false);
-        await SharedPreferencesHelper.listAllKeyValue();
+        // await SharedPreferencesHelper.listAllKeyValue();
 
         setState(() {
           isWorking = false;
@@ -477,7 +477,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   String get _orderAddress => orderDetail?['address'] ?? 'Không có địa chỉ';
 
   /// Giá tiền
-  int get _orderPrice => (orderDetail?['price'] ?? 0) as int;
+  int get _expectedIncome => (orderDetail?['pricing']['technicianReceiveAmount'] ?? 0) as int;
 
   /// Trạng thái đơn (đã dịch sang tiếng Việt)
   String get _orderStatusLabel {
@@ -564,9 +564,12 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
 
   @override
   Widget build(BuildContext context) {
-    return isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : RefreshIndicator(
+    return Container(
+      color: ColorConfig.primaryBackground,
+      child: isLoading
+      ? const Center(child: CircularProgressIndicator())
+      : RefreshIndicator(
+      color: ColorConfig.primary,
       onRefresh: _loadUserDetail,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -684,9 +687,9 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
             if (isTechnicianActive) ...[
               // ── Status toggle + location update ──
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: ColorConfig.primaryBackground,
+                  color: ColorConfig.white,
                   borderRadius: BorderRadius.circular(40),
                 ),
                 child: Row(
@@ -697,16 +700,20 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                         const SizedBox(width: 8),
                         const Text(
                           'Trạng thái',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         const SizedBox(width: 12),
+
                         isUpdating
                             ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                        : Tooltip(
+                            : Tooltip(
                           message: 'Bật/tắt nhận việc',
                           child: Switch(
                             value: statusAccount == 'active',
@@ -721,40 +728,58 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                         ),
                       ],
                     ),
+
                     Tooltip(
                       message: 'Cập nhật vị trí hiện tại',
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: ColorConfig.primary,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: IconButton(
-                          onPressed: isUpdatingLocation
+                      child: Material(
+                        color: ColorConfig.primary,
+                        borderRadius: BorderRadius.circular(40),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(40),
+                          onTap: isUpdatingLocation
                               ? null
                               : () async {
-                            final shouldUpdate = await _showLocationUpdateConfirmation();
+                            final shouldUpdate =
+                            await _showLocationUpdateConfirmation();
+
                             if (shouldUpdate == true) {
-                              await _getCurrentLocation(context);   // ← gọi ở đây
+                              await _getCurrentLocation(context);
                               await _updateLocation();
                             }
                           },
-                          icon: isUpdatingLocation
-                              ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                              : const Icon(Icons.my_location,
-                              size: 20, color: Colors.white),
-                          padding: const EdgeInsets.all(10),
-                          splashRadius: 20,
+
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 10,
+                            ),
+
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+
+                            child: isUpdatingLocation
+                                ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                                : const Icon(
+                              Icons.my_location,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -764,10 +789,6 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
               const SizedBox(height: 10),
 
               Container(
-                // decoration: BoxDecoration(
-                //   color: Color(0xffdfd8d8),
-                //   border: Border.all(color: Colors.grey.shade100),
-                // ),
                 margin: const EdgeInsets.only(bottom: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -841,7 +862,9 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
           ],
         ),
       ),
+      )
     );
+
   }
 
   Widget _buildShortcutItem({
@@ -958,210 +981,240 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
 
   Widget _buildOrderCard() {
     if (isWorking && orderDetail != null) {
-      return Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.white, Colors.grey.shade50],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+      appLog("$orderDetail");
+      return GestureDetector(
+        onTap: () {
+          context.push(
+            '${TechnicianRouterConfig.detailsOrder}/${idOrderWorking}',
+          );
+        },
+        // borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Colors.grey.shade50],
             ),
-          ],
-          border: Border.all(color: Colors.grey.shade100),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header card ──
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: _orderStatusColor.withOpacity(0.08),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(color: Colors.grey.shade100),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header card ──
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: ColorConfig.primary,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.bookmark_border_outlined,
+                      size: 18,
+                      color: ColorConfig.textWhite,
+                    ),
+                    const SizedBox(width: 8),
+
+                    Expanded(
+                      child: Text(
+                        'ĐƠN ĐANG THỰC HIỆN',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                          color: ColorConfig.textWhite,
+                        ),
+                      ),
+                    ),
+
+                    Row(
+                      children: [
+                        Text(
+                          'Chi tiết đơn',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: ColorConfig.textWhite.withOpacity(0.9),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 12,
+                          color: ColorConfig.textWhite.withOpacity(0.9),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.bookmark_border_outlined,
-                      size: 18, color: _orderStatusColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    'ĐƠN ĐANG THỰC HIỆN',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                      color: _orderStatusColor.withOpacity(0.9),
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _orderStatusColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _orderStatusLabel,
-                      style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: _orderStatusColor),
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
-            // ── Body ──
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Tên dịch vụ
-                  Row(
-                    children: [
-                      Icon(Icons.spa, size: 18, color: Colors.grey.shade600),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _orderServiceName,
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600),
+              // ── Body ──
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Tên dịch vụ
+                    Row(
+                      children: [
+                        Icon(Icons.spa, size: 18, color: Colors.grey.shade600),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _orderServiceName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                      ),
-                      // Loại đơn
-                      Container(
-                        padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          _orderType,
-                          style: TextStyle(
+
+                        // Loại đơn
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            _orderType,
+                            style: TextStyle(
                               fontSize: 11,
                               color: Colors.blue.shade700,
-                              fontWeight: FontWeight.w500),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Khách hàng
+                    _buildInfoRow(
+                      Icons.person_outline,
+                      'Khách hàng: $_orderCustomerName',
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    _buildInfoRow(
+                      Icons.phone,
+                      'SĐT: $_phoneCustomer',
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Địa chỉ
+                    _buildInfoRow(
+                      Icons.location_on_outlined,
+                      _orderAddress,
+                      expandText: true,
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Thời gian đặt
+                    if (_orderSubmittedAt.isNotEmpty)
+                      _buildInfoRow(
+                        Icons.access_time,
+                        'Đặt lúc: $_orderSubmittedAt',
+                      ),
+
+                    // Thời lượng
+                    if (_orderDuration.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _buildInfoRow(
+                        Icons.timer_outlined,
+                        'Thời lượng: $_orderDuration',
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
 
-                  // Khách hàng
-                  _buildInfoRow(
-                    Icons.person_outline,
-                    'Khách hàng: $_orderCustomerName',
-                  ),
-                  const SizedBox(height: 8),
+                    // Tiền đặt cọc
+                    if ((orderDetail?['deposit'] ?? 0) > 0) ...[
+                      const SizedBox(height: 8),
+                      _buildInfoRow(
+                        Icons.account_balance_wallet_outlined,
+                        'Đặt cọc: ${FormatHelper.formatPrice(orderDetail!['deposit'])}đ',
+                      ),
+                    ],
 
-                  _buildInfoRow(
-                    Icons.phone,
-                    'SĐT: $_phoneCustomer',
-                  ),
-                  const SizedBox(height: 8),
+                    const Divider(height: 24),
 
-                  // Địa chỉ
-                  _buildInfoRow(
-                    Icons.location_on_outlined,
-                    _orderAddress,
-                    expandText: true,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Thời gian đặt
-                  if (_orderSubmittedAt.isNotEmpty)
-                    _buildInfoRow(Icons.access_time, 'Đặt lúc: $_orderSubmittedAt'),
-
-                  // Thời lượng
-                  if (_orderDuration.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    _buildInfoRow(Icons.timer_outlined, 'Thời lượng: $_orderDuration'),
-                  ],
-
-                  // Tiền đặt cọc (nếu có)
-                  if ((orderDetail?['deposit'] ?? 0) > 0) ...[
-                    const SizedBox(height: 8),
-                    _buildInfoRow(
-                      Icons.account_balance_wallet_outlined,
-                      'Đặt cọc: ${FormatHelper.formatPrice(orderDetail!['deposit'])}đ',
-                    ),
-                  ],
-
-                  const Divider(height: 24),
-
-                  // Tổng thanh toán
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Tổng thanh toán',
+                    // Tổng thanh toán
+                    Row(
+                      mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Thu nhập dự kiến',
                           style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w500)),
-                      Text(
-                        '${FormatHelper.formatPrice(_orderPrice)}đ',
-                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          '+${FormatHelper.formatPrice(_expectedIncome)} đ',
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.redAccent),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                            color: ColorConfig.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
 
-                  // Nút xem chi tiết
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        context.go('/home-technician/orders/$idOrderWorking');
-                      },
-                      icon: const Icon(Icons.arrow_forward, size: 18),
-                      label: const Text('Xem chi tiết'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColorConfig.secondary.withOpacity(0.85),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30)),
-                        elevation: 0,
+                    const SizedBox(height: 16),
+
+                    // Nút xác nhận hoàn thành
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _showCompleteOrderConfirmation,
+                        icon: const Icon(
+                          Icons.check_circle_outline,
+                          size: 18,
+                        ),
+                        label: const Text('Xác nhận hoàn thành'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ColorConfig.secondary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 0,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Nút xác nhận hoàn thành - HIỂN THỊ POPUP
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _showCompleteOrderConfirmation, // Gọi popup xác nhận
-                      icon: const Icon(Icons.check_circle_outline, size: 18),
-                      label: const Text('Xác nhận hoàn thành'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColorConfig.secondary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30)),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }

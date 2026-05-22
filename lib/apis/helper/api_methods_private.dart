@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'dart:io';
 
 import '../../helper/snackbar_helper.dart';
@@ -83,7 +84,7 @@ class ApiMethodsPrivate {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('API Post Error: $e');
+        appLog('API Post Error: $e');
       }
       return {
         'status': 'error',
@@ -124,7 +125,7 @@ class ApiMethodsPrivate {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('API GET Error: $e');
+        appLog('API GET Error: $e');
       }
       return {'error': e.toString()};
     }
@@ -133,6 +134,7 @@ class ApiMethodsPrivate {
   // Các phương thức PUT
   static Future<Map<String, dynamic>> putRequest(
       String url, Map<String, dynamic> body) async {
+    final fullResponse;
     try {
       String? token = await getToken();
       final headers = {
@@ -158,7 +160,7 @@ class ApiMethodsPrivate {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('API PUT Error: $e');
+        appLog('API PUT Error: $e');
       }
       return {'error': e.toString()};
     }
@@ -180,7 +182,7 @@ class ApiMethodsPrivate {
         body: jsonEncode(body),
       );
 
-      print("response: $response");
+      // appLog("response: $response");
 
       if (response.statusCode == 401) {
         _handle401();
@@ -194,7 +196,7 @@ class ApiMethodsPrivate {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('API PATCH Error: $e');
+        appLog('API PATCH Error: $e');
       }
       return {'error': e.toString()};
     }
@@ -226,7 +228,7 @@ class ApiMethodsPrivate {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('API DELETE Error: $e');
+        appLog('API DELETE Error: $e');
       }
       return {'error': e.toString()};
     }

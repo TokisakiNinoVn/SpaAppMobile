@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/routes/config/technician_router_config.dart';
 import 'package:spa_app/screens/technician/tabs/components/job_card_get_job.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'package:spa_app/services/realtime_service.dart';
@@ -147,7 +149,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
 
       final queryParams = 'status=pending&typeOrder=automatic-matching&timeRange=2d';
       final response = await _orderService.listFilterOrder(queryParams);
-      appLog("data: ${response['data']}");
+      // appLog("data: ${response['data']}");
 
       if (response['success'] == true) {
         final newOrders = response['data'] ?? [];
@@ -321,7 +323,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
           _buildFilterChip(
             label: 'Tất cả',
             value: 'all',
-            icon: Icons.apps_rounded,
+            // icon: Icons.apps_rounded,
           ),
           const SizedBox(width: 8),
           // Service chips
@@ -330,7 +332,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
             child: _buildFilterChip(
               label: service['name'] ?? 'Không tên',
               value: service['_id'],
-              icon: Icons.spa,
+              // icon: Icons.spa,
             ),
           )),
         ],
@@ -341,7 +343,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
   Widget _buildFilterChip({
     required String label,
     required String value,
-    required IconData icon,
+    IconData? icon,
   }) {
     final isSelected = _selectedServiceId == value;
 
@@ -350,12 +352,12 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: isSelected ? Colors.white : Colors.grey.shade700,
-          ),
-          const SizedBox(width: 6),
+          // Icon(
+          //   icon,
+          //   size: 16,
+          //   color: isSelected ? Colors.white : Colors.grey.shade700,
+          // ),
+          // const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
@@ -478,6 +480,21 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
           job: job,
           remainingTime: remainingTime,
           onAccept: () => _acceptJob(job),
+          onTap: () async {
+            final result = await context.push(
+              '${TechnicianRouterConfig.detailsOrder}/${orderId}',
+              extra: true,
+            );
+
+            if (result != null &&
+                result is Map &&
+                result['success'] == true) {
+
+              setState(() {
+                filteredJobs.removeWhere((e) => e['_id'] == orderId);
+              });
+            }
+          },
           formatRemainingTime: _formatRemainingTime,
           getTimerColor: _getTimerColor,
         );

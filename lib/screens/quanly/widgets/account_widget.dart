@@ -1,8 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/handlers/auth_response_handler.dart';
+import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/screens/widgets/role_switcher_card.dart';
+import 'package:spa_app/services/auth_service.dart';
 
 import '../../../helper/shared_preferences_helper.dart';
+import '../../../storage/index.dart';
+import '../../customer/tabs/widgets/switch_role_widget.dart';
 
 class AccountQuanLyTab extends StatefulWidget {
   const AccountQuanLyTab({super.key});
@@ -12,6 +21,98 @@ class AccountQuanLyTab extends StatefulWidget {
 }
 
 class _AccountQuanLyTabState extends State<AccountQuanLyTab> {
+  final AuthService authService = AuthService();
+
+  bool isLoading = false;
+
+  String rolesActive = '';
+  List<String> roles = [];
+  bool get isAdmin => AppConfig.adminPhone.contains(userInfo?['phone']);
+  Map<String, dynamic>? userInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    loadUserInfo();
+  }
+
+  void loadUserInfo() async {
+    final userInfoJson = await SharedPrefs.getValue(PrefType.string, "inforUserLogin") ?? '';
+    final rolesActiveStr = await SharedPrefs.getValue(PrefType.string, "rolesActive") ?? '';
+    final rolesJsonStr = await SharedPrefs.getValue(PrefType.string, "roles") ?? '[]';
+
+    List<String> rolesList = [];
+    if (rolesJsonStr.isNotEmpty) {
+      try {
+        final List<dynamic> decoded = json.decode(rolesJsonStr);
+        rolesList = decoded.map((e) => e.toString()).toList();
+      } catch (e) {
+        rolesList = [];
+      }
+    }
+
+
+    Map<String, dynamic>? user;
+    if (userInfoJson.isNotEmpty) {
+      user = json.decode(userInfoJson);
+    }
+
+    if (mounted) {
+      setState(() {
+        rolesActive = rolesActiveStr;
+        roles = rolesList;
+        userInfo = user;
+      });
+    }
+  }
+
+  // Xử lý chuyển đổi vai trò (đã tách logic khỏi UI)
+  Future<void> _handleSwitchRole(String newRole) async {
+    if (newRole == rolesActive) {
+      SnackBarHelper.showWarning(context, "Bạn đang ở vai trò ${_getRoleDisplayName(newRole)}");
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final response = await authService.switchRoleAccount({
+        "roleChangeTo": newRole,
+      });
+      await SharedPreferencesHelper.logOut();
+
+      await AuthResponseHandler.handleLoginResponse(
+        context: context,
+        response: response,
+      );
+    } catch (e) {
+      appLog('Lỗi chuyển vai trò: $e');
+      SnackBarHelper.showError(
+        context,
+        "Lỗi kết nối hoặc hệ thống. Vui lòng thử lại!",
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  String _getRoleDisplayName(String roleKey) {
+    switch (roleKey) {
+      case 'admin':
+        return 'Quản trị viên';
+      case 'ktv':
+        return 'KTV';
+      case 'customer':
+        return 'Khách hàng';
+      case 'quanly':
+        return 'Quản lý';
+      default:
+        return roleKey;
+    }
+  }
+
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -54,6 +155,15 @@ class _AccountQuanLyTabState extends State<AccountQuanLyTab> {
                 backgroundImage: AssetImage('lib/assets/images/img_1.png'),
                 // Nếu có link thì thay NetworkImage(...)
               ),
+              const SizedBox(height: 12),
+              if (isAdmin && roles.isNotEmpty)
+                RoleSwitcherCard(
+                  roles: roles,
+                  activeRole: rolesActive,
+                  onSwitchRole: _handleSwitchRole,
+                  isSwitching: isLoading,
+                ),
+
               const SizedBox(height: 12),
 
               // Tên user

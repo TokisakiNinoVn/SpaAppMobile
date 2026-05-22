@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/providers/selected_tab_provider.dart';
+import 'package:spa_app/routes/config/technician_router_config.dart';
+import 'package:spa_app/screens/technician/tabs/components/accept_order_dialog.dart';
+import 'package:spa_app/screens/technician/tabs/components/book_order_card.dart';
+import 'package:spa_app/screens/technician/tabs/components/reject_order_bottom_sheet.dart';
 import 'package:spa_app/screens/technician/tabs/components/request_order_card.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'dart:async';
@@ -25,6 +31,7 @@ class _OrderTabState extends State<OrderTab> {
   int selectedTab = 0;
 
   bool _isLoading = true;
+  bool isLoading = true;
   bool isWorking = false;
   bool _isLogin = false;
   String _errorMessage = '';
@@ -34,10 +41,10 @@ class _OrderTabState extends State<OrderTab> {
   List<dynamic> filteredRequestOrders = [];
   List<dynamic> filteredBookOrders = [];
 
-  // Lưu trữ các timer cho mỗi order
   final Map<String, Timer> _timers = {};
-  // Lưu thời gian còn lại cho mỗi order
   final Map<String, Duration> _remainingTimes = {};
+
+  final TextEditingController _noteController = TextEditingController();
 
   @override
   void initState() {
@@ -102,6 +109,70 @@ class _OrderTabState extends State<OrderTab> {
         _updateFilteredOrders();
       }
     });
+  }
+
+  Future<void> _acceptOrderWithMessage(Map<String, dynamic> order, String message) async {
+    try {
+      final idOrder = order["_id"];
+      if (order['typeOrder'] == 'order-now') {
+        final data = {
+          'orderId': idOrder,
+          'result': 'approved',
+          'noteTechnician': message,
+        };
+        final response = await _orderService.updateStatus(data);
+        if (response['success'] == true) {
+          if (!mounted) return;
+          final acceptedAt = DateTime.now().toIso8601String();
+          await SharedPrefs.saveValue(PrefType.string, "orderDetail", order);
+          await SharedPrefs.saveValue(PrefType.bool, "isWorking", true);
+          await SharedPrefs.saveValue(PrefType.string, "idOrderWorking", idOrder);
+          await SharedPrefs.saveValue(PrefType.string, "acceptedAt", acceptedAt);
+          SnackBarHelper.showSuccess(context, "Nhận đơn thành công!");
+          context.read<SelectedTabProvider>().setIndex(0);
+          context.go(TechnicianRouterConfig.homeTechnician);
+        }
+      } else if (order?['typeOrder'] == 'book') {
+        final data = {
+          'orderId': idOrder,
+          'result': 'approved'
+        };
+        final response = await _orderService.updateStatus(data);
+        if (response['success'] == true) {
+          if (!mounted) return;
+          SnackBarHelper.showSuccess(context, "Nhận đơn việc đặt trước thành công!");
+          setState(() {
+            filteredRequestOrders.removeWhere((e) => e['_id'] == idOrder);
+          });
+
+        } else {
+          SnackBarHelper.showError(context, "Lỗi khi nhận đơn!");
+        }
+      } else {
+        SnackBarHelper.showError(context, "Không rõ loại đơn!");
+      }
+    } catch (e) {
+      debugPrint('Error accepting order: $e');
+      if (!mounted) return;
+      SnackBarHelper.showError(context, 'Có lỗi xảy ra khi nhận đơn');
+    }
+  }
+
+  Future<void> showAcceptOrderDialog({
+    required BuildContext context,
+    required Map<String, dynamic> order,
+    required Future<void> Function(String message) onConfirm,
+  }) {
+    return showDialog(
+      context: context,
+      builder: (_) {
+        return AcceptOrderDialog(
+          onConfirm: (message) async {
+            await _acceptOrderWithMessage(order, message);
+          },
+        );
+      },
+    );
   }
 
   // Thêm function mới để start timer cho 1 order duy nhất
@@ -180,7 +251,6 @@ class _OrderTabState extends State<OrderTab> {
     });
   }
 
-  // ⭐ Gộp chung load 1 lần cả 2 loại orders
   Future<void> _loadData() async {
     try {
       setState(() {
@@ -207,7 +277,7 @@ class _OrderTabState extends State<OrderTab> {
           final newOrders = requestResponse['data'] ?? [];
           setState(() {
             listRequestOrders = newOrders;
-            appLog("List request order: $listRequestOrders");
+            // appLog("List request order: $listRequestOrders");
           });
           _startTimersForOrders(newOrders);
         } else {
@@ -313,8 +383,6 @@ class _OrderTabState extends State<OrderTab> {
   }
 
   void _removeExpiredOrder(String orderId) {
-    // Chỉ xóa khỏi danh sách request orders (yêu cầu đơn mới)
-    // Không xóa khỏi book orders
     if (mounted) {
       setState(() {
         listRequestOrders.removeWhere((order) => order['_id'] == orderId);
@@ -356,58 +424,33 @@ class _OrderTabState extends State<OrderTab> {
     await _loadData();
   }
 
-  String _formatDuration(Duration duration) {
-    if (duration.isNegative) return '00:00:00';
-
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final hours = twoDigits(duration.inHours);
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-
-    if (duration.inHours > 0) {
-      return '$hours:$minutes:$seconds';
-    } else {
-      return '$minutes:$seconds';
+  Future<void> _rejectOrderWithReason(String idOrder, String? reason) async {
+    try {
+      final data = {
+        'orderId': idOrder,
+        'result': 'rejected',
+        'noteTechnician': '',
+        'reasonReject': reason ?? '',
+      };
+      final response = await _orderService.updateStatus(data);
+      if (response['success'] == true) {
+        if (!mounted) return;
+        SnackBarHelper.showSuccess(context, 'Đã từ chối đơn việc');
+        setState(() {
+          filteredRequestOrders.removeWhere((e) => e['_id'] == idOrder);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error rejecting order: $e');
+      if (!mounted) return;
+      SnackBarHelper.showError(context, 'Có lỗi xảy ra, vui lòng thử lại');
     }
-  }
-
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'pending':
-        return 'Chờ xử lý';
-      case 'approved':
-        return 'Đã chấp nhận';
-      case 'rejected':
-        return 'Từ chối';
-      case 'completed':
-        return 'Hoàn thành';
-      default:
-        return status;
-    }
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'pending':
-        return Colors.orange;
-      case 'approved':
-        return Colors.green;
-      case 'rejected':
-        return Colors.red;
-      case 'completed':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getTypeOrderText(String typeOrder) {
-    return typeOrder == 'order-now' ? 'Đặt ngay' : 'Đặt trước';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ColorConfig.primaryBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -446,7 +489,6 @@ class _OrderTabState extends State<OrderTab> {
     );
   }
 
-  // ⭐ Tách riêng logic hiển thị nội dung theo từng tab
   Widget _buildContent() {
     if (_isLoading &&
         ((selectedTab == 0 && filteredRequestOrders.isEmpty) ||
@@ -594,7 +636,7 @@ class _OrderTabState extends State<OrderTab> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? ColorConfig.primary : Colors.grey.shade200,
+            color: isSelected ? ColorConfig.primary : Colors.white,
             borderRadius: BorderRadius.circular(40),
           ),
           alignment: Alignment.center,
@@ -611,7 +653,7 @@ class _OrderTabState extends State<OrderTab> {
   }
 
   Widget _buildOrderItem(dynamic order) {
-    appLog("Data order: $order");
+    // appLog("Data order: $order");
     final orderId = order['_id'] ?? '';
     final remainingTime = _remainingTimes[orderId];
     final isExpiringSoon = order['isExpiringSoon'] ?? false;
@@ -620,241 +662,82 @@ class _OrderTabState extends State<OrderTab> {
     final isPrioritize = order['isPrioritize'] ?? false;
 
     final isBookOrderTab = selectedTab == 1;
-    return RequestOrderCard(
-      order: order,
-      remainingTime: _remainingTimes[order['_id']],
-      showTimeline: true,
-      onApply: () {
-        appLog("Ứng tuyển");
-        SnackBarHelper.showWarning(context, "Chức năng đang được phát triển");
-      },
-    );
 
-    return GestureDetector(
-      onTap: () {
-        context.push('/home-technician/orders/$orderId');
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          // Chỉ hiển thị border cho tab request orders
-          border: !isBookOrderTab && isExpiringSoon && remainingTime != null && remainingTime.inMinutes <= 5
-              ? Border.all(color: Colors.red.shade300, width: 1.5)
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    order['nameService'] ?? 'Dịch vụ',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    _getStatusText(status),
-                    style: TextStyle(
-                      color: _getStatusColor(status),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+    return isBookOrderTab
+      ? BookOrderCard(
+        order: order,
+        remainingTime: _remainingTimes[order['_id']],
+        showTimeline: true,
+        onApply: () async {
+          final idOrder = order["_id"];
 
-            // Customer info
-            Row(
-              children: [
-                const Icon(Icons.person_outline, size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    order['customerId']?['fullname'] ?? 'Khách hàng',
-                    style: const TextStyle(fontSize: 13, color: Colors.black87),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
+          final result = await context.push(
+            '${TechnicianRouterConfig.canceledOrder}/${order['_id']}'
+          );
 
-            // Type order and price
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: typeOrder == 'order-now' ? Colors.blue.shade50 : Colors.purple.shade50,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    _getTypeOrderText(typeOrder),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: typeOrder == 'order-now' ? Colors.blue.shade700 : Colors.purple.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (isPrioritize)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      'Ưu tiên',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.orange.shade700,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                const Spacer(),
-                Text(
-                  '${FormatHelper.formatPrice(order['price'] ?? 0)}đ',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+          if (result != null && mounted) {
+            setState(() {
+              filteredBookOrders.removeWhere((e) => e['_id'] == idOrder);
+            });
 
-            // Address
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    order['address'] ?? 'Địa chỉ',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
 
-            // Working hours if exists
-            if (order['workingHours'] != null && order['workingHours'].toString().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Row(
-                  children: [
-                    const Icon(Icons.access_time, size: 14, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Giờ làm: ${order['workingHours']}',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
+          }
 
-            const Divider(height: 16),
+        })
+      : RequestOrderCard(
+        order: order,
+        remainingTime: _remainingTimes[order['_id']],
+        showTimeline: true,
+        onTap: () async {
+          final result = await context.push(
+            '${TechnicianRouterConfig.detailsOrder}/${order['_id']}',
+            extra: true,
+          );
+          if (result != null &&
+              result is Map &&
+              result['success'] == true) {
 
-            // Chỉ hiển thị timeline cho tab "Yêu cầu đơn mới"
-            if (!isBookOrderTab)
-              _buildCountdownTimeline(order, remainingTime),
-          ],
-        ),
-      ),
-    );
-  }
+            final removedId = result['id'];
 
-  Widget _buildCountdownTimeline(dynamic order, Duration? remainingTime) {
-    final expiresAt = order['expiresAt'];
-    if (expiresAt == null) return const SizedBox.shrink();
+            setState(() {
+              filteredRequestOrders.removeWhere((e) => e['_id'] == removedId);
+            });
+          }
+        },
+        onApply: () {
+          // appLog("Details order: $order");
+          showAcceptOrderDialog(
+            context: context,
+            order: order,
+            onConfirm: (message) async {
+              await _acceptOrderWithMessage(order, message);
+            },
+          );
+        },
 
-    final expiryDateTime = DateTime.parse(expiresAt);
-    final totalDuration = const Duration(minutes: 5); // Giả sử thời gian hết hạn là 5 phút
-    final progress = remainingTime != null && remainingTime.inSeconds > 0
-        ? 1 - (remainingTime.inSeconds / totalDuration.inSeconds)
-        : 1.0;
+        onReject: () async {
+          // appLog("reject order: $order");
+          final idOrder = order["_id"];
+          final reason = await showModalBottomSheet<String>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) {
+              return RejectOrderBottomSheet(
+                onConfirm: (reason) async {
+                  await _rejectOrderWithReason(idOrder, reason);
+                },
+              );
+            },
+          );
 
-    final isExpired = remainingTime == null || remainingTime.isNegative || remainingTime.inSeconds <= 0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  isExpired ? Icons.timer_off : Icons.timer,
-                  size: 14,
-                  color: isExpired ? Colors.red : (remainingTime?.inMinutes ?? 0) <= 1 ? Colors.orange : Colors.grey,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  isExpired ? 'Đã hết hạn' : 'Thời gian còn lại: ${_formatDuration(remainingTime ?? Duration.zero)}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isExpired ? Colors.red : ((remainingTime?.inMinutes ?? 0) <= 1 ? Colors.orange : Colors.grey.shade600),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            Text(
-              FormatHelper.formatDateTime(expiresAt),
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        // Progress bar
-        ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: LinearProgressIndicator(
-            value: progress.clamp(0.0, 1.0),
-            backgroundColor: Colors.grey.shade200,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              isExpired
-                  ? Colors.red
-                  : (progress > 0.8)
-                  ? Colors.orange
-                  : Colors.green,
-            ),
-            minHeight: 3,
-          ),
-        ),
-      ],
-    );
+          // if (reason != null && mounted) {
+          //   context.pop({
+          //     'success': true,
+          //     'id': widget.id,
+          //   });
+          // }
+        },
+      );
   }
 }

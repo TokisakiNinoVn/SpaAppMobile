@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/screens/quanly/tabs/order_job.dart';
 import 'package:spa_app/screens/quanly/widgets/list_city.dart';
 
 // import '../admin/widgets/management_account_technician.dart';
@@ -23,9 +24,9 @@ class _HomeAdminScreenState extends State<HomeQuanLyScreen> {
 
   final List<Widget> _pages = [
     const ListCity(),
+    const OrderJobTab(),
     const AccountQuanLyTab(),
   ];
-
 
   @override
   void initState() {
@@ -61,7 +62,11 @@ class _HomeAdminScreenState extends State<HomeQuanLyScreen> {
     }
 
     return Scaffold(
-      body: SafeArea(child: _pages[_selectedIndex]),
+      body: SafeArea(
+      child: _selectedIndex < _pages.length
+      ? _pages[_selectedIndex]
+        : _pages[0],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -69,13 +74,13 @@ class _HomeAdminScreenState extends State<HomeQuanLyScreen> {
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
-          // BottomNavigationBarItem(
-          //   icon: Icon(Icons.account_circle),
-          //   label: 'Tài khoản',
-          // ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
+            icon: Icon(Icons.group),
             label: 'KTV',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.podcasts),
+            label: 'Đơn việc',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_circle_rounded),

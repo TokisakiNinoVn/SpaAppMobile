@@ -35,7 +35,7 @@ class _CanceledOrderScreenState extends State<CanceledOrderScreen> {
   @override
   void initState() {
     super.initState();
-    appLog("idOrder: ${widget.idOrder}");
+    // appLog("idOrder: ${widget.idOrder}");
   }
 
   @override
@@ -167,26 +167,6 @@ class _CanceledOrderScreenState extends State<CanceledOrderScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Hiển thị mã đơn (tùy chọn)
-                // Container(
-                //   padding: const EdgeInsets.all(12),
-                //   decoration: BoxDecoration(
-                //     color: const Color(0xFFF5F5F5),
-                //     borderRadius: BorderRadius.circular(12),
-                //   ),
-                //   child: Row(
-                //     children: [
-                //       const Icon(Icons.receipt, size: 20, color: Colors.grey),
-                //       const SizedBox(width: 8),
-                //       Text(
-                //         'Mã đơn: ${widget.idOrder ?? 'Không có'}',
-                //         style: const TextStyle(fontSize: 14),
-                //       ),
-                //     ],
-                //   ),
-                // ),
-                // const SizedBox(height: 24),
-
                 const Text(
                   'Chọn lý do hủy:',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
@@ -215,18 +195,51 @@ class _CanceledOrderScreenState extends State<CanceledOrderScreen> {
                 // Ô nhập lý do khác (chỉ hiện khi chọn "Lý do khác")
                 if (_selectedReason == 'Lý do khác')
                   Padding(
-                    padding: const EdgeInsets.only(left: 16, top: 8, bottom: 16),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                     child: TextFormField(
                       controller: _otherReasonController,
-                      decoration: const InputDecoration(
+                      maxLines: 3,
+                      textInputAction: TextInputAction.done,
+
+                      onTapOutside: (_) {
+                        FocusScope.of(context).unfocus();
+                      },
+
+                      onFieldSubmitted: (_) {
+                        FocusScope.of(context).unfocus();
+                      },
+
+                      decoration: InputDecoration(
                         hintText: 'Nhập lý do cụ thể...',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: Colors.grey.shade300,
+                          ),
+                        ),
+
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: ColorConfig.primary,
+                            width: 1.4,
+                          ),
+                        ),
+
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
                         ),
                       ),
-                      maxLines: 2,
+
                       validator: (value) {
                         if (_selectedReason == 'Lý do khác' &&
                             (value == null || value.trim().isEmpty)) {

@@ -397,7 +397,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
         statusColor = Colors.green;
         statusText = "Hoàn thành";
         break;
-      case "cancel":
+      case "canceled":
         statusColor = Colors.red;
         statusText = "Đã huỷ";
         break;
@@ -407,7 +407,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
         break;
       default:
         statusColor = Colors.orange;
-        statusText = "Không xác định";
+        statusText = "${status}";
     }
 
     switch (typeOrder) {
@@ -421,7 +421,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
         typeOderDisplay = "Tự động ghép";
         break;
       default:
-        typeOderDisplay = "Không xác định";
+        typeOderDisplay = "${typeOrder}";
     }
 
     // Hàm helper hiển thị thông tin khách hàng theo trạng thái
@@ -542,7 +542,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
                               ),
                             ),
                             if (isPrioritize) ...[
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 4),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
@@ -572,7 +572,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 4),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
@@ -602,7 +602,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 4),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
