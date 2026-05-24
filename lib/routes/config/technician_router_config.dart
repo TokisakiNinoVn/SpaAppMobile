@@ -8,4 +8,9 @@ class TechnicianRouterConfig {
   static String detailsOrder = '/home-technician/details-orders';
   static String canceledOrder = '/home-technician/canceled-order';
 
+  //withdraw
+  static String createRequestWithdraw = '/home-technician/create-request-withdraw';
+  static String historyWithdraw = '/home-technician/create-request-withdraw/history';
+  static String confirmRequestWithdraw = '/home-technician/create-request-withdraw/confirm';
+
 }

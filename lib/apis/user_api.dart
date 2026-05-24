@@ -23,4 +23,8 @@ class UserApiRoutes {
 
   // Admin
   static const String createManagerAccount = '${AppConfig.apiUrlPrivate}/user/create-manager-account';
+
+  // Technician/Customer
+  static const String balance = '${AppConfig.apiUrlPrivate}/user-app/balance';
+
 }

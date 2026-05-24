@@ -296,7 +296,7 @@ class _CreateOrderNowScreenState
     final provider = context.read<UserProvider>();
 
     try {
-      await provider.loadBalanceCustomer();
+      await provider.loadBalanceUser();
       balance = provider.nowBalance;
     } finally {
       if (mounted) {
@@ -730,12 +730,8 @@ class _CreateOrderNowScreenState
                         const Text("Tổng tiền", style: TextStyle(color: Colors.grey)),
                         if (_discountData != null) ...[
                           Text(
-                            "${FormatHelper.formatPrice(_totalBeforeDiscount)} đ",
-                            style: const TextStyle(fontSize: 13, color: Colors.grey, decoration: TextDecoration.lineThrough),
-                          ),
-                          Text(
                             "${FormatHelper.formatPrice(_finalTotal)} đ",
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: ColorConfig.textPrimary),
                           ),
                         ] else
                           Text(

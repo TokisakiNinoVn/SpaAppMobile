@@ -6,17 +6,18 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/providers/user_provider.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
+import 'package:spa_app/routes/config/technician_router_config.dart';
 
 import '../../../storage/index.dart';
 
-class CreateRequestWithdraw extends StatefulWidget {
-  const CreateRequestWithdraw({super.key});
+class CreateRequestWithdrawTechnician extends StatefulWidget {
+  const CreateRequestWithdrawTechnician({super.key});
 
   @override
-  State<CreateRequestWithdraw> createState() => _CreateRequestWithdrawState();
+  State<CreateRequestWithdrawTechnician> createState() => _CreateRequestWithdrawTechnicianState();
 }
 
-class _CreateRequestWithdrawState extends State<CreateRequestWithdraw> {
+class _CreateRequestWithdrawTechnicianState extends State<CreateRequestWithdrawTechnician> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _bankNameController = TextEditingController();
@@ -196,7 +197,7 @@ class _CreateRequestWithdrawState extends State<CreateRequestWithdraw> {
 
       // Navigate to ConfirmRequestWithdraw with all data
       context.push(
-        CustomerRouterConfig.confirmWithdraw,
+        TechnicianRouterConfig.confirmRequestWithdraw,
         extra: {
           'amount': cleanAmount,
           'bankName': _bankNameController.text.trim(),
@@ -249,7 +250,7 @@ class _CreateRequestWithdrawState extends State<CreateRequestWithdraw> {
               icon: const Icon(Icons.history_outlined, color: Color(0xFF1A1A1A), size: 22),
               tooltip: 'Lịch sử rút',
               onPressed: () {
-                context.go(CustomerRouterConfig.historyWithdraw);
+                context.push(TechnicianRouterConfig.historyWithdraw);
               },
             ),
           ],
@@ -258,212 +259,243 @@ class _CreateRequestWithdrawState extends State<CreateRequestWithdraw> {
       body: _isLoadingSavedInfo
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF0066FF)))
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        // Cột trái: Số dư hiện tại
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Số dư hiện tại',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF777777),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                FormatHelper.formatPrice(nowBalance),
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: ColorConfig.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Icon mũi tên ở giữa
-                        if (newBalance != null && _amountController.text.isNotEmpty)
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 12),
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: ColorConfig.primary.withOpacity(0.08),
-                              shape: BoxShape.circle,
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Current Balance Card
+              // Container(
+              //   width: double.infinity,
+              //   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              //   decoration: BoxDecoration(
+              //     color: const Color(0xFFF5F5F5),
+              //     borderRadius: BorderRadius.circular(16),
+              //   ),
+              //   child: Column(
+              //     crossAxisAlignment: CrossAxisAlignment.start,
+              //     children: [
+              //       const Text(
+              //         'Số dư hiện tại',
+              //         style: TextStyle(
+              //           fontSize: 12,
+              //           color: Color(0xFF777777),
+              //         ),
+              //       ),
+              //       const SizedBox(height: 6),
+              //       Text(
+              //         FormatHelper.formatPrice(nowBalance),
+              //         style: TextStyle(
+              //           fontSize: 22,
+              //           fontWeight: FontWeight.w700,
+              //           color: ColorConfig.primary,
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
+              // Current Balance Row (2 cột)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    // Cột trái: Số dư hiện tại
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Số dư hiện tại',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF777777),
                             ),
-                            child: Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 22,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            FormatHelper.formatPrice(nowBalance),
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
                               color: ColorConfig.primary,
                             ),
                           ),
-
-                        // Cột phải: Số dư mới
-                        if (newBalance != null && _amountController.text.isNotEmpty)
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                const Text(
-                                  'Số dư mới',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF777777),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  FormatHelper.formatPrice(newBalance!),
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
-                                    color: ColorConfig.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 5),
-
-                  // Amount Field with Range
-                  _buildAmountField(),
-
-                  const SizedBox(height: 5),
-
-                  // Bank Name Field
-                  _buildFormField(
-                    label: 'Tên ngân hàng',
-                    hint: 'Ví dụ: Vietcombank, Techcombank, ...',
-                    controller: _bankNameController,
-                    prefixIcon: Icons.account_balance_rounded,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Vui lòng nhập tên ngân hàng';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 5),
-
-                  // Account Number Field
-                  _buildFormField(
-                    label: 'Số tài khoản',
-                    hint: 'Nhập số tài khoản ngân hàng',
-                    controller: _accountNumberController,
-                    prefixIcon: Icons.numbers_rounded,
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Vui lòng nhập số tài khoản';
-                      }
-                      if (value.length < 8) {
-                        return 'Số tài khoản không hợp lệ';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 5),
-
-                  // Account Holder Field
-                  _buildFormField(
-                    label: 'Chủ tài khoản',
-                    hint: 'Nhập tên chủ tài khoản',
-                    controller: _accountHolderController,
-                    prefixIcon: Icons.person_rounded,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Vui lòng nhập tên chủ tài khoản';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Save Bank Info Checkbox
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: Checkbox(
-                            value: _saveBankInfo,
-                            onChanged: (bool? value) {
-                              setState(() {
-                                _saveBankInfo = value ?? false;
-                              });
-                            },
-                            activeColor: ColorConfig.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
+                    // Icon mũi tên ở giữa
+                    if (newBalance != null && _amountController.text.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: ColorConfig.primary.withOpacity(0.08),
+                          shape: BoxShape.circle,
                         ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Lưu thông tin ngân hàng cho lần sau',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF1A1A1A),
-                            ),
-                          ),
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 22,
+                          color: ColorConfig.primary,
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
+                      ),
 
-                  // Confirm Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _handleConfirm,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColorConfig.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shadowColor: Colors.transparent,
+                    // Cột phải: Số dư mới
+                    if (newBalance != null && _amountController.text.isNotEmpty)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text(
+                              'Số dư mới',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF777777),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              FormatHelper.formatPrice(newBalance!),
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: ColorConfig.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 5),
+
+              // Amount Field with Range
+              _buildAmountField(),
+
+              const SizedBox(height: 5),
+
+              // Bank Name Field
+              _buildFormField(
+                label: 'Tên ngân hàng',
+                hint: 'Ví dụ: Vietcombank, Techcombank, ...',
+                controller: _bankNameController,
+                prefixIcon: Icons.account_balance_rounded,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Vui lòng nhập tên ngân hàng';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 5),
+
+              // Account Number Field
+              _buildFormField(
+                label: 'Số tài khoản',
+                hint: 'Nhập số tài khoản ngân hàng',
+                controller: _accountNumberController,
+                prefixIcon: Icons.numbers_rounded,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Vui lòng nhập số tài khoản';
+                  }
+                  if (value.length < 8) {
+                    return 'Số tài khoản không hợp lệ';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 5),
+
+              // Account Holder Field
+              _buildFormField(
+                label: 'Chủ tài khoản',
+                hint: 'Nhập tên chủ tài khoản',
+                controller: _accountHolderController,
+                prefixIcon: Icons.person_rounded,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Vui lòng nhập tên chủ tài khoản';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Save Bank Info Checkbox
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Checkbox(
+                        value: _saveBankInfo,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            _saveBankInfo = value ?? false;
+                          });
+                        },
+                        activeColor: ColorConfig.primary,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(40),
-                        ),
-                      ),
-                      child: const Text(
-                        'Tiếp tục',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          borderRadius: BorderRadius.circular(6),
                         ),
                       ),
                     ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Lưu thông tin ngân hàng cho lần sau',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Confirm Button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _handleConfirm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ColorConfig.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(40),
+                    ),
                   ),
-                ],
+                  child: const Text(
+                    'Tiếp tục',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
-              ),
+            ],
           ),
+        ),
+      ),
     );
   }
 

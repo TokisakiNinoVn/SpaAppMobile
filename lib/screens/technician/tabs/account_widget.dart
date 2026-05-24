@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/app_config.dart';
@@ -11,8 +12,11 @@ import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/shared_preferences_helper.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/providers/user_provider.dart';
+import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/routes/config/technician_router_config.dart';
+import 'package:spa_app/screens/components/wallet_balance_section.dart';
 import 'package:spa_app/screens/widgets/role_switcher_card.dart';
 import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/helper/full_screen_list_image.dart';
@@ -28,21 +32,92 @@ class AccountTab extends StatefulWidget {
   State<AccountTab> createState() => _AccountTabState();
 }
 
-class _AccountTabState extends State<AccountTab> {
+class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateMixin {
+
   final UserService userService = UserService();
   final AuthService authService = AuthService();
   Map<String, dynamic>? userData;
   bool isLoading = true;
-  bool _isSwitchingRole = false;
+  bool _isRefreshing = false;
 
+  bool _isSwitchingRole = false;
+  bool _isLoading = false;
+  String _errorMessage = '';
+  int nowBalance = 0;
+  late final AnimationController _fadeCtrl;
+  late final Animation<double> _fadeAnim;
   String rolesActive = '';
   List<String> roles = [];
   bool get isAdmin => AppConfig.adminPhone.contains(userData?['user']['phone']);
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
     super.initState();
+
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+
     _loadUserDetail();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadBalanceNow();
+    });
+  }
+
+  @override
+  void dispose() {
+    _fadeCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadBalanceNow() async {
+    final provider = context.read<UserProvider>();
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
+
+      await provider.loadBalanceUser();
+      nowBalance = provider.nowBalance;
+
+      setState(() {
+        nowBalance = nowBalance ?? 0;
+        _isLoading = false;
+      });
+
+      if (!_fadeCtrl.isCompleted) _fadeCtrl.forward();
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+      print('Error get now balance: $e');
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    if (_isRefreshing) return;
+    setState(() => _isRefreshing = true);
+
+    try {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadBalanceNow();
+      });
+      if (mounted) {
+        SnackBarHelper.showSuccess(context, "Đã cập nhật thông tin");
+      }
+
+    } catch (e) {
+      if (mounted) {
+        SnackBarHelper.showError(context, 'Cập nhật thất bại: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isRefreshing = false);
+    }
   }
 
   void _showRoleSwitchDialog(BuildContext context) {
@@ -171,7 +246,6 @@ class _AccountTabState extends State<AccountTab> {
     final userInfoJson = await SharedPrefs.getValue(PrefType.string, "inforUserLogin") ?? '';
     final rolesActiveStr = await SharedPrefs.getValue(PrefType.string, "rolesActive") ?? '';
     final rolesJsonStr = await SharedPrefs.getValue(PrefType.string, "roles") ?? '[]';
-
 
     List<String> rolesList = [];
     if (rolesJsonStr.isNotEmpty) {
@@ -336,6 +410,7 @@ class _AccountTabState extends State<AccountTab> {
             width: 1,
           ),
           borderRadius: BorderRadius.circular(12),
+          color: ColorConfig.white
         ),
         child: Row(
           children: [
@@ -376,7 +451,7 @@ class _AccountTabState extends State<AccountTab> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 5),
         child: Row(
           children: [
             Container(
@@ -429,273 +504,328 @@ class _AccountTabState extends State<AccountTab> {
     final images = technician?['images'] ?? [];
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: CustomScrollView(
-        slivers: [
-          // Header với gradient
-          SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            backgroundColor: ColorConfig.secondary,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      ColorConfig.secondary,
-                      ColorConfig.secondary.withOpacity(0.7),
-                    ],
-                  ),
-                ),
-                child: SafeArea(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Spacer(),
-                      // Avatar
-                      GestureDetector(
-                        onTap: () {
-                          if (avatarUrl != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => FullScreenSingleImageViewer(
-                                  imageUrl: FormatHelper.formatNetworkImageUrl(avatarUrl),
+      backgroundColor: ColorConfig.primaryBackground,
+      body: RefreshIndicator(
+        key: _refreshIndicatorKey,
+        onRefresh: _onRefresh,
+        color: ColorConfig.primary,
+        backgroundColor: ColorConfig.white,
+        strokeWidth: 2,
+        child: FadeTransition(
+          opacity: _fadeAnim,
+          child:
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 130,
+                pinned: true,
+                backgroundColor: ColorConfig.secondary,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          ColorConfig.secondary,
+                          ColorConfig.secondary.withOpacity(0.7),
+                        ],
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Avatar
+                            GestureDetector(
+                              onTap: () {
+                                if (avatarUrl != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => FullScreenSingleImageViewer(
+                                        imageUrl: FormatHelper.formatNetworkImageUrl(avatarUrl),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 3,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.12),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: CircleAvatar(
+                                  radius: 38,
+                                  backgroundColor: Colors.white,
+                                  backgroundImage: avatarUrl != null
+                                      ? NetworkImage(
+                                    FormatHelper.formatNetworkImageUrl(avatarUrl),
+                                  )
+                                      : null,
+                                  child: avatarUrl == null
+                                      ? Icon(
+                                    Icons.person,
+                                    size: 38,
+                                    color: ColorConfig.secondary.withOpacity(0.5),
+                                  )
+                                      : null,
                                 ),
                               ),
-                            );
-                          }
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 3,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
+
+                            const SizedBox(width: 16),
+
+                            // Info
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Name + Role
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          technician?['fullName'] ?? '---',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+
+                                      const SizedBox(width: 6),
+
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.18),
+                                          borderRadius: BorderRadius.circular(30),
+                                        ),
+                                        child: const Text(
+                                          'KTV',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 8),
+
+                                  // Phone
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.18),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.15),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.phone_rounded,
+                                          size: 14,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          user?['phone'] ?? 'Chưa có số điện thoại',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.white,
-                            backgroundImage: avatarUrl != null
-                                ? NetworkImage(FormatHelper.formatNetworkImageUrl(avatarUrl))
-                                : null,
-                            child: avatarUrl == null
-                                ? Icon(
-                              Icons.person,
-                              size: 50,
-                              color: ColorConfig.secondary.withOpacity(0.5),
-                            )
-                                : null,
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      // Tên kỹ thuật viên
-                      Text(
-                        'KTV: ${technician?['fullName'] ?? '---'}' ,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      // Số điện thoại
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          user?['phone'] ?? 'Chưa có số điện thoại',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
 
-          // Sử dụng widget RoleSwitcherCard đã tách
-          if (isAdmin && roles.isNotEmpty)
-            SliverToBoxAdapter(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 16,
+              // Sử dụng widget RoleSwitcherCard đã tách
+              if (isAdmin && roles.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.only(left: 20, top: 10, right: 20, bottom: 5),
+                    child: RoleSwitcherCard(
+                      roles: roles,
+                      activeRole: rolesActive,
+                      onSwitchRole: _handleSwitchRole,
+                      isSwitching: isLoading,
+                    ),
+                  ),
                 ),
-                child: RoleSwitcherCard(
-                  roles: roles,
-                  activeRole: rolesActive,
-                  onSwitchRole: _handleSwitchRole,
-                  isSwitching: isLoading,
+
+              // Nội dung chính
+              SliverPadding(
+                padding: const EdgeInsets.only(left: 20, top: 5, right: 20, bottom: 10 ),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    Container(
+                      child: WalletBalanceSection(
+                        balance: nowBalance,
+                        // onTapDeposit: () {
+                        //   context.go(CustomerRouterConfig.choosePackage);
+                        // },
+                        onTapWithdraw: () {
+                          context.push(TechnicianRouterConfig.createRequestWithdraw);
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+                      Column(
+                        children: [
+                          _buildActionButton(
+                            icon: Icons.edit_outlined,
+                            label: 'Cập nhật thông tin',
+                            onTap: () {
+                              context.push(TechnicianRouterConfig.updateProfileTechnician);
+                            },
+                          ),
+                          const SizedBox(height: 4),
+                          _buildActionButton(
+                            icon: Icons.spa_outlined,
+                            label: 'Các dịch vụ cung cấp',
+                            onTap: () {
+                              context.go(TechnicianRouterConfig.updateTechnicianService);
+                            },
+                          ),
+                          // const SizedBox(height: 4),
+                          // _buildActionButton(
+                          //   icon: Icons.bar_chart,
+                          //   label: 'Thống kê doanh thu',
+                          //   onTap: () {
+                          //     context.go(TechnicianRouterConfig.statistical);
+                          //   },
+                          // ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+
+                    // Các nút hành động
+                    Container(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          if (roles.contains('customer'))...[
+                            _buildMenuItem(
+                              icon: Icons.swap_horiz,
+                              label: 'Chuyển vai trò khách hàng',
+                              onTap: () => _showRoleSwitchDialog(context),
+                            ),
+                            const Divider(height: 1, indent: 52),
+
+                          ],
+                          _buildMenuItem(
+                            icon: Icons.logout,
+                            label: 'Đăng xuất',
+                            onTap: () => _showLogoutDialog(context),
+                            iconColor: Colors.red,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Về Serene Spa
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Về Serene Spa',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildMenuItem(
+                            icon: Icons.help_outline,
+                            label: 'Trung tâm hỗ trợ',
+                            onTap: () {
+                              // TODO: Chuyển đến trung tâm hỗ trợ
+                            },
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.privacy_tip_outlined,
+                            label: 'Chính sách bảo mật',
+                            onTap: () {
+                              // TODO: Chuyển đến chính sách bảo mật
+                            },
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.description_outlined,
+                            label: 'Điều khoản dịch vụ',
+                            onTap: () {
+                              // TODO: Chuyển đến điều khoản dịch vụ
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                  ]),
                 ),
               ),
-            ),                             // ← đóng ngoặc
-
-          // Nội dung chính
-          SliverPadding(
-            padding: const EdgeInsets.all(20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // Thông tin chi tiết
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      _buildInfoRow('Họ và tên', technician?['fullName']),
-                      const Divider(height: 1),
-                      _buildInfoRow('Số điện thoại', user?['phone']),
-                      // const Divider(height: 1),
-                      // _buildInfoRow('Email', technician?['email']),
-                      // const Divider(height: 1),
-                      // _buildInfoRow('Địa chỉ', technician?['address']),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-                  Column(
-                    children: [
-                      _buildActionButton(
-                        icon: Icons.edit_outlined,
-                        label: 'Cập nhật thông tin',
-                        onTap: () {
-                          context.push(TechnicianRouterConfig.updateProfileTechnician);
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      _buildActionButton(
-                        icon: Icons.spa_outlined,
-                        label: 'Các dịch vụ cung cấp',
-                        onTap: () {
-                          context.go(TechnicianRouterConfig.updateTechnicianService);
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      _buildActionButton(
-                        icon: Icons.bar_chart,
-                        label: 'Thống kê doanh thu',
-                        onTap: () {
-                          context.go(TechnicianRouterConfig.statistical);
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-
-                // Các nút hành động
-                Container(
-                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      if (roles.contains('customer'))...[
-                        _buildMenuItem(
-                          icon: Icons.swap_horiz,
-                          label: 'Chuyển vai trò khách hàng',
-                          onTap: () => _showRoleSwitchDialog(context),
-                        ),
-                        const Divider(height: 1, indent: 52),
-
-                      ],
-                      _buildMenuItem(
-                        icon: Icons.logout,
-                        label: 'Đăng xuất',
-                        onTap: () => _showLogoutDialog(context),
-                        iconColor: Colors.red,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Về Serene Spa
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Về Serene Spa',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildMenuItem(
-                        icon: Icons.help_outline,
-                        label: 'Trung tâm hỗ trợ',
-                        onTap: () {
-                          // TODO: Chuyển đến trung tâm hỗ trợ
-                        },
-                      ),
-                      _buildMenuItem(
-                        icon: Icons.privacy_tip_outlined,
-                        label: 'Chính sách bảo mật',
-                        onTap: () {
-                          // TODO: Chuyển đến chính sách bảo mật
-                        },
-                      ),
-                      _buildMenuItem(
-                        icon: Icons.description_outlined,
-                        label: 'Điều khoản dịch vụ',
-                        onTap: () {
-                          // TODO: Chuyển đến điều khoản dịch vụ
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-              ]),
-            ),
-          ),
-        ],
+            ],
+          )
+        )
       ),
     );
   }

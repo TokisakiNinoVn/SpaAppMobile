@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/enums/gender_customer.dart';
 import 'package:spa_app/enums/gender_requirement.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/providers/information_provider.dart';
@@ -45,6 +46,7 @@ class _CreatePostOrderState extends State<CreatePostOrder> {
   final _moneyFocusNode = FocusNode();
 
   GenderRequirement _genderRequirement = GenderRequirement.any;
+  GenderCustomer _genderCustomer = GenderCustomer.female;
 
   @override
   void initState() {
@@ -247,12 +249,14 @@ class _CreatePostOrderState extends State<CreatePostOrder> {
 
       'subTypeOrder': _timeType,
       'genderRequirement': _genderRequirement.value,
+      'genderCustomer': _genderCustomer.value,
     };
     try {
-      appLog("Data after send: $data");
-      SnackBarHelper.showSuccess(context, 'Tạo yêu cầu đơn thành công! Vui lòng chờ kỹ thuật viên phản hồi!');
-      return;
-      final response = await _orderService.createOrder(data);
+      // appLog("Data after send: $data");
+      // SnackBarHelper.showSuccess(context, 'Tạo yêu cầu đơn thành công! Vui lòng chờ kỹ thuật viên phản hồi!');
+      // context.pop(true);
+      // return;
+      final response = await _orderService.createOrderAdmin(data);
       if (!mounted) return;
       if (response['success'] == true) {
         SnackBarHelper.showSuccess(context, 'Tạo yêu cầu đơn thành công! Vui lòng chờ kỹ thuật viên phản hồi!');
@@ -612,6 +616,11 @@ class _CreatePostOrderState extends State<CreatePostOrder> {
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   hintText: 'Nhập số điện thoại khách hàng',
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: Colors.black38, // mờ hơn
+                    fontWeight: FontWeight.w400,
+                  ),
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 14,
@@ -620,6 +629,89 @@ class _CreatePostOrderState extends State<CreatePostOrder> {
                 ),
                 onChanged: (_) => setState(() {}),
               ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+            child: Row(
+              children: [
+                Icon(Icons.person_search_rounded,
+                    size: 18, color: ColorConfig.primary),
+                const SizedBox(width: 8),
+                const Text(
+                  'Giới tính khách',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: GenderCustomer.values.map((genderCustomer) {
+                final isSelected = _genderCustomer == genderCustomer;
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _genderCustomer = genderCustomer;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        width: 1.5,
+                        color: isSelected
+                            ? ColorConfig.primary
+                            : Colors.grey.shade300,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          genderCustomer == GenderCustomer.male
+                              ? Icons.male_rounded
+                              : genderCustomer == GenderCustomer.female
+                              ? Icons.female_rounded
+                              : Icons.people_alt_rounded,
+                          size: 16,
+                          color: isSelected
+                              ? ColorConfig.primary
+                              : Colors.grey,
+                        ),
+
+                        const SizedBox(width: 6),
+
+                        Text(
+                          genderCustomer.label,
+                          style: TextStyle(
+                            color: isSelected
+                                ? ColorConfig.primary
+                                : Colors.black87,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ),
 
@@ -666,9 +758,18 @@ class _CreatePostOrderState extends State<CreatePostOrder> {
                       focusNode: _addressFocusNode,
                       maxLines: 2,
                       textInputAction: TextInputAction.done,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
-                        hintText: 'Đường 13, xã…',
+                        hintText: 'Đường 13, xã Xuân Giang, tỉnh Ninh Bình',
+                        hintStyle: TextStyle(
+                          fontSize: 13,
+                          color: Colors.black38, // mờ hơn
+                          fontWeight: FontWeight.w400,
+                        ),
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 14,
@@ -737,8 +838,8 @@ class _CreatePostOrderState extends State<CreatePostOrder> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+                      horizontal: 14,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.white,

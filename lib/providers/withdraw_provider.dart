@@ -2,28 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/services/customer_service.dart';
 import 'package:spa_app/services/user_service.dart';
+import 'package:spa_app/services/withdraw_service.dart';
 
-class UserProvider extends ChangeNotifier {
-  final CustomerService _customerService = CustomerService();
-  final UserService _userService = UserService();
+class WithdrawProvider extends ChangeNotifier {
+  final WithdrawService _withdrawService  = WithdrawService();
 
   bool isLoading = false;
 
   String? errorMessage;
-  int nowBalance = 0;
+  // int nowBalance = 0;
+  bool hasFirstWithdrawalToday = true;
+  dynamic feePercentWithdraw;
 
-  Future<bool> loadBalanceUser() async {
+  Future<bool> checkHasFirstWithdrawalToday() async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
-      final res = await _userService.getBalanceUserService();
+      final res = await _withdrawService.hasFirstWithdrawalToday();
 
       // appLog("response: $res");
 
-      // Lấy balance từ response
-      nowBalance = res['data']['balance'] ?? 0;
+      hasFirstWithdrawalToday = res['data']['hasFirstWithdrawalToday'] ?? true;
+      feePercentWithdraw = res['data']['feePercent'] ?? true;
       // appLog("nowBalance: $nowBalance");
 
       return true;
@@ -36,14 +38,14 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> createManagementAccount(Map<String, dynamic> data) async {
+  Future<bool> createRequestWithdraw(Map<String, dynamic> data) async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
-      final res = await _userService.createManagementAccountService(data);
-      // appLog("$res");
+      final response = await _withdrawService.createRequest(data);
+      appLog("${response}");
       // Lấy balance từ response
       // nowBalance = res['data']['balance'] ?? 0;
       // appLog("nowBalance: $nowBalance");

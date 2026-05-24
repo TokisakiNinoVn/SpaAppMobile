@@ -7,23 +7,22 @@ import 'package:spa_app/providers/withdraw_provider.dart';
 import 'package:spa_app/services/withdraw_service.dart';
 import 'package:intl/intl.dart';
 
-class ConfirmRequestWithdraw extends StatefulWidget {
+class ConfirmRequestWithdrawTechnician extends StatefulWidget {
   final Map<String, dynamic> data;
 
-  const ConfirmRequestWithdraw({
+  const ConfirmRequestWithdrawTechnician({
     super.key,
     required this.data,
   });
 
   @override
-  State<ConfirmRequestWithdraw> createState() => _ConfirmRequestWithdrawState();
+  State<ConfirmRequestWithdrawTechnician> createState() => _ConfirmRequestWithdrawTechnicianState();
 }
 
-class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
+class _ConfirmRequestWithdrawTechnicianState extends State<ConfirmRequestWithdrawTechnician> {
   final WithdrawService _withdrawService = WithdrawService();
   bool _isLoading = false;
   String? _errorMessage;
-
   bool _hasFirstWithdrawalToday = false;
   dynamic _feePercentWithdraw;
   double _feeAmount = 0.0;
@@ -75,14 +74,12 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
   }
 
   void _validateData() {
-    if (widget.data == null) {
-      _errorMessage = "Không có dữ liệu yêu cầu rút tiền";
-    } else if (widget.data!['amount'] == null ||
-        widget.data!['bankName'] == null ||
-        widget.data!['accountNumber'] == null ||
-        widget.data!['accountHolder'] == null) {
-      _errorMessage = "Dữ liệu không đầy đủ";
-    }
+    if (widget.data['amount'] == null ||
+      widget.data['bankName'] == null ||
+      widget.data['accountNumber'] == null ||
+      widget.data['accountHolder'] == null) {
+    _errorMessage = "Dữ liệu không đầy đủ";
+  }
   }
 
   Future<void> _handleConfirmWithdraw() async {
@@ -182,6 +179,7 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).popUntil((route) => route.isFirst);
+                      context.pop();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ColorConfig.primary,
@@ -210,61 +208,6 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
 
   @override
   Widget build(BuildContext context) {
-    // if (_errorMessage != null) {
-    //   return Scaffold(
-    //     backgroundColor: Colors.white,
-    //     appBar: _buildAppBar(),
-    //     body: Center(
-    //       child: Padding(
-    //         padding: const EdgeInsets.all(24),
-    //         child: Column(
-    //           mainAxisAlignment: MainAxisAlignment.center,
-    //           children: [
-    //             Container(
-    //               width: 80,
-    //               height: 80,
-    //               decoration: BoxDecoration(
-    //                 color: Colors.red.shade50,
-    //                 shape: BoxShape.circle,
-    //               ),
-    //               child: Icon(
-    //                 Icons.error_outline_rounded,
-    //                 size: 40,
-    //                 color: Colors.red.shade400,
-    //               ),
-    //             ),
-    //             const SizedBox(height: 20),
-    //             Text(
-    //               _errorMessage!,
-    //               textAlign: TextAlign.center,
-    //               style: const TextStyle(
-    //                 fontSize: 16,
-    //                 color: Color(0xFF1A1A1A),
-    //               ),
-    //             ),
-    //             const SizedBox(height: 24),
-    //             SizedBox(
-    //               width: 200,
-    //               height: 48,
-    //               child: ElevatedButton(
-    //                 onPressed: () => context.pop(),
-    //                 style: ElevatedButton.styleFrom(
-    //                   backgroundColor: const Color(0xFF0066FF),
-    //                   foregroundColor: Colors.white,
-    //                   shape: RoundedRectangleBorder(
-    //                     borderRadius: BorderRadius.circular(12),
-    //                   ),
-    //                 ),
-    //                 child: const Text('Quay lại'),
-    //               ),
-    //             ),
-    //           ],
-    //         ),
-    //       ),
-    //     ),
-    //   );
-    // }
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(),
@@ -345,7 +288,7 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
         ),
         const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: const Color(0xFFF7F8FA),
             borderRadius: BorderRadius.circular(16),
@@ -420,6 +363,7 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
     );
   }
 
+  // Helper: hiển thị một dòng số tiền
   Widget _buildAmountRow(String label, double value, {String? note, bool isFee = false, bool isNet = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -497,7 +441,7 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
               ),
             )
                 : const Text(
-              'Xác nhận yêu cầu rút tiền',
+              'Xác nhận tạo yêu cầu rút tiền',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

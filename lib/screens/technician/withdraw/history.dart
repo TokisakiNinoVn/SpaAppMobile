@@ -13,12 +13,12 @@ import 'package:spa_app/services/notification_service.dart';
 import '../../../helper/format_helper.dart';
 import '../../../routes/config/customer_router_config.dart';
 
-class HistoryWithdrawScreen extends StatefulWidget {
+class HistoryWithdrawTechnician extends StatefulWidget {
   @override
-  State<HistoryWithdrawScreen> createState() => _HistoryWithdrawScreenState();
+  State<HistoryWithdrawTechnician> createState() => _HistoryWithdrawTechnicianState();
 }
 
-class _HistoryWithdrawScreenState extends State<HistoryWithdrawScreen> {
+class _HistoryWithdrawTechnicianState extends State<HistoryWithdrawTechnician> {
   final WithdrawService _withdrawService = WithdrawService();
 
   List<dynamic> _historyDepositList = [];

@@ -12,6 +12,10 @@ class OrderService {
     // appLog("Data create order: $data");
     return await ApiMethodsPrivate.postRequest(OrderApiRoutes.create, data);
   }
+  Future<Map<String, dynamic>> createOrderAdmin(Map<String, dynamic> data) async {
+    // appLog("Data create order: $data");
+    return await ApiMethodsPrivate.postRequest(OrderApiRoutes.adminCreate, data);
+  }
 
   Future<Map<String, dynamic>> updateStatus(Map<String, dynamic> data) async {
     final response =  await ApiMethodsPrivate.putRequest(OrderApiRoutes.updateStatus, data);
@@ -42,5 +46,8 @@ class OrderService {
 
   Future<Map<String, dynamic>> listFilterOrder(String queryParams) async {
     return await ApiMethodsPrivate.getRequest('${OrderApiRoutes.listRequestOrder}?$queryParams');
+  }
+  Future<Map<String, dynamic>> listPostOrder() async {
+    return await ApiMethodsPrivate.getRequest('${OrderApiRoutes.listPostAdmin}');
   }
 }

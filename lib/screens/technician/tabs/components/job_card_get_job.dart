@@ -1,15 +1,11 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
-import 'package:spa_app/helper/logger_utils.dart';
-import 'package:spa_app/routes/config/technician_router_config.dart';
 import 'package:spa_app/screens/components/dashed_divider_component.dart';
 
 class JobCard extends StatelessWidget {
   final Map<String, dynamic> job;
+  final bool isWorking;
   final Duration remainingTime;
   final VoidCallback onAccept;
   final VoidCallback? onTap;
@@ -20,24 +16,70 @@ class JobCard extends StatelessWidget {
     super.key,
     required this.job,
     this.onTap,
+    required this.isWorking,
     required this.remainingTime,
     required this.onAccept,
     required this.formatRemainingTime,
     required this.getTimerColor,
   });
 
+  bool get isAdminPost => job['isAdminCreate'] ?? false;
+
+  /// Kiểm tra hết hạn
+  bool get isExpired => remainingTime.isNegative;
+
+  /// Chế độ ứng tuyển
+  bool get isApplyMode => isAdminPost;
+
+  /// Có thể thao tác không
+  bool get canHandleJob {
+    // Hết hạn => disable
+    if (isExpired) return false;
+
+    // Đang làm việc mà là nút nhận việc => disable
+    if (isWorking && !isApplyMode) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Text nút
+  String get actionText {
+    if (isApplyMode) {
+      return "Ứng tuyển";
+    }
+
+    if (isWorking) {
+      return "Đang làm việc";
+    }
+
+    return "Nhận việc";
+  }
+
+  /// Màu nút
+  Color get buttonColor {
+    if (!canHandleJob) {
+      return Colors.grey.shade300;
+    }
+
+    return isApplyMode
+        ? ColorConfig.primary
+        : ColorConfig.primary;
+  }
+
   @override
   Widget build(BuildContext context) {
-    // appLog("Details job: $job");
     final customer = job['customerId'] ?? {};
     final serviceTimePrice = job['serviceTimePriceId'] ?? {};
 
     final isPrioritize = job['isPrioritize'] ?? false;
     final isExpired = remainingTime.isNegative;
-    final isAdminPost = false;
+    final isAdminPost = job['isAdminCreate'] ?? false;
 
     final gender = customer['gender'] == "male" ? "Khách nam" : "Khách nữ";
-    double borderRadiusAll = 18.0;
+    const double borderRadiusAll = 18.0;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       child: GestureDetector(
@@ -57,7 +99,6 @@ class JobCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 /// HEADER
                 Row(
                   children: [
@@ -68,9 +109,7 @@ class JobCard extends StatelessWidget {
                           size: 20,
                           color: Colors.orange.shade400,
                         ),
-
                         const SizedBox(width: 6),
-
                         Text(
                           isPrioritize ? "Việc ưu tiên" : "Việc mới",
                           style: TextStyle(
@@ -81,9 +120,7 @@ class JobCard extends StatelessWidget {
                         ),
                       ],
                     ),
-
                     const Spacer(),
-
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -103,9 +140,7 @@ class JobCard extends StatelessWidget {
                               color: Colors.orange.shade700,
                             ),
                           ),
-
                           const SizedBox(width: 8),
-
                           Text(
                             formatRemainingTime(remainingTime),
                             style: TextStyle(
@@ -120,8 +155,6 @@ class JobCard extends StatelessWidget {
                   ],
                 ),
 
-                // const SizedBox(height: 8),
-
                 /// CUSTOMER
                 Text(
                   "$gender${customer['nationality'] != null ? ", ${customer['nationality']}" : ""}",
@@ -131,9 +164,7 @@ class JobCard extends StatelessWidget {
                     color: Colors.black87,
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
                 Text(
                   job['address'] ?? "Địa chỉ đang cập nhật",
                   maxLines: 2,
@@ -144,7 +175,6 @@ class JobCard extends StatelessWidget {
                     color: Colors.grey.shade700,
                   ),
                 ),
-
                 const SizedBox(height: 14),
                 const DashedDivider(),
                 const SizedBox(height: 5),
@@ -164,9 +194,7 @@ class JobCard extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const SizedBox(width: 12),
-
                     Row(
                       children: [
                         Icon(
@@ -174,9 +202,7 @@ class JobCard extends StatelessWidget {
                           size: 18,
                           color: Colors.grey.shade500,
                         ),
-
                         const SizedBox(width: 4),
-
                         Text(
                           "${serviceTimePrice['duration'] ?? 0} phút",
                           style: TextStyle(
@@ -189,7 +215,6 @@ class JobCard extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 5),
                 const DashedDivider(),
                 const SizedBox(height: 5),
@@ -210,9 +235,7 @@ class JobCard extends StatelessWidget {
                               color: Colors.grey.shade600,
                             ),
                           ),
-
                           const SizedBox(height: 2),
-
                           Text(
                             "+ ${FormatHelper.formatPrice(job['pricing']?['technicianReceiveAmount'] ?? job['price'])}",
                             style: TextStyle(
@@ -224,31 +247,63 @@ class JobCard extends StatelessWidget {
                         ],
                       ),
                     ),
-
                     const SizedBox(width: 12),
 
-                    /// BUTTON
-                    if(!isExpired)...[
+                    /// BUTTON Handling the matter
+                    // if (!isExpired) ...[
+                    //   Expanded(
+                    //     child: SizedBox(
+                    //       height: 40,
+                    //       child: ElevatedButton(
+                    //         onPressed: canHandleJob ? onAccept : null,
+                    //         style: ElevatedButton.styleFrom(
+                    //           elevation: 0,
+                    //           backgroundColor: buttonColor,
+                    //           disabledBackgroundColor: Colors.grey.shade300,
+                    //           foregroundColor: Colors.white,
+                    //           disabledForegroundColor: Colors.grey.shade600,
+                    //           shape: RoundedRectangleBorder(
+                    //             borderRadius: BorderRadius.circular(999),
+                    //           ),
+                    //         ),
+                    //         child: Text(
+                    //           actionText,
+                    //           style: const TextStyle(
+                    //             fontSize: 15,
+                    //             fontWeight: FontWeight.w700,
+                    //           ),
+                    //         ),
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ],
+                    if (!isExpired) ...[
                       Expanded(
                         child: SizedBox(
-                          height: 30,
-                          child: ElevatedButton(
-                            onPressed: isExpired ? null : onAccept,
-                            style: ElevatedButton.styleFrom(
-                              elevation: 0,
-                              backgroundColor: isExpired
-                                  ? Colors.grey.shade300
-                                  : const Color(0xFF5D8E47),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                              ),
+                          height: 40,
+                          child: ElevatedButton.icon(
+                            onPressed: canHandleJob ? onAccept : null,
+                            icon: Icon(
+                              isAdminPost
+                                  ? Icons.send_rounded
+                                  : Icons.handshake_rounded,
+                              size: 18,
                             ),
-                            child: Text(
-                              isAdminPost ? "Ứng tuyển" : "Nhận việc",
+                            label: Text(
+                              actionText,
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              elevation: 0,
+                              backgroundColor: buttonColor,
+                              disabledBackgroundColor: Colors.grey.shade300,
+                              foregroundColor: Colors.white,
+                              disabledForegroundColor: Colors.grey.shade600,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
                               ),
                             ),
                           ),

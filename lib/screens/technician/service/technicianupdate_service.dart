@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/providers/service_provider.dart';
 import 'package:spa_app/services/service_service.dart';
 import '../../../helper/snackbar_helper.dart';
 
@@ -17,14 +21,13 @@ class TechnicianUpdateService extends StatefulWidget {
 class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
   final ServiceService _serviceService = ServiceService();
 
-  final _formKey = GlobalKey<FormState>();
-  List<dynamic>? serviceIds = [];
-  List<dynamic>? allServices = [];
-  List<dynamic>? originalServiceIds = []; // Lưu trữ danh sách gốc
+  List<String> serviceIds = [];
+  List<String> originalServiceIds = [];
   Map<String, dynamic>? selectedServiceDetail;
-  bool _showDetailPopup = false;
-  bool _hasChanges = false; // Biến kiểm tra có thay đổi không
+  List<Map<String, dynamic>> allServices = [];
 
+  bool _showDetailPopup = false;
+  bool _hasChanges = false;
   bool _isLoading = false;
 
   @override
@@ -39,7 +42,9 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
     });
 
     try {
-      await _loadServiceIds();
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _loadServiceIds();
+      });
       await _loadAllServices();
     } catch (e) {
       print("Error loading data: $e");
@@ -51,103 +56,79 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
   }
 
   Future<void> _loadServiceIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString('serviceIds');
+    final serviceProvider =
+    Provider.of<ServiceProvider>(context, listen: false);
 
-    if (jsonString != null) {
-      setState(() {
-        serviceIds = List<String>.from(jsonDecode(jsonString));
-        originalServiceIds = List<String>.from(jsonDecode(jsonString));
-      });
-      print("Loaded serviceIds: ${serviceIds}");
-    } else {
-      // Fallback: Try to get from response data if available
-      final userDataString = prefs.getString('userData');
-      if (userDataString != null) {
-        final userData = jsonDecode(userDataString);
-        if (userData['data']?['technicianProfile']?['serviceIds'] != null) {
-          setState(() {
-            serviceIds = List<String>.from(userData['data']['technicianProfile']['serviceIds']);
-            originalServiceIds = List<String>.from(userData['data']['technicianProfile']['serviceIds']);
-          });
-        }
-      }
+    final success = await serviceProvider.loadSelectedServices();
+
+    if (!success) {
+      appLog(
+        "Load selected services failed: ${serviceProvider.errorMessage}",
+      );
+      return;
     }
+
+    final services = serviceProvider.selectedServices;
+
+    final loadedIds = services
+        .map<String>((service) => service['_id'].toString())
+        .toList();
+
+    setState(() {
+      serviceIds = loadedIds;
+      originalServiceIds = List<String>.from(loadedIds);
+    });
+
+    // appLog("Loaded serviceIds: $serviceIds");
   }
 
   Future<void> _loadAllServices() async {
     try {
       final response = await _serviceService.listService();
+
       setState(() {
-        allServices = response['data'];
+        allServices =
+        List<Map<String, dynamic>>.from(response['data'] ?? []);
       });
     } catch (e) {
-      print("Error loading services: $e");
+      appLog("Error loading services: $e");
     }
   }
 
   bool _isServiceSelected(String serviceId) {
-    return serviceIds?.contains(serviceId) ?? false;
+    return serviceIds.contains(serviceId);
   }
 
   void _toggleServiceSelection(String serviceId) {
     setState(() {
-      if (_isServiceSelected(serviceId)) {
-        serviceIds?.remove(serviceId);
+      if (serviceIds.contains(serviceId)) {
+        serviceIds.remove(serviceId);
       } else {
-        serviceIds?.add(serviceId);
+        serviceIds.add(serviceId);
       }
+
       _checkForChanges();
     });
-    // Không tự động lưu ở đây nữa, chỉ lưu khi nhấn nút "Lưu thay đổi"
   }
 
   void _checkForChanges() {
-    // So sánh danh sách hiện tại với danh sách gốc
-    bool hasChanges = false;
+    final current = [...serviceIds]..sort();
+    final original = [...originalServiceIds]..sort();
 
-    if (serviceIds == null && originalServiceIds == null) {
-      hasChanges = false;
-    } else if (serviceIds == null || originalServiceIds == null) {
-      hasChanges = true;
-    } else if (serviceIds!.length != originalServiceIds!.length) {
-      hasChanges = true;
-    } else {
-      // Sắp xếp và so sánh từng phần tử
-      final sortedCurrent = List<String>.from(serviceIds!)..sort();
-      final sortedOriginal = List<String>.from(originalServiceIds!)..sort();
-
-      for (int i = 0; i < sortedCurrent.length; i++) {
-        if (sortedCurrent[i] != sortedOriginal[i]) {
-          hasChanges = true;
-          break;
-        }
-      }
-    }
+    final hasChanges = current.length != original.length ||
+        !current.asMap().entries.every(
+              (entry) => entry.value == original[entry.key],
+        );
 
     setState(() {
       _hasChanges = hasChanges;
     });
   }
 
-  Future<void> _saveServiceIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('serviceIds', jsonEncode(serviceIds));
-  }
-
-  void _showServiceDetail(Map<String, dynamic> service) {
-    setState(() {
-      selectedServiceDetail = service;
-      _showDetailPopup = true;
-    });
-  }
-
-  void _hideServiceDetail() {
-    setState(() {
-      _showDetailPopup = false;
-      selectedServiceDetail = null;
-    });
-  }
+  // Future<void> _saveServiceIds() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.setString('serviceIds', jsonEncode(serviceIds));
+  // }
 
   Future<void> _updateServices() async {
     setState(() {
@@ -155,23 +136,20 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
     });
 
     try {
-      // SỬA LỖI: Lấy danh sách serviceIds hiện tại (đã thay đổi)
       final List<String> currentServiceIds = List<String>.from(serviceIds ?? []);
 
-      final payload = {
+      final body = {
         "serviceIds": currentServiceIds,
       };
 
-      await _serviceService.technicianAddService(payload);
+      await _serviceService.technicianUpdateService(body);
 
-      // Cập nhật lại originalServiceIds với giá trị mới
       setState(() {
         originalServiceIds = List<String>.from(currentServiceIds);
         _hasChanges = false;
       });
 
-      // Lưu vào shared_preferences
-      await _saveServiceIds();
+      // await _saveServiceIds();
 
       SnackBarHelper.showSuccess(
         context,
@@ -196,13 +174,13 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
       decoration: BoxDecoration(
         color: ColorConfig.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isSelected ? ColorConfig.primary : Colors.grey.shade300,
-          width: isSelected ? 2 : 1,
+          width: isSelected ? 0.5 : 0.1,
         ),
         boxShadow: [
           BoxShadow(
@@ -214,7 +192,6 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
       ),
       child: Row(
         children: [
-          // Checkbox
           Transform.scale(
             scale: 1.3,
             child: Checkbox(
@@ -228,10 +205,7 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
               activeColor: ColorConfig.primary,
             ),
           ),
-
           const SizedBox(width: 12),
-
-          // Service Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,10 +231,11 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
               ],
             ),
           ),
-
-          // Detail Button
           IconButton(
-            onPressed: () => _showServiceDetail(service),
+            onPressed: () {
+              selectedServiceDetail = service;
+              _showServiceDetailBottomSheet(context);
+            },
             icon: Icon(
               Icons.info_outline,
               color: ColorConfig.primary,
@@ -272,273 +247,339 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
     );
   }
 
-  Widget _buildDetailPopup() {
-    if (selectedServiceDetail == null) return const SizedBox();
+  void _showServiceDetailBottomSheet(BuildContext context) {
+    if (selectedServiceDetail == null) return;
 
     final service = selectedServiceDetail!;
     final timePrices = service['timePrices'] as List? ?? [];
     final isSelected = _isServiceSelected(service['_id']);
 
-    // SỬA LỖI: Thêm AnimatedPositioned để popup hiển thị từ dưới lên
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 300),
-      bottom: _showDetailPopup ? 0 : -500, // Ẩn popup bằng cách đưa ra ngoài màn hình
-      left: 0,
-      right: 0,
-      child: Container(
-        height: 450,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with close button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.65,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (_, controller) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
+              ),
+              child: Column(
                 children: [
-                  Text(
-                    'Chi tiết dịch vụ',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: ColorConfig.primary,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: _hideServiceDetail,
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Service name
-              Text(
-                service['name'] ?? '',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Description
-              Text(
-                service['description'] ?? 'Không có mô tả',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Divider
-              Divider(color: Colors.grey.shade300),
-
-              // Time and Price section
-              const Text(
-                'Thời gian & Giá cả',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              if (timePrices.isEmpty)
-                Text(
-                  'Chưa có thông tin giá',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade500,
-                    fontStyle: FontStyle.italic,
-                  ),
-                )
-              else
-                ...timePrices.map((priceInfo) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(12),
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    width: 48,
+                    height: 5,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade200),
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(999),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time,
-                              color: ColorConfig.primary,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${priceInfo['duration']} ${priceInfo['unit'] ?? 'phút'}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: controller,
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Chi tiết dịch vụ',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: ColorConfig.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      service['name'] ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: Colors.grey.shade200,
                               ),
                             ),
-                          ],
-                        ),
-                        Text(
-                          '${priceInfo['price']?.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},') ?? '0'} VNĐ',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: ColorConfig.primary,
+                            child: Text(
+                              service['description'] ?? 'Không có mô tả',
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.6,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-
-              const SizedBox(height: 20),
-
-              // Action buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        _toggleServiceSelection(service['_id']);
-                        if (isSelected) {
-                          _hideServiceDetail();
-                        }
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: isSelected ? Colors.red : ColorConfig.primary,
-                        side: BorderSide(
-                          color: isSelected ? Colors.red : ColorConfig.primary,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.schedule_rounded,
+                                color: ColorConfig.primary,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Thời gian & Giá cả',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          if (timePrices.isEmpty)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                'Chưa có thông tin giá',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade500,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            )
+                          else
+                            ...timePrices.map((priceInfo) {
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  color: Colors.grey.shade50,
+                                  border: Border.all(
+                                    color: Colors.grey.shade200,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: ColorConfig.primary.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Icon(
+                                        Icons.access_time_rounded,
+                                        color: ColorConfig.primary,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${priceInfo['duration']} ${priceInfo['unit'] ?? 'phút'}',
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Thời lượng dịch vụ',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      "${FormatHelper.formatPrice(priceInfo['price'])} VNĐ",
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: ColorConfig.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          const SizedBox(height: 28),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                _toggleServiceSelection(service['_id']);
+                                if (isSelected) {
+                                  Navigator.pop(context);
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isSelected
+                                    ? Colors.red
+                                    : ColorConfig.primary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                              child: Text(
+                                isSelected
+                                    ? 'Bỏ chọn dịch vụ này'
+                                    : 'Chọn dịch vụ này',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: MediaQuery.of(context).padding.bottom,
+                          ),
+                        ],
                       ),
-                      child: Text(isSelected ? 'Bỏ chọn dịch vụ này' : 'Chọn dịch vụ này'),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildSaveButton() {
-    if (!_hasChanges) return const SizedBox();
-
-    return Positioned(
-      bottom: 20,
-      left: 16,
-      right: 16,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: ElevatedButton(
-          onPressed: _isLoading ? null : _updateServices,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: ColorConfig.primary,
-            minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+  Widget _buildBottomActionBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
-          child: _isLoading
-              ? const SizedBox(
-            height: 20,
-            width: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          )
-              : Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.save,
-                size: 20,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Lưu thay đổi',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
+        ],
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade200),
         ),
       ),
-    );
-  }
-
-  Widget _buildChangesIndicator() {
-    if (!_hasChanges) return const SizedBox();
-
-    return Positioned(
-      bottom: 80, // Đặt phía trên nút Lưu
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.orange.shade50,
-          border: Border(
-            top: BorderSide(color: Colors.orange.shade200),
-            bottom: BorderSide(color: Colors.orange.shade200),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(
-              Icons.info,
-              color: Colors.orange.shade700,
-              size: 16,
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: Colors.orange.shade700, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Bạn có thay đổi chưa lưu',
+                      style: TextStyle(
+                        color: Colors.orange.shade700,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              'Bạn có thay đổi chưa lưu',
-              style: TextStyle(
-                color: Colors.orange.shade700,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+
+            const SizedBox(height: 12),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _updateServices,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ColorConfig.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                    AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                    : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.save, size: 18),
+                    SizedBox(width: 6),
+                    Text(
+                      'Lưu thay đổi',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -552,122 +593,115 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
+        backgroundColor: ColorConfig.primaryBackground,
         elevation: 0,
-        title: const Text('Chỉnh sửa dịch vụ của bạn'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (_hasChanges) {
-              // Hiển thị cảnh báo nếu có thay đổi chưa lưu
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Thay đổi chưa lưu'),
-                  content: const Text('Bạn có thay đổi chưa lưu. Bạn có muốn thoát mà không lưu?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Ở lại'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context); // Đóng dialog
-                        context.pop(); // Quay lại màn hình trước
-                      },
-                      child: const Text('Thoát'),
-                    ),
-                  ],
+        title: Row(
+          children: [
+            InkWell(
+              onTap: () => context.pop(),
+              borderRadius: BorderRadius.circular(40),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(40),
                 ),
-              );
-            } else {
-              context.pop();
-            }
-          },
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Text(
+                "Chỉnh sửa dịch vụ cung cấp",
+                style: TextStyle(
+                  color: Color(0xFF1A1A1A),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header info
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: ColorConfig.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: ColorConfig.primary),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: ColorConfig.primary,
+      body: Container(
+        color: ColorConfig.primaryBackground   ,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: ColorConfig.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: ColorConfig.primary),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Chọn các dịch vụ bạn có thể cung cấp. Nhấn vào biểu tượng ℹ️ để xem chi tiết.',
-                          style: TextStyle(
-                            color: Colors.grey.shade700,
-                            fontSize: 14,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: ColorConfig.primary,
                           ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Chọn các dịch vụ bạn có thể cung cấp. Nhấn vào biểu tượng ℹ️ để xem chi tiết.',
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_isLoading && allServices.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 50),
+                          child: CircularProgressIndicator(),
                         ),
                       ),
-                    ],
-                  ),
+                    if (!_isLoading && allServices.isNotEmpty)
+                      ...allServices.map((service) => _buildServiceItem(service)).toList(),
+                    if (allServices.isEmpty && !_isLoading)
+                      Center(
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 50),
+                            Icon(
+                              Icons.miscellaneous_services,
+                              size: 60,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Không có dịch vụ nào',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
-
-                if (_isLoading && allServices!.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 50),
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-
-                // Services list
-                if (!_isLoading && allServices!.isNotEmpty)
-                  ...allServices!.map((service) => _buildServiceItem(service)).toList(),
-
-                // Empty state
-                if (allServices!.isEmpty && !_isLoading)
-                  Center(
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 50),
-                        Icon(
-                          Icons.miscellaneous_services,
-                          size: 60,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Không có dịch vụ nào',
-                          style: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                const SizedBox(height: 100),
-              ],
+              ),
             ),
-          ),
-
-          _buildChangesIndicator(),
-
-          _buildSaveButton(),
-
-          _buildDetailPopup(),
-        ],
+            if (_hasChanges) _buildBottomActionBar(),
+          ],
+        ),
       ),
     );
   }

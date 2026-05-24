@@ -24,6 +24,8 @@ class RealtimeService {
   final void Function(Map<String, dynamic>)? onNewOrder;
   final void Function(String orderId)? onOrderExpired;
   final void Function(String orderId)? onOrderRemoved;
+  final void Function(Map<String, dynamic>)? onNewOrderAutoMatching;
+  final void Function(String orderId)? onOrderAutoMatchingRemove;
   bool _isDisposed = false;
 
   // RealtimeService(this.context, {this.onUserStatusUpdate});
@@ -40,6 +42,8 @@ class RealtimeService {
     this.onNewOrder,
     this.onOrderExpired,
     this.onOrderRemoved,
+    this.onNewOrderAutoMatching,
+    this.onOrderAutoMatchingRemove
   });
 
   void dispose() {
@@ -118,7 +122,7 @@ class RealtimeService {
     // appLog("URI connect Wss: $uri");
 
     try {
-      // appLog('[RealtimeService] 🔌 Connecting...');
+      appLog('[RealtimeService] 🔌 Connecting...');
 
       final socket = await WebSocket.connect(
         uri.toString(),
@@ -202,6 +206,17 @@ class RealtimeService {
         final order = data['data'];
 
         onNewOrder?.call(order);
+
+        // 🔔 optional: show local notification nếu muốn
+        // _showNotification(
+        //   title: 'Đơn mới',
+        //   body: 'Bạn có một đơn việc mới',
+        // );
+      }
+      else if (data['type'] == 'new_auto_matching') {
+        final order = data['data'];
+
+        onNewOrderAutoMatching?.call(order);
 
         // 🔔 optional: show local notification nếu muốn
         // _showNotification(

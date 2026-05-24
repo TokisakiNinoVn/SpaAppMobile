@@ -10,6 +10,7 @@ class ServiceProvider extends ChangeNotifier {
 
   String? errorMessage;
   List serviceBase = [];
+  List selectedServices = [];
 
   Future<bool> loadListService() async {
     isLoading = true;
@@ -34,4 +35,25 @@ class ServiceProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> loadSelectedServices() async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _serviceService.getSelectedServices();
+      // appLog("response: $res");
+      selectedServices = res['data'] ?? [];
+      // appLog("List data service: $serviceBase");
+      return true;
+    } catch (e) {
+      errorMessage = 'Đã xảy ra lỗi: $e';
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
 }

@@ -6,8 +6,11 @@ class ServiceApiRoutes {
   static const String updateService = '${AppConfig.apiUrlPrivate}/service/update';
   static const String deleteService = '${AppConfig.apiUrlPrivate}/service/delete';
   static const String addTimePriceService = '${AppConfig.apiUrlPrivate}/service/time-price';
-  static const String technicianAddService = '${AppConfig.apiUrlPrivate}/service/add-service';
   static const String listService = '${AppConfig.apiUrlPrivate}/service/list';
   static const String listBaseService = '${AppConfig.apiUrlPublic}/service/list-base';
 
+  // Technician
+  static const String getService = '${AppConfig.apiUrlPrivate}/technician-app/services';
+  static const String technicianAddService = '${AppConfig.apiUrlPrivate}/service/add-service';
+  static const String technicianUpdateService = '${AppConfig.apiUrlPrivate}/service/update-service';
 }

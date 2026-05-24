@@ -9,6 +9,9 @@ import 'package:spa_app/screens/technician/order/details_new_order.dart';
 import 'package:spa_app/screens/technician/order/technician_canceled_order.dart';
 import 'package:spa_app/screens/technician/service/technicianupdate_service.dart';
 import 'package:spa_app/screens/technician/technician/update_profile_technician.dart';
+import 'package:spa_app/screens/technician/withdraw/confirm_request.dart';
+import 'package:spa_app/screens/technician/withdraw/create_request.dart';
+import 'package:spa_app/screens/technician/withdraw/history.dart';
 import '../screens/technician/home_technician_screen.dart';
 import '../screens/technician/order/history_order.dart';
 import '../screens/technician/statistical/statistical_screen.dart';
@@ -60,6 +63,26 @@ final List<GoRoute> technicianRoutes = [
         GoRoute(
           path: 'history-order',
           builder: (context, state) => const HistoryOrder(),
+        ),
+        GoRoute(
+          path: 'create-request-withdraw',
+          builder: (context, state) => const CreateRequestWithdrawTechnician(),
+          routes: [
+            GoRoute(
+              path: 'confirm',
+              builder: (context, state) {
+                final data = state.extra as Map<String, dynamic>;
+                return ConfirmRequestWithdrawTechnician(data: data);
+              }
+              // builder: (context, state) => ConfirmRequestWithdrawTechnician(),
+            ),
+            GoRoute(
+              path: 'history',
+              builder: (context, state) {
+                return HistoryWithdrawTechnician();
+              }
+            ),
+          ]
         ),
         GoRoute(
           path: 'notifications',

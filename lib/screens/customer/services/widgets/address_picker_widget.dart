@@ -52,7 +52,7 @@ class _AddressPickerWidgetState extends State<AddressPickerWidget> {
           _selectDefaultAddressIfNeeded();
           _isLoading = false;
         });
-        appLog("Đã tải ${_addresses.length} địa chỉ");
+        // appLog("Đã tải ${_addresses.length} địa chỉ");
       } else {
         setState(() {
           _errorMessage = response['message'] ?? 'Không thể tải danh sách địa chỉ';

@@ -50,23 +50,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
       if (response['success'] == true || response['status'] == 'success') {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: const [
-                  Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                  SizedBox(width: 8),
-                  Text('Đặt lại mật khẩu thành công'),
-                ],
-              ),
-              backgroundColor: const Color(0xFF27AE60),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(40),
-              ),
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          SnackBarHelper.showSuccess(context, 'Đặt lại mật khẩu thành công');
           context.go('/login');
         }
       } else {

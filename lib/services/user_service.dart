@@ -124,4 +124,10 @@ class UserService {
       data,
     );
   }
+
+  Future<Map<String, dynamic>> getBalanceUserService() async {
+    return await ApiMethodsPrivate.getRequest(
+        '${UserApiRoutes.balance}'
+    );
+  }
 }
