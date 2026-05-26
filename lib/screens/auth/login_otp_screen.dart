@@ -181,7 +181,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
         setState(() => _fcmToken = token);
-        appLog('FCM token: $token');
+        // appLog('FCM token: $token');
       } else {
         SnackBarHelper.showError(context, 'Không thể lấy FCM token. Vui lòng thử lại hoặc kiểm tra cấu hình Firebase.');
         appLog('FCM token null sau khi đã có APNs token');

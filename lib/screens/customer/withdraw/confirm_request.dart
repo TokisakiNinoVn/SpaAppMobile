@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/providers/withdraw_provider.dart';
 import 'package:spa_app/services/withdraw_service.dart';
 import 'package:intl/intl.dart';
 
 class ConfirmRequestWithdraw extends StatefulWidget {
-  final Map<String, dynamic>? data;
+  final Map<String, dynamic> data;
 
   const ConfirmRequestWithdraw({
     super.key,
-    this.data,
+    required this.data,
   });
 
   @override
@@ -22,10 +24,54 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  bool _hasFirstWithdrawalToday = false;
+  dynamic _feePercentWithdraw;
+  double _feeAmount = 0.0;
+  double _netAmount = 0.0;
+
   @override
   void initState() {
     super.initState();
     _validateData();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHasFirstWithdrawToday();
+    });
+  }
+
+  Future<void> _loadHasFirstWithdrawToday() async {
+    final provider = context.read<WithdrawProvider>();
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
+
+      await provider.checkHasFirstWithdrawalToday();
+      setState(() {
+        _hasFirstWithdrawalToday = provider.hasFirstWithdrawalToday;
+        _feePercentWithdraw = provider.feePercentWithdraw ?? 0;
+        appLog("Load: $_hasFirstWithdrawalToday - $_feePercentWithdraw %");
+        _calculateFeeAndNet();   // <-- Gọi tính toán
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+      print('Error get now balance: $e');
+    }
+  }
+
+  void _calculateFeeAndNet() {
+    final double amount = double.tryParse(widget.data['amount'].toString()) ?? 0;
+    if (_hasFirstWithdrawalToday) {
+      _feeAmount = 0;
+    } else {
+      _feeAmount = amount * (_feePercentWithdraw / 100);
+    }
+    _netAmount = amount - _feeAmount;
   }
 
   void _validateData() {
@@ -40,7 +86,7 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
   }
 
   Future<void> _handleConfirmWithdraw() async {
-    if (_errorMessage != null) return;
+    // if (_errorMessage != null) return;
 
     setState(() {
       _isLoading = true;
@@ -49,15 +95,17 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
 
     try {
       final requestData = {
-        // 'amount': widget.data!['amount'],
-        'amount': int.parse(widget.data!['amount'].toString()),
-        'bankName': widget.data!['bankName'],
-        'accountNumber': widget.data!['accountNumber']?.toString(),
-        'accountHolder': widget.data!['accountHolder'],
+        'amount': int.parse(widget.data['amount'].toString()),
+        'bankName': widget.data['bankName'],
+        'accountNumber': widget.data['accountNumber']?.toString(),
+        'accountHolder': widget.data['accountHolder'],
+        'hasFirstWithdrawalToday': _hasFirstWithdrawalToday,
+        'fee': _feeAmount,           // thêm nếu cần
+        'netAmount': _netAmount,     // thêm nếu cần
       };
 
       final response = await _withdrawService.createRequest(requestData);
-
+      appLog("$response");
       if (mounted) {
         if (response['status'] == "success" || response['success'] == true) {
           _showSuccessDialog();
@@ -162,60 +210,60 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
 
   @override
   Widget build(BuildContext context) {
-    if (_errorMessage != null) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: _buildAppBar(),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.error_outline_rounded,
-                    size: 40,
-                    color: Colors.red.shade400,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  _errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: 200,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () => context.pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0066FF),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text('Quay lại'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    // if (_errorMessage != null) {
+    //   return Scaffold(
+    //     backgroundColor: Colors.white,
+    //     appBar: _buildAppBar(),
+    //     body: Center(
+    //       child: Padding(
+    //         padding: const EdgeInsets.all(24),
+    //         child: Column(
+    //           mainAxisAlignment: MainAxisAlignment.center,
+    //           children: [
+    //             Container(
+    //               width: 80,
+    //               height: 80,
+    //               decoration: BoxDecoration(
+    //                 color: Colors.red.shade50,
+    //                 shape: BoxShape.circle,
+    //               ),
+    //               child: Icon(
+    //                 Icons.error_outline_rounded,
+    //                 size: 40,
+    //                 color: Colors.red.shade400,
+    //               ),
+    //             ),
+    //             const SizedBox(height: 20),
+    //             Text(
+    //               _errorMessage!,
+    //               textAlign: TextAlign.center,
+    //               style: const TextStyle(
+    //                 fontSize: 16,
+    //                 color: Color(0xFF1A1A1A),
+    //               ),
+    //             ),
+    //             const SizedBox(height: 24),
+    //             SizedBox(
+    //               width: 200,
+    //               height: 48,
+    //               child: ElevatedButton(
+    //                 onPressed: () => context.pop(),
+    //                 style: ElevatedButton.styleFrom(
+    //                   backgroundColor: const Color(0xFF0066FF),
+    //                   foregroundColor: Colors.white,
+    //                   shape: RoundedRectangleBorder(
+    //                     borderRadius: BorderRadius.circular(12),
+    //                   ),
+    //                 ),
+    //                 child: const Text('Quay lại'),
+    //               ),
+    //             ),
+    //           ],
+    //         ),
+    //       ),
+    //     ),
+    //   );
+    // }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -337,74 +385,86 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
   }
 
   Widget _buildAmountSection() {
+    final double amount = double.tryParse(widget.data['amount'].toString()) ?? 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Số tiền rút',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
-          ),
+          'Chi tiết rút tiền',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFFF1F1F1),
+            color: const Color(0xFFF7F8FA),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: ColorConfig.primary.withOpacity(0.2),
-              width: 1,
-            ),
+            border: Border.all(color: const Color(0xFFE8ECF0)),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Column(
             children: [
-              const Text(
-                'Tổng số tiền:',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF4A5568),
-                ),
+              _buildAmountRow('Số tiền yêu cầu', amount),
+              const SizedBox(height: 12),
+              _buildAmountRow(
+                'Phí rút tiền (${_feePercentWithdraw}%)',
+                _feeAmount,
+                note: _hasFirstWithdrawalToday ? '(Miễn phí lần đầu trong ngày)' : null,
+                isFee: true,
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${_formatAmount(widget.data!['amount'])} đ',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: ColorConfig.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: ColorConfig.yellow.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Chờ xử lý',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: ColorConfig.textWhite,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              const Divider(height: 24, thickness: 1, color: Color(0xFFE8ECF0)),
+              _buildAmountRow('Thực nhận', _netAmount, isNet: true),
             ],
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAmountRow(String label, double value, {String? note, bool isFee = false, bool isNet = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: isNet ? FontWeight.w600 : FontWeight.w500,
+                  color: isNet ? ColorConfig.primary : const Color(0xFF4A5568),
+                ),
+              ),
+              if (note != null)
+                Text(
+                  note,
+                  style: const TextStyle(fontSize: 12, color: Colors.green),
+                ),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            if(isFee) ...[
+              Text(
+                '- ',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: isNet ? FontWeight.bold : FontWeight.w600,
+                  color: isNet ? ColorConfig.primary : (isFee ? Colors.red.shade600 : const Color(0xFF1A1A1A)),
+                ),
+              ),
+            ],
+            Text(
+              '${_formatAmount(value.toString())} đ',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: isNet ? FontWeight.bold : FontWeight.w600,
+                color: isNet ? ColorConfig.primary : (isFee ? Colors.red.shade600 : const Color(0xFF1A1A1A)),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -415,7 +475,7 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
       children: [
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: 46,
           child: ElevatedButton(
             onPressed: _isLoading ? null : _handleConfirmWithdraw,
             style: ElevatedButton.styleFrom(
@@ -437,7 +497,7 @@ class _ConfirmRequestWithdrawState extends State<ConfirmRequestWithdraw> {
               ),
             )
                 : const Text(
-              'Xác nhận rút tiền',
+              'Xác nhận yêu cầu rút tiền',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

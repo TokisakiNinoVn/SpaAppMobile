@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/helper/shared_preferences_helper.dart';
 import 'package:spa_app/services/auth_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -99,6 +101,7 @@ class _SplashScreenState extends State<SplashScreen>
       Permission.notification,
       Permission.storage,
       Permission.photos,
+      // Permission.photosAddOnly, // For iOS Permission only
     ];
 
     for (final permission in permissions) {
@@ -125,6 +128,7 @@ class _SplashScreenState extends State<SplashScreen>
     final bool isLogin = token != null && token.isNotEmpty;
 
     if (!isLogin) {
+      // appLog("Loading: $isLogin - $role - $token");
       context.go('/home-customer');
       return;
     }
@@ -141,13 +145,15 @@ class _SplashScreenState extends State<SplashScreen>
           break;
         case 'admin':
           context.go('/home-admin');
+        case 'quanly':
+          context.go('/home-quanly');
           break;
         default:
-          prefs.remove('token');
+          await SharedPreferencesHelper.logOut();
           context.go('/home-customer');
       }
     } else {
-      prefs.remove('token');
+      await SharedPreferencesHelper.logOut();
       context.go('/home-customer');
     }
   }

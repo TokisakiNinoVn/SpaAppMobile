@@ -463,6 +463,14 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
           title: const Text("Quản lý tài khoản", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
           actions: [
             IconButton(
+              icon: const Icon(Icons.person_add, size: 22),
+              color: Colors.black,
+              onPressed: () {
+                context.push(AdminRouterConfig.createManageAccount);
+              },
+              tooltip: 'Thêm tài khoản quản lý',
+            ),
+            IconButton(
               icon: const Icon(Icons.filter_alt_outlined, size: 22),
               color: Colors.black,
               onPressed: _showFilterBottomSheet,

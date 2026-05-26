@@ -572,8 +572,10 @@ class _AccountAdminTabState extends State<AccountAdminTab> {
         return 'KTV';
       case 'customer':
         return 'Khách hàng';
+      case 'quanly':
+        return 'Quản lý';
       default:
-        return roleKey;
+        return "$roleKey : Không rõ";
     }
   }
 

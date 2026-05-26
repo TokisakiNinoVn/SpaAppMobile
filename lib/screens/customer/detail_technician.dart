@@ -163,7 +163,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
 
       // Điều hướng đến màn hình đặt lịch
       if(widget.type == 'now') {
-        context.go(
+        context.push(
           CustomerRouterConfig.createOrderNow,
           extra: {
             'technician': {
@@ -177,7 +177,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
           },
         );
       } else {
-        context.go(
+        context.push(
           CustomerRouterConfig.createBookOrder,
           extra: {
             'technician': {
@@ -579,10 +579,21 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
     final timePrices = service["timePrices"] as List<dynamic>? ?? [];
     final name = service["name"] as String? ?? "Không có tên";
     final serviceId = service["_id"] as String?;
-    final isSelected = (_selectedServiceId == serviceId);
-    final currentTimePrice = timePrices.isNotEmpty && _selectedTimeIndex < timePrices.length
-        ? timePrices[_selectedTimeIndex]
-        : null;
+    // final isSelected = (_selectedServiceId == serviceId);
+    // final currentTimePrice = timePrices.isNotEmpty && _selectedTimeIndex < timePrices.length
+    //     ? timePrices[_selectedTimeIndex]
+    //     : null;
+    final bool isSelected = (_selectedServiceId == serviceId);
+
+    Map<String, dynamic>? displayTimePrice;
+
+    if (isSelected && _selectedTimeIndex < timePrices.length) {
+      displayTimePrice = timePrices[_selectedTimeIndex];
+    } else {
+      // Mặc định lấy mốc thời gian đầu tiên
+      displayTimePrice = timePrices.isNotEmpty ? timePrices[0] : null;
+    }
+    final int displayPrice = displayTimePrice != null ? displayTimePrice['price'] : 0;
 
     // Giá hiển thị mặc định (lấy từ time đầu tiên)
     final defaultPrice = timePrices.isNotEmpty ? timePrices[0]["price"] : 0;
@@ -610,7 +621,7 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
                       Text(name, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: ColorConfig.black)),
                       const SizedBox(height: 4),
                       Text(
-                        FormatHelper.formatPrice(currentTimePrice["price"]),
+                        FormatHelper.formatPrice(displayPrice),
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: ColorConfig.black),
                       ),
                     ],
@@ -700,168 +711,6 @@ class _DetailsTechnicianScreenState extends State<DetailsTechnicianScreen> {
       ),
     );
   }
-
-  /// Phần hiển thị đánh giá chi tiết (1-5 sao)
-  // Widget _buildRatingBreakdown(String idTechnician) {
-  //   final Map<int, int> ratingCounts = {
-  //     5: 120,
-  //     4: 45,
-  //     3: 12,
-  //     2: 5,
-  //     1: 3,
-  //   };
-  //
-  //
-  //
-  //   final totalReviews = ratingCounts.values.reduce((a, b) => a + b);
-  //   final averageRating = _technicianDetails!["rate"]?.toDouble() ?? 0.0;
-  //
-  //   return Container(
-  //     margin: const EdgeInsets.all(12),
-  //     padding: const EdgeInsets.all(16),
-  //     decoration: BoxDecoration(
-  //       color: Colors.white,
-  //       borderRadius: BorderRadius.circular(16),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: Colors.black.withOpacity(0.04),
-  //           blurRadius: 8,
-  //           offset: const Offset(0, 2),
-  //         )
-  //       ],
-  //     ),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         Text(
-  //           "Đánh giá",
-  //           style: TextStyle(
-  //             fontSize: 20,
-  //             fontWeight: FontWeight.bold,
-  //             color: ColorConfig.black,
-  //           ),
-  //         ),
-  //         /// ===== HÀNG 1 =====
-  //         Row(
-  //           crossAxisAlignment: CrossAxisAlignment.center,
-  //           children: [
-  //             /// CỘT 1: SỐ RATE
-  //             Text(
-  //               averageRating.toStringAsFixed(1),
-  //               style: TextStyle(
-  //                 fontSize: 40,
-  //                 fontWeight: FontWeight.bold,
-  //                 color: ColorConfig.black,
-  //               ),
-  //             ),
-  //
-  //             const SizedBox(width: 16),
-  //
-  //             /// CỘT 2: STAR + TEXT
-  //             Column(
-  //               crossAxisAlignment: CrossAxisAlignment.start,
-  //               children: [
-  //                 /// HÀNG 1: ICON STAR
-  //                 Row(
-  //                   children: List.generate(5, (index) {
-  //                     return Icon(
-  //                       index < averageRating.floor()
-  //                           ? Icons.star
-  //                           : (index < averageRating.ceil()
-  //                           ? Icons.star_half
-  //                           : Icons.star_border),
-  //                       size: 18,
-  //                       color: ColorConfig.yellow,
-  //                     );
-  //                   }),
-  //                 ),
-  //
-  //                 const SizedBox(height: 4),
-  //
-  //                 /// HÀNG 2: TEXT REVIEW
-  //                 Text(
-  //                   "$totalReviews đánh giá",
-  //                   style: TextStyle(
-  //                     fontSize: 13,
-  //                     color: ColorConfig.black.withOpacity(0.6),
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ],
-  //         ),
-  //
-  //         /// ===== HÀNG 2: BREAKDOWN =====
-  //         Column(
-  //           children: List.generate(5, (star) {
-  //             final starLevel = 5 - star;
-  //             final count = ratingCounts[starLevel] ?? 0;
-  //             final percent =
-  //             totalReviews > 0 ? (count / totalReviews) : 0.0;
-  //
-  //             return Padding(
-  //               padding: const EdgeInsets.symmetric(vertical: 3),
-  //               child: Row(
-  //                 children: [
-  //                   SizedBox(
-  //                     width: 40,
-  //                     child: Row(
-  //                       children: [
-  //                         Text(
-  //                           "$starLevel",
-  //                           style: TextStyle(
-  //                             fontSize: 12,
-  //                             color:
-  //                             ColorConfig.black.withOpacity(0.7),
-  //                           ),
-  //                         ),
-  //                         const SizedBox(width: 2),
-  //                         Icon(
-  //                           Icons.star,
-  //                           size: 14,
-  //                           color: ColorConfig.yellow,
-  //                         ),
-  //                       ],
-  //                     ),
-  //                   ),
-  //
-  //                   Expanded(
-  //                     child: ClipRRect(
-  //                       borderRadius: BorderRadius.circular(4),
-  //                       child: LinearProgressIndicator(
-  //                         value: percent,
-  //                         backgroundColor: Colors.grey.shade200,
-  //                         color: ColorConfig.primary,
-  //                         minHeight: 6,
-  //                       ),
-  //                     ),
-  //                   ),
-  //
-  //                   const SizedBox(width: 8),
-  //
-  //                   SizedBox(
-  //                     width: 35,
-  //                     child: Text(
-  //                       "$count",
-  //                       style: TextStyle(
-  //                         fontSize: 12,
-  //                         fontWeight: FontWeight.w500,
-  //                         color:
-  //                         ColorConfig.black.withOpacity(0.7),
-  //                       ),
-  //                       textAlign: TextAlign.right,
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //             );
-  //           }),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
 
   /// Bottom bar hiển thị gói dịch vụ đã chọn
   Widget _buildBottomBar() {

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/providers/user_provider.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 
 import '../../../storage/index.dart';
@@ -26,17 +28,20 @@ class _CreateRequestWithdrawState extends State<CreateRequestWithdraw> {
   bool _isLoadingSavedInfo = true;
   String _errorMessage = '';
   int nowBalance = 0;
+  int? newBalance;
 
   // Constants
   static const int minWithdrawAmount = 10000;
-  late int maxWithdrawAmount;
+  int maxWithdrawAmount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadSavedBankInfo();
-    _loadBalanceNow();
     _setupAmountListener();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadBalanceNow();
+    });
   }
 
   @override
@@ -63,25 +68,43 @@ class _CreateRequestWithdrawState extends State<CreateRequestWithdraw> {
               selection: TextSelection.collapsed(offset: formatted.length),
             );
           }
+          // ===== THÊM ĐOẠN NÀY =====
+          // Cập nhật số dư mới
+          final amount = int.parse(cleanText);
+          setState(() {
+            newBalance = nowBalance - amount;
+          });
+        } else {
+          setState(() {
+            newBalance = null;
+          });
         }
+      } else {
+        setState(() {
+          newBalance = null;
+        });
       }
     });
   }
 
   Future<void> _loadBalanceNow() async {
+    final provider = context.read<UserProvider>();
     try {
       setState(() {
         _isLoading = true;
         _errorMessage = '';
       });
 
-      final balance = await SharedPrefs.getValue(PrefType.int, "balance");
+      await provider.loadBalanceUser();
+      nowBalance = provider.nowBalance;
 
       setState(() {
-        nowBalance = balance ?? 0;
+        nowBalance = nowBalance;
         maxWithdrawAmount = nowBalance;
+        newBalance = nowBalance;
         _isLoading = false;
       });
+
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -187,10 +210,10 @@ class _CreateRequestWithdrawState extends State<CreateRequestWithdraw> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ColorConfig.primaryBackground,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
+        backgroundColor: ColorConfig.primaryBackground,
         elevation: 0,
         title: Row(
           children: [
@@ -235,164 +258,212 @@ class _CreateRequestWithdrawState extends State<CreateRequestWithdraw> {
       body: _isLoadingSavedInfo
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF0066FF)))
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Current Balance Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(16),
-                ),
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Số dư hiện tại',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF777777),
-                      ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      FormatHelper.formatPrice(nowBalance),
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: ColorConfig.primary,
-                      ),
+                    child: Row(
+                      children: [
+                        // Cột trái: Số dư hiện tại
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Số dư hiện tại',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF777777),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                FormatHelper.formatPrice(nowBalance),
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: ColorConfig.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Icon mũi tên ở giữa
+                        if (newBalance != null && _amountController.text.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: ColorConfig.primary.withOpacity(0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 22,
+                              color: ColorConfig.primary,
+                            ),
+                          ),
+
+                        // Cột phải: Số dư mới
+                        if (newBalance != null && _amountController.text.isNotEmpty)
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                const Text(
+                                  'Số dư mới',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF777777),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  FormatHelper.formatPrice(newBalance!),
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    color: ColorConfig.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-              const SizedBox(height: 24),
+                  const SizedBox(height: 5),
 
-              // Amount Field with Range
-              _buildAmountField(),
+                  // Amount Field with Range
+                  _buildAmountField(),
 
-              const SizedBox(height: 24),
+                  const SizedBox(height: 5),
 
-              // Bank Name Field
-              _buildFormField(
-                label: 'Tên ngân hàng',
-                hint: 'Ví dụ: Vietcombank, Techcombank, ...',
-                controller: _bankNameController,
-                prefixIcon: Icons.account_balance_rounded,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Vui lòng nhập tên ngân hàng';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
+                  // Bank Name Field
+                  _buildFormField(
+                    label: 'Tên ngân hàng',
+                    hint: 'Ví dụ: Vietcombank, Techcombank, ...',
+                    controller: _bankNameController,
+                    prefixIcon: Icons.account_balance_rounded,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Vui lòng nhập tên ngân hàng';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 5),
 
-              // Account Number Field
-              _buildFormField(
-                label: 'Số tài khoản',
-                hint: 'Nhập số tài khoản ngân hàng',
-                controller: _accountNumberController,
-                prefixIcon: Icons.numbers_rounded,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Vui lòng nhập số tài khoản';
-                  }
-                  if (value.length < 8) {
-                    return 'Số tài khoản không hợp lệ';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
+                  // Account Number Field
+                  _buildFormField(
+                    label: 'Số tài khoản',
+                    hint: 'Nhập số tài khoản ngân hàng',
+                    controller: _accountNumberController,
+                    prefixIcon: Icons.numbers_rounded,
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Vui lòng nhập số tài khoản';
+                      }
+                      if (value.length < 8) {
+                        return 'Số tài khoản không hợp lệ';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 5),
 
-              // Account Holder Field
-              _buildFormField(
-                label: 'Chủ tài khoản',
-                hint: 'Nhập tên chủ tài khoản',
-                controller: _accountHolderController,
-                prefixIcon: Icons.person_rounded,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Vui lòng nhập tên chủ tài khoản';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
+                  // Account Holder Field
+                  _buildFormField(
+                    label: 'Chủ tài khoản',
+                    hint: 'Nhập tên chủ tài khoản',
+                    controller: _accountHolderController,
+                    prefixIcon: Icons.person_rounded,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Vui lòng nhập tên chủ tài khoản';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
 
-              // Save Bank Info Checkbox
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: Checkbox(
-                        value: _saveBankInfo,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _saveBankInfo = value ?? false;
-                          });
-                        },
-                        activeColor: ColorConfig.primary,
+                  // Save Bank Info Checkbox
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: _saveBankInfo,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                _saveBankInfo = value ?? false;
+                              });
+                            },
+                            activeColor: ColorConfig.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Lưu thông tin ngân hàng cho lần sau',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF1A1A1A),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Confirm Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _handleConfirm,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ColorConfig.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(40),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Lưu thông tin ngân hàng cho lần sau',
+                      child: const Text(
+                        'Tiếp tục',
                         style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF1A1A1A),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Confirm Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _handleConfirm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ColorConfig.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(40),
-                    ),
                   ),
-                  child: const Text(
-                    'Tiếp tục',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                ],
               ),
-            ],
+              ),
           ),
-        ),
-      ),
     );
   }
 
@@ -523,17 +594,27 @@ class _CreateRequestWithdrawState extends State<CreateRequestWithdraw> {
     required IconData prefixIcon,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    bool isRequired = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
-            letterSpacing: -0.3,
+        RichText(
+          text: TextSpan(
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A1A),
+              letterSpacing: -0.3,
+            ),
+            children: [
+              TextSpan(text: label),
+              if (isRequired)
+                const TextSpan(
+                  text: '*',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+            ],
           ),
         ),
         const SizedBox(height: 8),

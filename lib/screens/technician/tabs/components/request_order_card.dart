@@ -2,6 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/routes/config/technician_router_config.dart';
+import 'package:spa_app/screens/components/dashed_divider_component.dart';
 
 class RequestOrderCard extends StatelessWidget {
   final dynamic order;
@@ -9,6 +14,7 @@ class RequestOrderCard extends StatelessWidget {
   final bool showTimeline;
   final VoidCallback? onTap;
   final VoidCallback? onApply;
+  final VoidCallback? onReject;
 
   const RequestOrderCard({
     super.key,
@@ -17,10 +23,12 @@ class RequestOrderCard extends StatelessWidget {
     this.showTimeline = true,
     this.onTap,
     this.onApply,
+    this.onReject,
   });
 
   @override
   Widget build(BuildContext context) {
+    // appLog("Details order: $order");
     final orderId = order['_id'] ?? '';
     final status = order['status'] ?? 'pending';
     final typeOrder = order['typeOrder'] ?? 'order-now';
@@ -33,10 +41,10 @@ class RequestOrderCard extends StatelessWidget {
     final duration = order['serviceTimePriceId']?['duration'] ?? 0;
 
     return GestureDetector(
-      onTap: onTap ??
-              () {
-            context.push('/home-technician/orders/$orderId');
-          },
+      // onTap: onTap ?? () {
+      //   context.push('${TechnicianRouterConfig.detailsOrder}/${order['_id']}', extra: true);
+      // },
+      onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(14),
@@ -62,7 +70,6 @@ class RequestOrderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // TOP
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -81,7 +88,7 @@ class RequestOrderCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          _getTypeOrderText(typeOrder),
+                          "Việc mới",
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
@@ -95,35 +102,143 @@ class RequestOrderCard extends StatelessWidget {
                   ),
                 ),
 
-                // STATUS
+                // STATUS + TIME
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(status),
-                    borderRadius: BorderRadius.circular(999),
+                    color: Color(0xfff4ddb4),
+                    borderRadius: BorderRadius.circular(14),
                   ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(status),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          _getTypeOrderText(typeOrder),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+
+                      // TIME
+                      if (showTimeline && remainingTime != null) ...[
+                        // const SizedBox(width: 8),
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                remainingTime!.inSeconds <= 0
+                                    ? 'Hết hạn'
+                                    : _CountdownTimeline.formatDuration(
+                                  remainingTime!,
+                                ),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+
+                // Container(
+                //   padding: const EdgeInsets.symmetric(
+                //     horizontal: 10,
+                //     vertical: 5,
+                //   ),
+                //   decoration: BoxDecoration(
+                //     color: _getStatusColor(status),
+                //     borderRadius: BorderRadius.circular(999),
+                //   ),
+                //   child: Text(
+                //     _getTypeOrderText(typeOrder),
+                //     style: const TextStyle(
+                //       fontSize: 12,
+                //       color: Colors.white,
+                //       fontWeight: FontWeight.w700,
+                //     ),
+                //   ),
+                // ),
+              ],
+            ),
+
+            const SizedBox(height: 13),
+            // const DashedDivider(),
+            // const SizedBox(height: 5),
+
+            /// SERVICE + DURATION
+            Row(
+              children: [
+                Expanded(
                   child: Text(
-                    _getStatusText(status),
+                    order['nameService'] ?? "Dịch vụ Spa",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.white,
+                      fontSize: 17,
                       fontWeight: FontWeight.w700,
+                      color: Colors.black87,
                     ),
                   ),
+                ),
+
+                const SizedBox(width: 12),
+
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time_rounded,
+                      size: 18,
+                      color: Colors.grey.shade500,
+                    ),
+
+                    const SizedBox(width: 4),
+
+                    Text(
+                      "${duration ?? 0} phút",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 5),
+            const DashedDivider(),
+            const SizedBox(height: 5),
 
             // CUSTOMER
             Text(
               _buildCustomerText(customer, status, gender),
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
               ),
@@ -137,7 +252,7 @@ class RequestOrderCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade700,
-                height: 1.4,
+                height: 1,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -145,48 +260,131 @@ class RequestOrderCard extends StatelessWidget {
 
             const SizedBox(height: 14),
 
-            // SERVICE
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: Colors.grey.shade200,
-                  ),
-                  bottom: BorderSide(
-                    color: Colors.grey.shade200,
-                  ),
-                ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 0,
+                vertical: 0,
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Text(
-                      order['nameService'] ?? 'Dịch vụ',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
+                  /// Income
                   Row(
                     children: [
-                      Icon(
-                        Icons.access_time_rounded,
-                        size: 16,
-                        color: Colors.grey.shade600,
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Thu nhập dự kiến',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: ColorConfig.textBlack.withOpacity(.7),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+
+                            const SizedBox(height: 3),
+
+                            Text(
+                              'Sau khi hoàn thành dịch vụ',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(width: 4),
+
                       Text(
-                        '$duration phút',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.grey.shade700,
+                        '+ ${FormatHelper.formatPrice(order['pricing']?['technicianReceiveAmount'] ?? 0)} đ',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF5A8F45),
+                          letterSpacing: -.5,
+                          height: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 5),
+                  const DashedDivider(),
+                  const SizedBox(height: 10),
+
+                  /// Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: SizedBox(
+                          height: 36,
+                          child: OutlinedButton(
+                            onPressed: onReject,
+                            style: OutlinedButton.styleFrom(
+                              elevation: 0,
+                              backgroundColor: Colors.white,
+                              side: BorderSide(
+                                color: Colors.red.shade200,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Từ chối',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.red.shade400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        flex: 2,
+                        child: SizedBox(
+                          height: 36,
+                          child: ElevatedButton(
+                            onPressed: onApply,
+                            style: ElevatedButton.styleFrom(
+                              elevation: 0,
+                              backgroundColor: ColorConfig.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.flash_on_rounded,
+                                  size: 18,
+                                ),
+                                SizedBox(width: 7),
+                                Text(
+                                  'Nhận việc ngay',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -195,72 +393,14 @@ class RequestOrderCard extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 14),
-
-            // BOTTOM
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Bạn sẽ nhận được',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '+${_formatPrice(order['pricing']?['technicianReceiveAmount'] ?? 0)} đ',
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF5A8F45),
-                          height: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: SizedBox(
-                    height: 46,
-                    child: ElevatedButton(
-                      onPressed: onApply,
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: const Color(0xFF5A8F45),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                      child: const Text(
-                        'Ứng tuyển',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
             // TIMELINE
-            if (showTimeline) ...[
-              const SizedBox(height: 14),
-              _CountdownTimeline(
-                order: order,
-                remainingTime: remainingTime,
-              ),
-            ],
+            // if (showTimeline) ...[
+            //   const SizedBox(height: 12),
+            //   _CountdownTimeline(
+            //     order: order,
+            //     remainingTime: remainingTime,
+            //   ),
+            // ],
           ],
         ),
       ),
@@ -275,42 +415,22 @@ class RequestOrderCard extends StatelessWidget {
     if (status == 'done') {
       final fullname = customer?['fullname'] ?? 'Khách hàng';
       final phone = customer?['phone'] ?? '';
-
       return '$fullname • $phone';
     }
 
-    return gender == 'female'
-        ? 'Khách nữ'
-        : 'Khách nam';
+    return gender == 'female' ? 'Khách nữ' : 'Khách nam';
   }
 
   static String _getTypeOrderText(String type) {
+    // appLog("$type");
     switch (type) {
-      case 'order-book':
-        return '📅 Việc đặt lịch';
+      case 'book':
+        return 'Việc đặt lịch';
 
       case 'order-now':
-      default:
-        return '⚡ Việc mới';
-    }
-  }
-
-  static String _getStatusText(String status) {
-    switch (status) {
-      case 'pending':
         return 'Cần ngay';
-
-      case 'accepted':
-        return 'Đã nhận';
-
-      case 'done':
-        return 'Hoàn thành';
-
-      case 'cancel':
-        return 'Đã huỷ';
-
       default:
-        return status;
+        return 'Không rõ loại đơn';
     }
   }
 
@@ -331,15 +451,6 @@ class RequestOrderCard extends StatelessWidget {
       default:
         return Colors.grey;
     }
-  }
-
-  static String _formatPrice(num value) {
-    return value
-        .toStringAsFixed(0)
-        .replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]}.',
-    );
   }
 }
 
@@ -383,32 +494,25 @@ class _CountdownTimeline extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              isExpired
-                  ? Icons.timer_off_rounded
-                  : Icons.timer_outlined,
-              size: 16,
-              color: progressColor,
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                isExpired
-                    ? 'Đơn đã hết hạn'
-                    : 'Còn ${_formatDuration(remainingTime!)}',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: progressColor,
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 8),
+        // Row(
+        //   children: [
+        //     const SizedBox(width: 6),
+        //     Expanded(
+        //       child: Text(
+        //         isExpired
+        //             ? 'Đơn đã hết hạn'
+        //             : 'Thời gian còn: ${formatDuration(remainingTime!)}',
+        //         style: TextStyle(
+        //           fontSize: 13,
+        //           fontWeight: FontWeight.w600,
+        //           color: progressColor,
+        //         ),
+        //       ),
+        //     ),
+        //   ],
+        // ),
+        //
+        // const SizedBox(height: 8),
 
         ClipRRect(
           borderRadius: BorderRadius.circular(999),
@@ -423,7 +527,14 @@ class _CountdownTimeline extends StatelessWidget {
     );
   }
 
-  static String _formatDuration(Duration duration) {
+  // static String _formatDuration(Duration duration) {
+  //   final minutes = duration.inMinutes;
+  //   final seconds = duration.inSeconds % 60;
+  //
+  //   return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  // }
+
+  static String formatDuration(Duration duration) {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds % 60;
 

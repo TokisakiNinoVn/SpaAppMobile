@@ -261,6 +261,7 @@ class _CreateAutoMatchingOrderScreenState
       "moneyPrioritize": moneyPrioritize,
       'workingHours': _formatWorkingHours(_selectedDateTime),
       "typeTime": _timeType,
+      'subTypeOrder': _timeType,
 
       if (_discountData != null)
         'discountInput': {
@@ -309,7 +310,7 @@ class _CreateAutoMatchingOrderScreenState
   Future<void> _loadCustomerProfile() async {
     final provider = context.read<UserProvider>();
     try {
-      await provider.loadBalanceCustomer();
+      await provider.loadBalanceUser();
       balance = provider.nowBalance;
 
       // balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
@@ -1060,20 +1061,20 @@ class _CreateAutoMatchingOrderScreenState
                           style: TextStyle(color: Colors.grey),
                         ),
                         if (_discountData != null) ...[
-                          Text(
-                            "${FormatHelper.formatPrice(_totalBeforeDiscount)} đ",
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey,
-                              decoration: TextDecoration.lineThrough,
-                            ),
-                          ),
+                          // Text(
+                          //   "${FormatHelper.formatPrice(_totalBeforeDiscount)} đ",
+                          //   style: const TextStyle(
+                          //     fontSize: 13,
+                          //     color: Colors.grey,
+                          //     decoration: TextDecoration.lineThrough,
+                          //   ),
+                          // ),
                           Text(
                             "${FormatHelper.formatPrice(_finalTotal)} đ",
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green,
+                              color: ColorConfig.textPrimary,
                             ),
                           ),
                         ] else
@@ -1534,6 +1535,31 @@ class _CreateAutoMatchingOrderScreenState
                 ],
               ),
             ),
+
+            const SizedBox(height: 10),
+
+            _Section(
+              title: "Ghi chú",
+              // icon: Icons.note,
+              child: _InputBox(
+                isFocused: _noteFocusNode.hasFocus,
+                child: TextField(
+                  controller: _noteController,
+                  focusNode: _noteFocusNode,
+                  maxLines: 2,
+                  textInputAction: TextInputAction.done,
+                  onEditingComplete: () {
+                    _noteFocusNode.unfocus();
+                  },
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    hintText: "Ví dụ: thời gian phù hợp, tình trạng cụ thể, lưu ý khi đến…",
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+            ),
+
             const SizedBox(height: 90),
           ],
         ),

@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:spa_app/screens/admin/account/create_manager_account.dart';
 import 'package:spa_app/screens/admin/account/technician/management_account_technician.dart';
 import 'package:spa_app/screens/admin/bank/add.dart';
 import 'package:spa_app/screens/admin/bank/edit.dart';
@@ -6,6 +7,9 @@ import 'package:spa_app/screens/admin/bank/management.dart';
 import 'package:spa_app/screens/admin/feature_service/edit.dart';
 import 'package:spa_app/screens/admin/feature_service/list.dart';
 import 'package:spa_app/screens/admin/notification/create_notification_screen.dart';
+import 'package:spa_app/screens/admin/order/post/create_post_order.dart';
+import 'package:spa_app/screens/admin/order/post/management_post_order.dart';
+import 'package:spa_app/screens/admin/order/post/technician_apply.dart';
 import 'package:spa_app/screens/admin/platform_fee/management_platform_fee.dart';
 import 'package:spa_app/screens/admin/report/report.dart';
 import 'package:spa_app/screens/admin/withdraw/confirm_request_screen.dart';
@@ -49,6 +53,28 @@ final List<GoRoute> adminRoutes = [
       GoRoute(
         path: 'manage-account-customer',
         builder: (context, state) => const ManagementAccountCustomer(),
+      ),
+      GoRoute(
+        path: 'create-manage-account',
+        builder: (context, state) => const CreateManagementAccount(),
+      ),
+      GoRoute(
+        path: 'manage-post-order',
+        builder: (context, state) => const ManagementPostOrder(),
+        routes: [
+          GoRoute(
+            path: 'create-post-order',
+            builder: (context, state) => const CreatePostOrder(),
+          ),
+
+          GoRoute(
+            path: 'technician-apply',
+            builder: (context, state) {
+              final data = state.extra as Map<String, dynamic>;
+              return ListTechnicianApply(data: data);
+            },
+          ),
+        ]
       ),
       GoRoute(
         path: 'manage-platform-fees',

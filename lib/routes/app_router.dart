@@ -1,6 +1,7 @@
 // file: app_router.dart
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import 'package:spa_app/routes/managers_router.dart';
 import 'package:spa_app/routes/technician_router.dart';
 
 import '../screens/auth/signup_screen.dart';
@@ -120,5 +121,6 @@ final GoRouter appRouter = GoRouter(
     ...adminRoutes,
     ...customerRoutes,
     ...technicianRoutes,
+    ...managersRoutes,
   ],
 );

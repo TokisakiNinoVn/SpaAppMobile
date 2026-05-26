@@ -74,6 +74,7 @@ class AuthResponseHandler {
 
     if (role == 'quanly') {
       context.go('/home-quanly');
+      return;
     }
     // ===== UNKNOWN ROLE =====
     SnackBarHelper.showWarning(

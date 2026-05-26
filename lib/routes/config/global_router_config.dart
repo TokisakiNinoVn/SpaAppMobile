@@ -6,4 +6,6 @@ class GlobalRouterConfig {
   static String confirmLoginOTP = "/login-otp/confirm-login-otp";
   static String getOptForgotPassword = "/get-otp";
   static String createTechnician = "/create-technician";
+
+
 }

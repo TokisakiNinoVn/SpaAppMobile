@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/helper/shared_preferences_helper.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/providers/selected_tab_provider.dart';
+import 'package:spa_app/routes/config/technician_router_config.dart';
 import 'package:spa_app/services/order_service.dart';
 import '../../../helper/format_helper.dart';
 import 'dart:async';
@@ -49,7 +53,7 @@ class _DetailsNewOrderScreenState extends State<DetailsNewOrderScreen> {
   Future<void> loadDetailOrder() async {
     try {
       final response = await _orderService.detailOrder(widget.orderId);
-      appLog('Chi tiết đơn mới: $response');
+      // appLog('Chi tiết đơn mới: ${response['data']}');
       if (response['success'] == true) {
         setState(() {
           orderDetail = response['data'];
@@ -102,30 +106,53 @@ class _DetailsNewOrderScreenState extends State<DetailsNewOrderScreen> {
   Future<void> acceptOrder() async {
     final note = _noteController.text.trim();
     try {
-      final data = {
-        'orderId': widget.orderId,
-        'result': 'approved',
-        'noteTechnician': note,
+      // appLog("Type order: ${orderDetail?['typeOrder']}");
+      if(orderDetail?['typeOrder'] == 'order-now') {
+        final data = {
+          'orderId': widget.orderId,
+          'result': 'approved',
+          'noteTechnician': note,
+        };
+        final response = await _orderService.updateStatus(data);
+        // appLog('response : $response');
+
+        if (response['success'] == true) {
+          setState(() => isLoading = false);
+          if (!mounted) return;
+
+          final acceptedAt = DateTime.now().toIso8601String();
+
+          await SharedPrefs.saveValue(PrefType.string, "orderDetail", orderDetail);
+          await SharedPrefs.saveValue(PrefType.bool, "isWorking", true);
+          await SharedPrefs.saveValue(PrefType.string, "idOrderWorking", widget.orderId);
+          await SharedPrefs.saveValue(PrefType.string, "acceptedAt", acceptedAt);
+
+          SnackBarHelper.showSuccess(context, "Nhận đơn thành công!");
+
+          context.read<SelectedTabProvider>().setIndex(0);
+          context.go(TechnicianRouterConfig.homeTechnician);
+        }
+      } else if (orderDetail?['typeOrder'] == 'book') {
+        final data = {
+          'orderId': widget.orderId,
+          'result': 'approved'
+        };
+        final response = await _orderService.updateStatus(data);
+        appLog("$response");
+
+        if (response['success'] == true) {
+          if (!mounted) return;
+          SnackBarHelper.showWarning(context, "Nhận đơn việc thành công!");
+          context.read<SelectedTabProvider>().setIndex(1);
+
+          context.go(TechnicianRouterConfig.homeTechnician);
+        } else {
+          SnackBarHelper.showWarning(context, "Lỗi gì đó!");
+        }
+      } else {
+        SnackBarHelper.showWarning(context, "Không rõ loại đơn!");
       };
-      final response = await _orderService.updateStatus(data);
-      appLog('response : $response');
 
-      if (response['success'] == true) {
-        setState(() => isLoading = false);
-        if (!mounted) return;
-
-        final acceptedAt = DateTime.now().toIso8601String();
-
-        await SharedPrefs.saveValue(PrefType.string, "orderDetail", orderDetail);
-        await SharedPrefs.saveValue(PrefType.bool, "isWorking", true);
-        await SharedPrefs.saveValue(PrefType.string, "idOrderWorking", widget.orderId);
-
-        // 👇 thêm dòng này
-        await SharedPrefs.saveValue(PrefType.string, "acceptedAt", acceptedAt);
-
-        SnackBarHelper.showSuccess(context, "Chấp nhận đơn thành công!");
-        context.go('/home-technician');
-      }
 
     } catch (e) {
       debugPrint('Error accepting order: $e');

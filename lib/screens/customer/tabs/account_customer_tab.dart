@@ -90,14 +90,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
 
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Cập nhật thất bại: $e'),
-            backgroundColor: _kRed,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-          ),
-        );
+        SnackBarHelper.showError(context, 'Cập nhật thất bại: $e');
       }
     } finally {
       if (mounted) setState(() => _isRefreshing = false);

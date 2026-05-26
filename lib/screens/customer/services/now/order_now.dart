@@ -808,26 +808,26 @@ class _ListTechnicianOrderNowState extends State<ListTechnicianOrderNow> {
                         ),
                       ),
 
-                      const SizedBox(width: 8),
-
-                      GestureDetector(
-                        onTap: () {
-                          context.go(CustomerRouterConfig.listLike);
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: ColorConfig.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(40),
-                          ),
-                          child: Icon(
-                            Icons.favorite,
-                            color: ColorConfig.primary,
-                            size: 20,
-                          ),
-                        ),
-                      ),
+                      // const SizedBox(width: 8),
+                      //
+                      // GestureDetector(
+                      //   onTap: () {
+                      //     context.go(CustomerRouterConfig.listLike);
+                      //   },
+                      //   child: Container(
+                      //     width: 40,
+                      //     height: 40,
+                      //     decoration: BoxDecoration(
+                      //       color: ColorConfig.primary.withOpacity(0.1),
+                      //       borderRadius: BorderRadius.circular(40),
+                      //     ),
+                      //     child: Icon(
+                      //       Icons.favorite,
+                      //       color: ColorConfig.primary,
+                      //       size: 20,
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
 

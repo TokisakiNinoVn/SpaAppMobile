@@ -5,6 +5,7 @@ import '../apis/withdraw_api.dart';
 
 class WithdrawService {
   Future<Map<String, dynamic>> createRequest(Map<String, dynamic> data) async {
+    // appLog("data: $data");
     return await ApiMethodsPrivate.postRequest(WithdrawApi.create, data);
   }
 
@@ -17,8 +18,8 @@ class WithdrawService {
   }
 
   // Admin
-  Future<Map<String, dynamic>> listRequestWithdraw() async {
-    return await ApiMethodsPrivate.getRequest(WithdrawApi.listRequest);
+  Future<Map<String, dynamic>> listRequestWithdraw(String? queryString) async {
+    return await ApiMethodsPrivate.getRequest("${WithdrawApi.filter}?$queryString");
   }
 
   Future<Map<String, dynamic>> confirmRequestWithdraw(data) async {
@@ -28,5 +29,12 @@ class WithdrawService {
 
   Future<Map<String, dynamic>> detailRequestWithdraw(String id) async {
     return await ApiMethodsPrivate.getRequest("${WithdrawApi.detailRequestWithdraw}/$id");
+  }
+
+  //Technician/Customer
+  Future<Map<String, dynamic>> hasFirstWithdrawalToday() async {
+    // final url =
+    appLog("URL: ${WithdrawApi.checkFirstWithdraw}");
+    return await ApiMethodsPrivate.getRequest(WithdrawApi.checkFirstWithdraw);
   }
 }

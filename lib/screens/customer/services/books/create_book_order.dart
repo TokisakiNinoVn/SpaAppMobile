@@ -298,7 +298,7 @@ class _CreateBookOrderScreenState
   Future<void> _loadCustomerProfile() async {
       final provider = context.read<UserProvider>();
     try {
-      await provider.loadBalanceCustomer();
+      await provider.loadBalanceUser();
       balance = provider.nowBalance;
 
       final rawProfile = await SharedPrefs.getValue(PrefType.string, "customerProfile");
@@ -828,20 +828,20 @@ class _CreateBookOrderScreenState
                           style: TextStyle(color: Colors.grey),
                         ),
                         if (_discountData != null) ...[
-                          Text(
-                            "${FormatHelper.formatPrice(_totalBeforeDiscount)} đ",
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey,
-                              decoration: TextDecoration.lineThrough,
-                            ),
-                          ),
+                          // Text(
+                          //   "${FormatHelper.formatPrice(_totalBeforeDiscount)} đ",
+                          //   style: const TextStyle(
+                          //     fontSize: 13,
+                          //     color: Colors.grey,
+                          //     decoration: TextDecoration.lineThrough,
+                          //   ),
+                          // ),
                           Text(
                             "${FormatHelper.formatPrice(_finalTotal)} đ",
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green,
+                              color: ColorConfig.textPrimary,
                             ),
                           ),
                         ] else

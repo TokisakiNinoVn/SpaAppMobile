@@ -16,6 +16,7 @@ import 'package:spa_app/screens/customer/tabs/components/feature_section.dart';
 import 'package:spa_app/screens/customer/tabs/components/promo_section.dart';
 import 'package:spa_app/services/customer_service.dart';
 import 'package:spa_app/services/discount_service.dart';
+import 'package:spa_app/services/user_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:spa_app/routes/config/customer_router_config.dart';
@@ -49,6 +50,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
   final CustomerService _customerService = CustomerService();
   final InformationService _informationService = InformationService();
   final DiscountService _discountService = DiscountService();
+  final UserService _userService = UserService();
 
   @override
   bool get wantKeepAlive => true;
@@ -211,7 +213,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
       _isBalanceLoading = true;
     });
     try {
-      final response = await _customerService.balanceCustomerService();
+      final response = await _userService.getBalanceUserService();
       balance = response["data"]["balance"] ?? 0;
     } catch (e) {
       if (mounted) {
@@ -1006,11 +1008,17 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                                 HomeShortcutItem(
                                   icon: Icons.calendar_today,
                                   label: "Đặt lịch ngay",
-                                  onTap: () {},
+                                  onTap: () {
+                                    context.push(CustomerRouterConfig.listOrderNowTechnician);
+                                  },
                                 ),
                                 HomeShortcutItem(
                                   icon: Icons.spa,
                                   label: "Dịch vụ",
+                                  onTap: () {
+                                    context.push(CustomerRouterConfig.automaticMatching);
+
+                                  }
                                 ),
                                 HomeShortcutItem(
                                   icon: Icons.card_giftcard,

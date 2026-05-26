@@ -29,6 +29,21 @@ class OrderHelper {
     }
   }
 
+  static String displayTypeOrder(String typeOrder) {
+    switch (typeOrder) {
+      case 'order-now':
+        return 'Đơn đặt ngay';
+
+      case 'book':
+        return 'Đơn đặt trước';
+
+      case 'automatic-matching':
+        return 'Đơn KTV ngẫu nhiên';
+
+      default:
+        return 'Không xác định';
+    }
+  }
   static String displayStatusOrder(String status) {
     switch (status) {
       case 'pending':

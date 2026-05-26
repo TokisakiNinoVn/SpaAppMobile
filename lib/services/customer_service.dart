@@ -12,11 +12,7 @@ class CustomerService {
       '${CustomerApiRoutes.update}', data
     );
   }
-  Future<Map<String, dynamic>> balanceCustomerService() async {
-    return await ApiMethodsPrivate.getRequest(
-      '${CustomerApiRoutes.balanceCustomer}'
-    );
-  }
+
   //
   // Future<Map<String, dynamic>> listBaseCustomerService() async {
   //   return await ApiMethodsPrivate.getRequest(

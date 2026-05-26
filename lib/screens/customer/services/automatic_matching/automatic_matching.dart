@@ -76,14 +76,6 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
     });
   }
 
-  String formatPrice(int price) {
-    return price
-        .toString()
-        .replaceAllMapped(
-        RegExp(r'(\d{3})(?=\d)'), (m) => '${m[1]}.') +
-        ' đ';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -277,7 +269,7 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        formatPrice(currentTimePrice['price']),
+                        "${FormatHelper.formatPrice(currentTimePrice['price'])} VNĐ",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -333,7 +325,7 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
               ],
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             /// ===== DIVIDER =====
             Container(
@@ -489,7 +481,7 @@ class _AutomaticMatchingScreenState extends State<AutomaticMatchingScreen> {
                 ),
               ),
               Text(
-                formatPrice(_selectedTimePrice?['price'] ?? 0),
+                "${FormatHelper.formatPrice(_selectedTimePrice?['price'] ?? 0)} VNĐ",
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,

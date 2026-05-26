@@ -44,5 +44,13 @@ class AdminRouterConfig {
   static String listFeatureService = "/home-admin/feature-service";
   static String editFeatureService = "/home-admin/feature-service/edit";
 
+  // platform-fees
   static String managePlatformFees = "/home-admin/manage-platform-fees";
+
+  // Post order
+  static String manageOrderPost = "/home-admin/manage-post-order";
+  static String createOrderPost = "/home-admin/manage-post-order/create-post-order";
+  static String listTechnicianApply = "/home-admin/manage-post-order/technician-apply";
+
+  static String createManageAccount = "/home-admin/create-manage-account";
 }
