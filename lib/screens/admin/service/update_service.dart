@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/services/service_service.dart';
 import '../../../helper/logger_utils.dart';
@@ -27,7 +28,7 @@ class _UpdateServiceState extends State<UpdateService> {
   final Map<String, dynamic>? dataItem = {};
 
   // Màu sắc spa theme
-  final Color _spaPrimaryColor = const Color(0xFF8B7355);
+  final Color _spaPrimaryColor = const Color(0xFF5F8B55);
   final Color _spaSecondaryColor = const Color(0xFFD4B896);
   final Color _spaLightColor = const Color(0xFFF5E6D3);
   final Color _spaDarkColor = const Color(0xFF5D4037);
@@ -157,117 +158,132 @@ class _UpdateServiceState extends State<UpdateService> {
     final bool isLoading = _loadingPrice[duration] ?? false;
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _spaLightColor.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _spaLightColor.withOpacity(0.5)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _spaLightColor.withOpacity(0.25),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
         children: [
-          /// ===== DÒNG 1: PHÚT + GIÁ =====
-          Row(
-            children: [
-              Container(
-                width: 90,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _spaPrimaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _spaPrimaryColor.withOpacity(0.3)),
+          /// TIME
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: ColorConfig.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.schedule_rounded,
+                  color: ColorConfig.primary,
+                  size: 20,
                 ),
-                child: Text(
+                const SizedBox(height: 4),
+                Text(
                   '$duration phút',
                   textAlign: TextAlign.center,
                   style: TextStyle(
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
                     color: _spaDarkColor,
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 14),
+
+          /// INPUT + BUTTON
+          Expanded(
+            child: Column(
+              children: [
+                Container(
+                  height: 48,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                    ),
                   ),
                   child: TextField(
                     controller: _priceControllers[duration],
                     keyboardType: TextInputType.number,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: _spaDarkColor,
+                    ),
                     decoration: InputDecoration(
-                      hintText: '0',
-                      prefixText: 'đ ',
-                      isDense: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
+                      border: InputBorder.none,
+                      hintText: 'Nhập giá',
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
                       ),
-                      filled: true,
-                      fillColor: Colors.white,
+                      prefixText: '₫ ',
+                      prefixStyle: TextStyle(
+                        color: ColorConfig.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,
-                        vertical: 14,
+                        vertical: 12,
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: _spaAccentColor,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: _spaDarkColor,
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
 
-          const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
-          /// ===== DÒNG 2: NÚT CẬP NHẬT =====
-          SizedBox(
-            height: 46,
-            child: ElevatedButton(
-              onPressed: isLoading ? null : () => _updatePrice(duration),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _spaPrimaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: isLoading
+                        ? null
+                        : () => _updatePrice(duration),
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: ColorConfig.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                        : Text(
+                      'Cập nhật',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: ColorConfig.textWhite
+                      ),
+                    ),
+                  ),
                 ),
-                elevation: 2,
-              ),
-              child: isLoading
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-                  : const Text(
-                'Cập nhật',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              ],
             ),
           ),
         ],
@@ -276,73 +292,86 @@ class _UpdateServiceState extends State<UpdateService> {
   }
 
   Widget _buildSection({
-    required String title,
-    required String subtitle,
+    String? title,
+    String? subtitle,
     required Widget child,
     Color? titleColor,
   }) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            _spaLightColor.withOpacity(0.1),
-            Colors.white,
-            _spaLightColor.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _spaLightColor.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: _spaDarkColor.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        // gradient: LinearGradient(
+        //   begin: Alignment.topLeft,
+        //   end: Alignment.bottomRight,
+        //   colors: [
+        //     _spaLightColor.withOpacity(0.1),
+        //     Colors.white,
+        //     _spaLightColor.withOpacity(0.05),
+        //   ],
+        // ),
+        // borderRadius: BorderRadius.circular(20),
+        // border: Border.all(color: _spaLightColor.withOpacity(0.3)),
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: _spaDarkColor.withOpacity(0.05),
+        //     blurRadius: 15,
+        //     offset: const Offset(0, 5),
+        //   ),
+        // ],
       ),
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: titleColor ?? _spaPrimaryColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: titleColor ?? _spaDarkColor,
-                  letterSpacing: 0.5,
+
+          if(titleColor != null && title != null && subtitle != null)... [
+            Row(
+              children: [
+                if(titleColor != null) ...[
+                  Container(
+                    width: 4,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: titleColor ?? _spaPrimaryColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+
+                if(title != null) ...[
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: ColorConfig.textBlack,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+
+              ],
+            ),
+            const SizedBox(height: 8),
+            if(subtitle != null) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[700],
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.only(left: 16),
-            child: Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[700],
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
+
+            const SizedBox(height: 24),
+          ],
+
           child,
         ],
       ),
@@ -354,7 +383,41 @@ class _UpdateServiceState extends State<UpdateService> {
     if (widget.item == null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Cập nhật dịch vụ'),
+          automaticallyImplyLeading: false,
+          backgroundColor: ColorConfig.primaryBackground,
+          elevation: 0,
+          title: Row(
+            children: [
+              InkWell(
+                onTap: () => context.pop(),
+                borderRadius: BorderRadius.circular(40),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 18,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text(
+                  "Cập nhật dịch vụ",
+                  style: TextStyle(
+                    color: Color(0xFF1A1A1A),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         body: const Center(
           child: Text('Không tìm thấy dữ liệu dịch vụ'),
@@ -363,17 +426,43 @@ class _UpdateServiceState extends State<UpdateService> {
     }
 
     return Scaffold(
+      backgroundColor: ColorConfig.primaryBackground,
       appBar: AppBar(
-        title: const Text('Cập nhật dịch vụ'),
-        backgroundColor: _spaPrimaryColor,
-        foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+        backgroundColor: ColorConfig.primaryBackground,
         elevation: 0,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(20),
-          ),
+        title: Row(
+          children: [
+            InkWell(
+              onTap: () => context.pop(true),
+              borderRadius: BorderRadius.circular(40),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Text(
+                "Cập nhật dịch vụ",
+                style: TextStyle(
+                  color: Color(0xFF1A1A1A),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ],
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -393,9 +482,9 @@ class _UpdateServiceState extends State<UpdateService> {
             children: [
               // ===== THÔNG TIN DỊCH VỤ =====
               _buildSection(
-                title: 'Thông tin dịch vụ',
-                subtitle: 'Cập nhật thông tin cơ bản của dịch vụ spa',
-                titleColor: const Color(0xFF4A6572),
+                // title: 'Thông tin dịch vụ',
+                // subtitle: 'Cập nhật thông tin cơ bản của dịch vụ spa',
+                // titleColor: const Color(0xFF4A6572),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -406,10 +495,10 @@ class _UpdateServiceState extends State<UpdateService> {
                         labelStyle: TextStyle(
                           color: _spaDarkColor.withOpacity(0.7),
                         ),
-                        prefixIcon: Icon(
-                          Icons.spa,
-                          color: _spaPrimaryColor,
-                        ),
+                        // prefixIcon: Icon(
+                        //   Icons.spa,
+                        //   color: _spaPrimaryColor,
+                        // ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: _spaLightColor),
@@ -442,10 +531,10 @@ class _UpdateServiceState extends State<UpdateService> {
                         labelStyle: TextStyle(
                           color: _spaDarkColor.withOpacity(0.7),
                         ),
-                        prefixIcon: Icon(
-                          Icons.description,
-                          color: _spaPrimaryColor,
-                        ),
+                        // prefixIcon: Icon(
+                        //   Icons.description,
+                        //   color: _spaPrimaryColor,
+                        // ),
                         alignLabelWithHint: true,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -495,7 +584,7 @@ class _UpdateServiceState extends State<UpdateService> {
                         child: ElevatedButton(
                           onPressed: _loadingInfo ? null : _updateInfo,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
+                            backgroundColor: ColorConfig.primary,
                             foregroundColor: Colors.white,
                             shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(
@@ -538,7 +627,7 @@ class _UpdateServiceState extends State<UpdateService> {
               _buildSection(
                 title: 'Giá theo thời gian',
                 subtitle: 'Nhập và cập nhật giá cho từng khoảng thời gian dịch vụ',
-                titleColor: const Color(0xFF5D4037),
+                titleColor: ColorConfig.textBlack,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

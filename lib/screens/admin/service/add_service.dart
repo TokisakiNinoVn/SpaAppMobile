@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/services/service_service.dart';
+
 import '../../../helper/snackbar_helper.dart';
 
 class AddService extends StatefulWidget {
@@ -15,8 +16,9 @@ class _AddServiceState extends State<AddService> {
   final ServiceService _serviceService = ServiceService();
 
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
+
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
 
   bool _isLoading = false;
 
@@ -38,83 +40,206 @@ class _AddServiceState extends State<AddService> {
         'description': _descriptionController.text.trim(),
       });
 
+      if (!mounted) return;
+
       if (res['success'] == true) {
-        SnackBarHelper.showSuccess(context, 'Tạo dịch vụ thành công');
+        SnackBarHelper.showSuccess(
+          context,
+          'Tạo dịch vụ thành công',
+        );
+
         context.pop(true);
       } else {
-        SnackBarHelper.showError(context, 'Lỗi khi tạo dịch vụ');
+        SnackBarHelper.showError(
+          context,
+          'Không thể tạo dịch vụ',
+        );
       }
     } catch (e) {
-      SnackBarHelper.showError(context, 'Có điều gì không đúng');
+      if (!mounted) return;
+
+      SnackBarHelper.showError(
+        context,
+        'Đã xảy ra lỗi',
+      );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  InputDecoration _inputDecoration({
+    required String hint,
+    IconData? icon,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: icon != null
+          ? Icon(
+        icon,
+        size: 20,
+        color: Colors.grey.shade600,
+      )
+          : null,
+      filled: true,
+      fillColor: const Color(0xFFF7F7F7),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 16,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(
+          color: ColorConfig.primary,
+          width: 1.4,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(
+          color: Colors.red,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ColorConfig.primaryBackground,
+
       appBar: AppBar(
-        title: const Text('Thêm dịch vụ'),
-        backgroundColor: ColorConfig.primary,
+        backgroundColor: ColorConfig.primaryBackground,
+        elevation: 0,
+        centerTitle: true,
+
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12),
+          child: InkWell(
+            onTap: () => context.pop(),
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F3F3),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ),
+
+        title: const Text(
+          'Thêm dịch vụ',
+          style: TextStyle(
+            color: Colors.black87,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+
+      body: SafeArea(
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListView(
+            padding: const EdgeInsets.all(20),
             children: [
-              /// NAME
+              const Text(
+                'Tên dịch vụ',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Tên dịch vụ',
-                  border: OutlineInputBorder(),
+                textInputAction: TextInputAction.next,
+                decoration: _inputDecoration(
+                  hint: 'Nhập tên dịch vụ',
+                  icon: Icons.spa_rounded,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Bắt buộc phải điền tên dịch vụ';
+                    return 'Vui lòng nhập tên dịch vụ';
                   }
+
                   return null;
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 22),
 
-              /// DESCRIPTION
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Mô tả',
-                  border: OutlineInputBorder(),
+              const Text(
+                'Mô tả',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
 
-              /// BUTTON
+              TextFormField(
+                controller: _descriptionController,
+                maxLines: 5,
+                decoration: _inputDecoration(
+                  hint: 'Một vài mô tả ngắn về dịch vụ...',
+                  // icon: Icons.description_rounded,
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
               SizedBox(
-                width: double.infinity,
-                height: 48,
+                height: 46,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleAddService,
+                  onPressed: _isLoading
+                      ? null
+                      : _handleAddService,
                   style: ElevatedButton.styleFrom(
+                    elevation: 0,
                     backgroundColor: ColorConfig.primary,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor:
+                    ColorConfig.primary.withOpacity(0.6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
                     ),
-                  )
-                      : const Text(
-                    'Add Service',
-                    style: TextStyle(fontSize: 16),
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: _isLoading
+                        ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: Colors.white,
+                      ),
+                    )
+                        : const Text(
+                      'Tạo dịch vụ',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ),

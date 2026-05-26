@@ -74,7 +74,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _initPermissionsAndContinue() async {
     await _updateLoadingProgress(0.2, "Kiểm tra quyền truy cập...");
-    await _requestPermissions();
+    // await _requestPermissions();
 
     await _updateLoadingProgress(0.5, "...");
     await _initializeNotification();
@@ -132,6 +132,13 @@ class _SplashScreenState extends State<SplashScreen>
       context.go('/home-customer');
       return;
     }
+
+    // if(!isLogin) {
+    //   await _requestPermissions();
+    //   appLog("Đã đăng nhập - $isLogin");
+    // } else {
+    //   appLog("Chưa đăng nhập - $isLogin");
+    // }
 
     final response = await authService.checkTokenService();
 

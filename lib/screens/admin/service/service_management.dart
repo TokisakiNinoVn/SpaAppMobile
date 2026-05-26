@@ -3,8 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/routes/config/admin_router_config.dart';
 import 'package:spa_app/services/service_service.dart';
+
 import '../../../helper/snackbar_helper.dart';
-import 'package:spa_app/services/service_service.dart';
 
 class ServiceManagement extends StatefulWidget {
   const ServiceManagement({super.key});
@@ -14,12 +14,12 @@ class ServiceManagement extends StatefulWidget {
 }
 
 class _ServiceManagementState extends State<ServiceManagement> {
-  
   final ServiceService _serviceService = ServiceService();
   final TextEditingController _searchController = TextEditingController();
 
   List<dynamic> _services = [];
   List<dynamic> _filteredServices = [];
+
   bool _loading = true;
 
   @override
@@ -35,29 +35,37 @@ class _ServiceManagementState extends State<ServiceManagement> {
     super.dispose();
   }
 
-  void _reloadServices() {
-    _searchController.clear();
-    _fetchServices();
-  }
-
   Future<void> _fetchServices() async {
-    setState(() => _loading = true);
+    if (mounted) {
+      setState(() => _loading = true);
+    }
 
     try {
       final res = await _serviceService.listService();
+
       if (res['success'] == true) {
         _services = res['data'];
         _filteredServices = _services;
       }
     } catch (e) {
-      SnackBarHelper.showError(context, 'Không tải được danh sách dịch vụ');
+      SnackBarHelper.showError(
+        context,
+        'Không tải được danh sách dịch vụ',
+      );
     }
 
-    setState(() => _loading = false);
+    if (mounted) {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _reloadServices() async {
+    _searchController.clear();
+    await _fetchServices();
   }
 
   void _onSearch() {
-    final keyword = _searchController.text.toLowerCase();
+    final keyword = _searchController.text.trim().toLowerCase();
 
     setState(() {
       _filteredServices = _services.where((item) {
@@ -73,22 +81,30 @@ class _ServiceManagementState extends State<ServiceManagement> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Xóa dịch vụ'),
-        content: const Text('Bạn có chắc muốn xóa dịch vụ này không?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text(
+          'Xóa dịch vụ',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+          'Bạn có chắc muốn xóa dịch vụ này không?',
+        ),
         actions: [
           TextButton(
-            child: const Text('Hủy'),
             onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
           ),
           TextButton(
-            child: const Text(
-              'Xóa',
-              style: TextStyle(color: Colors.red),
-            ),
             onPressed: () {
               Navigator.pop(context);
               _deleteService(serviceId);
             },
+            child: const Text(
+              'Xóa',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -98,6 +114,7 @@ class _ServiceManagementState extends State<ServiceManagement> {
   Future<void> _deleteService(String serviceId) async {
     try {
       final res = await _serviceService.deleteService(serviceId);
+
       if (res['success'] == true) {
         SnackBarHelper.showSuccess(context, 'Xóa thành công');
       } else {
@@ -106,6 +123,7 @@ class _ServiceManagementState extends State<ServiceManagement> {
     } catch (e) {
       SnackBarHelper.showError(context, 'Có lỗi xảy ra');
     }
+
     _fetchServices();
   }
 
@@ -113,34 +131,68 @@ class _ServiceManagementState extends State<ServiceManagement> {
     if (timePrices.isEmpty) {
       return const Text(
         'Chưa có gói thời gian',
-        style: TextStyle(color: Colors.grey),
+        style: TextStyle(
+          fontSize: 13,
+          color: Colors.grey,
+        ),
       );
     }
 
-    final durations = timePrices
-        .map((e) => '${e['duration']}')
-        .join(' / ');
-
-    return Text(
-      durations,
-      style: const TextStyle(
-        fontSize: 13,
-        color: Colors.black54,
-      ),
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: timePrices.map<Widget>((e) {
+        return Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: ColorConfig.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Text(
+            '${e['duration']} phút',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: ColorConfig.primary,
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
   Widget _buildServiceItem(dynamic item) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.black12),
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: Colors.black.withOpacity(0.05),
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: ColorConfig.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.spa_rounded,
+              color: ColorConfig.primary,
+            ),
+          ),
+
+          const SizedBox(width: 14),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,26 +201,127 @@ class _ServiceManagementState extends State<ServiceManagement> {
                   item['name'],
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 6),
+
+                const SizedBox(height: 10),
+
                 _buildTimePrices(item['timePrices'] ?? []),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.edit, size: 20),
-            onPressed: () {
-              context.push(
-                AdminRouterConfig.editService,
-                extra: {'item': item},
-              );
+
+          PopupMenuButton<String>(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            onSelected: (value) async {
+              if (value == 'edit') {
+                final result = await context.push(
+                  AdminRouterConfig.editService,
+                  extra: {'item': item},
+                );
+
+                if (result == true && mounted) {
+                  _fetchServices();
+                }
+              }
+
+              if (value == 'delete') {
+                _confirmDelete(item['_id']);
+              }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Chỉnh sửa'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_rounded,
+                      size: 18,
+                      color: Colors.red,
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Xóa',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(Icons.more_vert_rounded),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-            onPressed: () => _confirmDelete(item['_id']),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBox() {
+    return Container(
+      height: 54,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.black.withOpacity(0.06),
+        ),
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Tìm dịch vụ...',
+          hintStyle: TextStyle(
+            color: Colors.grey.shade500,
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: Colors.grey.shade600,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.spa_outlined,
+            size: 60,
+            color: Colors.grey.shade400,
+          ),
+
+          const SizedBox(height: 14),
+
+          Text(
+            'Không có dịch vụ',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
           ),
         ],
       ),
@@ -178,70 +331,87 @@ class _ServiceManagementState extends State<ServiceManagement> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xfff6f7fb),
+
       appBar: AppBar(
-        title: Text("Quản lý dịch vụ", style: TextStyle(fontWeight: FontWeight.w600),),
+        elevation: 0,
+        backgroundColor: const Color(0xfff6f7fb),
+        surfaceTintColor: Colors.transparent,
+        title: const Text(
+          'Quản lý dịch vụ',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         actions: [
-          //RELOAD
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.green),
-            tooltip: 'Tải lại danh sách',
             onPressed: _loading ? null : _reloadServices,
+            icon: const Icon(Icons.refresh_rounded),
           ),
 
-          const SizedBox(width: 2),
-
-          // ADD
           IconButton(
-              icon: const Icon(Icons.add, color: Colors.blue),
-              tooltip: 'Thêm dịch vụ',
-              onPressed: () {
-                context.go(AdminRouterConfig.addService);
-              })
-        ]
+            onPressed: () async {
+              final result = await context.push(
+                AdminRouterConfig.addService,
+              );
+
+              if (result == true && mounted) {
+                _fetchServices();
+              }
+            },
+            icon: const Icon(Icons.add_rounded),
+          ),
+
+          const SizedBox(width: 6),
+        ],
       ),
-      body:  Container(
-        padding: const EdgeInsets.all(16),
+
+      body: SafeArea(
         child: Column(
           children: [
-            Row(
-              children: [
-                // SEARCH
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Tìm theo tên dịch vụ...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: _buildSearchBox(),
             ),
 
-            const SizedBox(height: 8),
-
-            // LIST
             Expanded(
               child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filteredServices.isEmpty
-                  ? const Center(child: Text('Không có dịch vụ'))
-                  : ListView.builder(
-                itemCount: _filteredServices.length,
-                itemBuilder: (context, index) {
-                  return _buildServiceItem(
-                      _filteredServices[index]);
-                },
+                  ? const Center(
+                child: CircularProgressIndicator(),
+              )
+                  : RefreshIndicator(
+                onRefresh: _reloadServices,
+                child: _filteredServices.isEmpty
+                    ? ListView(
+                  physics:
+                  const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    SizedBox(
+                      height:
+                      MediaQuery.of(context).size.height *
+                          0.6,
+                      child: _buildEmpty(),
+                    ),
+                  ],
+                )
+                    : ListView.builder(
+                  physics:
+                  const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                  ),
+                  itemCount: _filteredServices.length,
+                  itemBuilder: (context, index) {
+                    return _buildServiceItem(
+                      _filteredServices[index],
+                    );
+                  },
+                ),
               ),
             ),
           ],
         ),
-      )
+      ),
     );
-
   }
 }
