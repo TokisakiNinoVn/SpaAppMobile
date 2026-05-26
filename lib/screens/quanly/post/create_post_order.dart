@@ -16,14 +16,14 @@ import 'package:spa_app/services/order_service.dart';
 // ─────────────────────────────────────────────
 // Widget chính
 // ─────────────────────────────────────────────
-class CreatePostOrder extends StatefulWidget {
-  const CreatePostOrder({super.key});
+class CreatePostOrderManager extends StatefulWidget {
+  const CreatePostOrderManager({super.key});
 
   @override
-  State<CreatePostOrder> createState() => _CreatePostOrderState();
+  State<CreatePostOrderManager> createState() => _CreatePostOrderState();
 }
 
-class _CreatePostOrderState extends State<CreatePostOrder> {
+class _CreatePostOrderState extends State<CreatePostOrderManager> {
   final OrderService _orderService = OrderService();
 
   bool _isLoading = true;

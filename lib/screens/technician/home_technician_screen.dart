@@ -104,6 +104,7 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
         context.watch<SelectedTabProvider>().selectedIndex;
 
     return Scaffold(
+      backgroundColor: ColorConfig.primaryBackground,
       body: SafeArea(
         child: _buildBody(selectedIndex),
       ),

@@ -9,6 +9,7 @@ import 'package:spa_app/screens/admin/feature_service/list.dart';
 import 'package:spa_app/screens/admin/notification/create_notification_screen.dart';
 import 'package:spa_app/screens/admin/order/post/create_post_order.dart';
 import 'package:spa_app/screens/admin/order/post/management_post_order.dart';
+import 'package:spa_app/screens/admin/order/post/technician_apply.dart';
 import 'package:spa_app/screens/admin/platform_fee/management_platform_fee.dart';
 import 'package:spa_app/screens/admin/report/report.dart';
 import 'package:spa_app/screens/admin/withdraw/confirm_request_screen.dart';
@@ -64,6 +65,14 @@ final List<GoRoute> adminRoutes = [
           GoRoute(
             path: 'create-post-order',
             builder: (context, state) => const CreatePostOrder(),
+          ),
+
+          GoRoute(
+            path: 'technician-apply',
+            builder: (context, state) {
+              final data = state.extra as Map<String, dynamic>;
+              return ListTechnicianApply(data: data);
+            },
           ),
         ]
       ),

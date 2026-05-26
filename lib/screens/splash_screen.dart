@@ -101,6 +101,7 @@ class _SplashScreenState extends State<SplashScreen>
       Permission.notification,
       Permission.storage,
       Permission.photos,
+      // Permission.photosAddOnly, // For iOS Permission only
     ];
 
     for (final permission in permissions) {

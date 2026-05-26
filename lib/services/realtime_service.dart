@@ -18,6 +18,15 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
 
 class RealtimeService {
+  static RealtimeService? _instance;
+  static RealtimeService get instance {
+    _instance ??= RealtimeService();
+    return _instance!;
+  }
+  static void setInstance(RealtimeService service) {
+    _instance = service;
+  }
+
   late WebSocketChannel _channel;
   final BuildContext? context;
   final void Function(Map<String, dynamic>)? onUserStatusUpdate;
@@ -26,15 +35,8 @@ class RealtimeService {
   final void Function(String orderId)? onOrderRemoved;
   final void Function(Map<String, dynamic>)? onNewOrderAutoMatching;
   final void Function(String orderId)? onOrderAutoMatchingRemove;
+  void Function(Map<String, dynamic>)? onNewTechnicianApplyOrder;
   bool _isDisposed = false;
-
-  // RealtimeService(this.context, {this.onUserStatusUpdate});
-  // RealtimeService({this.context, this.onUserStatusUpdate}) {
-  //   // ⚡ Đây là vị trí đúng cho đoạn kiểm tra môi trường
-  //   if (AppConfig.isProduction) {
-  //     // Cậu có thể thêm logic đặc biệt cho production ở đây
-  //   }
-  // }
 
   RealtimeService({
     this.context,
@@ -43,7 +45,8 @@ class RealtimeService {
     this.onOrderExpired,
     this.onOrderRemoved,
     this.onNewOrderAutoMatching,
-    this.onOrderAutoMatchingRemove
+    this.onOrderAutoMatchingRemove,
+    this.onNewTechnicianApplyOrder
   });
 
   void dispose() {
@@ -53,51 +56,6 @@ class RealtimeService {
 
   int _reconnectDelay = 2000; // bắt đầu 2s
   final int _maxReconnectDelay = 30000;
-
-  // Dùng cái này khi AppConfig.isProduction == true
-  // Future<void> connect() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final token = prefs.getString('token');
-  //
-  //   // 🚧 Tránh kết nối khi chưa có token — tránh crash WebSocket
-  //   if (token == null || token.isEmpty) {
-  //     appLog("[RealtimeService] ❌ Không tìm thấy token để kết nối WebSocket");
-  //     return;
-  //   }
-  //
-  //   // ⚙️ Tự động chọn link websocket dựa vào environment
-  //   final uri = AppConfig.isProduction
-  //       ? Uri.parse(AppConfig.apiWebsocket)
-  //       : Uri(
-  //     scheme: 'ws',
-  //     host: AppConfig.ip,
-  //     port: 5001,
-  //     path: '/api/private/ws/realtime',
-  //   );
-  //
-  //   try {
-  //     final socket = await WebSocket.connect(
-  //       uri.toString(),
-  //       headers: {
-  //         'Authorization': 'Bearer $token',
-  //       },
-  //     );
-  //
-  //     _channel = IOWebSocketChannel(socket);
-  //
-  //     _channel.stream.listen(
-  //       _handleEvent,
-  //       onError: (error) {
-  //         appLog('[RealtimeService] ❌ Lỗi WebSocket: $error');
-  //       },
-  //       onDone: () {
-  //         appLog('[RealtimeService] 🔴 WebSocket đã đóng');
-  //       },
-  //     );
-  //   } catch (e) {
-  //     appLog('[RealtimeService] ❌ Không thể kết nối WebSocket: $e');
-  //   }
-  // }
 
   Future<void> connect() async {
     if (_isDisposed) return;
@@ -229,6 +187,11 @@ class RealtimeService {
 
         onOrderExpired?.call(orderId);
       }
+      else if (data['type'] == 'technician_apply') {
+        final dataApply = data['data'];
+
+        onNewTechnicianApplyOrder?.call(dataApply);
+      }
       else if (data['type'] == 'remove-order') {
         final orderId = data['data']?['orderId'];
 
@@ -314,8 +277,22 @@ class RealtimeService {
     }
   }
 
+  // void disconnect() {
+  //   try {
+  //     _channel.sink.close(status.goingAway);
+  //   } catch (_) {}
+  //
+  //   appLog('[RealtimeService] 🔌 Ngắt kết nối WebSocket');
+  // }
   void disconnect() {
-    _channel.sink.close(status.goingAway);
+    try {
+      // Kiểm tra _channel đã được khởi tạo chưa
+      // Dùng normalClosure (1000) thay vì goingAway (1001)
+      _channel.sink.close(status.normalClosure);
+    } catch (e) {
+      appLog('[RealtimeService] ❌ Lỗi khi đóng WebSocket: $e');
+    }
     appLog('[RealtimeService] 🔌 Ngắt kết nối WebSocket');
   }
+
 }

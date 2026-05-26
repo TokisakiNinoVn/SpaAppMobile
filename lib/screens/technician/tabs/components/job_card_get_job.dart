@@ -250,33 +250,6 @@ class JobCard extends StatelessWidget {
                     const SizedBox(width: 12),
 
                     /// BUTTON Handling the matter
-                    // if (!isExpired) ...[
-                    //   Expanded(
-                    //     child: SizedBox(
-                    //       height: 40,
-                    //       child: ElevatedButton(
-                    //         onPressed: canHandleJob ? onAccept : null,
-                    //         style: ElevatedButton.styleFrom(
-                    //           elevation: 0,
-                    //           backgroundColor: buttonColor,
-                    //           disabledBackgroundColor: Colors.grey.shade300,
-                    //           foregroundColor: Colors.white,
-                    //           disabledForegroundColor: Colors.grey.shade600,
-                    //           shape: RoundedRectangleBorder(
-                    //             borderRadius: BorderRadius.circular(999),
-                    //           ),
-                    //         ),
-                    //         child: Text(
-                    //           actionText,
-                    //           style: const TextStyle(
-                    //             fontSize: 15,
-                    //             fontWeight: FontWeight.w700,
-                    //           ),
-                    //         ),
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ],
                     if (!isExpired) ...[
                       Expanded(
                         child: SizedBox(

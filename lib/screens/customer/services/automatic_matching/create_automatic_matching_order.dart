@@ -261,6 +261,7 @@ class _CreateAutoMatchingOrderScreenState
       "moneyPrioritize": moneyPrioritize,
       'workingHours': _formatWorkingHours(_selectedDateTime),
       "typeTime": _timeType,
+      'subTypeOrder': _timeType,
 
       if (_discountData != null)
         'discountInput': {

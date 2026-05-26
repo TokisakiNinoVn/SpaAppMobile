@@ -1008,11 +1008,17 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                                 HomeShortcutItem(
                                   icon: Icons.calendar_today,
                                   label: "Đặt lịch ngay",
-                                  onTap: () {},
+                                  onTap: () {
+                                    context.push(CustomerRouterConfig.listOrderNowTechnician);
+                                  },
                                 ),
                                 HomeShortcutItem(
                                   icon: Icons.spa,
                                   label: "Dịch vụ",
+                                  onTap: () {
+                                    context.push(CustomerRouterConfig.automaticMatching);
+
+                                  }
                                 ),
                                 HomeShortcutItem(
                                   icon: Icons.card_giftcard,

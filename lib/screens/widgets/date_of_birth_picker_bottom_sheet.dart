@@ -7,6 +7,8 @@ import '../../../config/color_config.dart';
 /// Trả về DateTime? nếu người dùng xác nhận, null nếu đóng.
 Future<DateTime?> showDateOfBirthPickerBottomSheet({
   required BuildContext context,
+  String? title,
+  bool? isReversal,
   DateTime? initialDate,
   DateTime? minimumDate,
   DateTime? maximumDate,
@@ -53,9 +55,9 @@ Future<DateTime?> showDateOfBirthPickerBottomSheet({
                 _buildHandle(),
                 const SizedBox(height: 18),
 
-                const Text(
-                  'Chọn ngày sinh',
-                  style: TextStyle(
+                Text(
+                  title == null ? 'Chọn ngày sinh' : title,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF1A1A1A),

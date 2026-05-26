@@ -8,19 +8,19 @@ import 'package:spa_app/providers/order_provider.dart';
 import 'package:spa_app/services/realtime_service.dart';
 import 'package:spa_app/services/user_discount_service.dart';
 
-class ListTechnicianApply extends StatefulWidget {
+class ListTechnicianApplyManager extends StatefulWidget {
   final Map<String, dynamic> data;
 
-  const ListTechnicianApply({
+  const ListTechnicianApplyManager({
     super.key,
     required this.data,
   });
 
   @override
-  State<ListTechnicianApply> createState() => _ListTechnicianApplyState();
+  State<ListTechnicianApplyManager> createState() => _ListTechnicianApplyState();
 }
 
-class _ListTechnicianApplyState extends State<ListTechnicianApply> {
+class _ListTechnicianApplyState extends State<ListTechnicianApplyManager> {
   final UserDiscountService _userDiscountService = UserDiscountService();
 
   late Map<String, dynamic> _order;

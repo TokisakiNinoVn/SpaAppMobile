@@ -30,6 +30,10 @@ class OrderService {
   Future<Map<String, dynamic>> listOrder() async {
     return await ApiMethodsPrivate.getRequest('${OrderApiRoutes.list}');
   }
+
+  Future<Map<String, dynamic>> technicianApplyService(String id) async {
+    return await ApiMethodsPrivate.getRequest("${OrderApiRoutes.listTechnicianApplyPost}/${id}");
+  }
   //
   // Future<Map<String, dynamic>> deleteService(String serviceId) async {
   //   return await ApiMethodsPrivate.deleteRequest('${ServiceApiRoutes.deleteService}/$serviceId');
@@ -47,7 +51,13 @@ class OrderService {
   Future<Map<String, dynamic>> listFilterOrder(String queryParams) async {
     return await ApiMethodsPrivate.getRequest('${OrderApiRoutes.listRequestOrder}?$queryParams');
   }
-  Future<Map<String, dynamic>> listPostOrder() async {
-    return await ApiMethodsPrivate.getRequest('${OrderApiRoutes.listPostAdmin}');
+  Future<Map<String, dynamic>> listPostOrder(String query) async {
+    final uri = '${OrderApiRoutes.listPostAdmin}?$query';
+    appLog("URI: $uri");
+    return await ApiMethodsPrivate.getRequest('$uri');
+  }
+
+  Future<Map<String, dynamic>> applyPostOrder(Map<String, dynamic> body) async {
+    return await ApiMethodsPrivate.postRequest('${OrderApiRoutes.applyOrder}', body);
   }
 }

@@ -34,7 +34,7 @@ class ImageDownloadUtil {
       if (androidInfo.version.sdkInt >= 33) {
         final status = await Permission.notification.request();
         if (!status.isGranted) {
-          debugPrint("🛑 Quyền thông báo không được cấp");
+          appLog("🛑 Quyền thông báo không được cấp");
         }
       }
     }
@@ -71,7 +71,7 @@ class ImageDownloadUtil {
         platformChannelSpecifics,
       );
     } else if (context != null) {
-      debugPrint("🛑 Không có quyền hiển thị thông báo");
+      appLog("🛑 Không có quyền hiển thị thông báo");
       SnackBarHelper.showError(context, "Vui lòng cấp quyền thông báo để nhận thông báo");
     }
   }
@@ -84,30 +84,52 @@ class ImageDownloadUtil {
     Function(bool)? onComplete,
   }) async {
     try {
-      final status = await Permission.photos.request();
+      PermissionStatus status;
+
+      // ===== REQUEST PERMISSION THEO PLATFORM =====
+      if (Platform.isIOS) {
+        // iOS chỉ cần quyền thêm ảnh
+        status = await Permission.photosAddOnly.request();
+      } else if (Platform.isAndroid) {
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+
+        // Android 13+
+        if (androidInfo.version.sdkInt >= 33) {
+          status = PermissionStatus.granted;
+        } else {
+          // Android <= 12
+          status = await Permission.storage.request();
+        }
+      } else {
+        status = PermissionStatus.granted;
+      }
+
       if (!status.isGranted) {
         throw Exception("Không có quyền lưu ảnh");
       }
 
+      // ===== DOWNLOAD IMAGE =====
       final response = await Dio().get(
         imageUrl,
         options: Options(responseType: ResponseType.bytes),
       );
 
-      // imageUrl = FormatHelper.formatNetworkImageUrl(imageUrl);
-      // appLog("$imageUrl");
-
       final Uint8List bytes = Uint8List.fromList(response.data);
 
       final tempDir = await getTemporaryDirectory();
-      final fileName = "image_${DateTime.now().millisecondsSinceEpoch}.jpg";
+      final fileName =
+          "image_${DateTime.now().millisecondsSinceEpoch}.jpg";
+
       final tempFile = File("${tempDir.path}/$fileName");
+
       await tempFile.writeAsBytes(bytes);
 
+      // ===== SAVE IMAGE =====
       await MediaStore.ensureInitialized();
       MediaStore.appFolder = 'SpaApp';
 
       final mediaStore = MediaStore();
+
       final result = await mediaStore.saveFile(
         tempFilePath: tempFile.path,
         dirType: DirType.photo,
@@ -116,9 +138,14 @@ class ImageDownloadUtil {
 
       if (result != null) {
         await _showSuccessNotification(context);
+
         if (context != null) {
-          SnackBarHelper.showSuccess(context, "Tải ảnh thành công vào thư viện");
+          SnackBarHelper.showSuccess(
+            context,
+            "Tải ảnh thành công vào thư viện",
+          );
         }
+
         onComplete?.call(true);
         return true;
       } else {
@@ -126,10 +153,16 @@ class ImageDownloadUtil {
       }
     } catch (e) {
       appLog("🛑 Lỗi lưu ảnh: $e");
+
       if (context != null) {
-        SnackBarHelper.showError(context, "Lỗi khi lưu ảnh: ${e.toString()}");
+        SnackBarHelper.showError(
+          context,
+          "Lỗi khi lưu ảnh: ${e.toString()}",
+        );
+
         appLog("Lỗi khi lưu ảnh: ${e.toString()}");
       }
+
       onComplete?.call(false);
       return false;
     }

@@ -50,6 +50,7 @@ class AdminRouterConfig {
   // Post order
   static String manageOrderPost = "/home-admin/manage-post-order";
   static String createOrderPost = "/home-admin/manage-post-order/create-post-order";
+  static String listTechnicianApply = "/home-admin/manage-post-order/technician-apply";
 
   static String createManageAccount = "/home-admin/create-manage-account";
 }

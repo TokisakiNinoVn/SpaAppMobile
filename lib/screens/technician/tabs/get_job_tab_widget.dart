@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/providers/order_provider.dart';
 import 'package:spa_app/routes/config/technician_router_config.dart';
 import 'package:spa_app/screens/customer/tabs/components/SpaDialog.dart';
 import 'package:spa_app/screens/technician/tabs/components/accept_order_dialog.dart';
@@ -345,11 +347,22 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
 
   void _acceptJob(Map<String, dynamic> job) {
     bool isAdminCreate = job['isAdminCreate'] ?? false;
+    String idOrder = job['_id'];
     if (isAdminCreate) {
-      _showConfirmApplyJobDialog();
+      _showConfirmApplyJobDialog(idOrder);
       return;
+    } else {
+      // SnackBarHelper.showWarning(context, 'Chức năng đang phát triển!');
+      showAcceptOrderDialog(
+        context: context,
+        order: job,
+        onConfirm: (message) async {
+          await _acceptOrderWithMessage(job, message);
+        },
+      );
     }
-    SnackBarHelper.showWarning(context, 'Chức năng đang phát triển!');
+
+
   }
 
   Future<void> _acceptOrderWithMessage(Map<String, dynamic> order, String message) async {
@@ -417,36 +430,108 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
     );
   }
 
-  Future<void> _showConfirmApplyJobDialog() async {
+  // Future<void> _showConfirmApplyJobDialog(String idOrder) async {
+  //   final result = await showDialog<bool>(
+  //     context: context,
+  //     builder: (dialogContext) => SpaDialog(
+  //       iconColor: ColorConfig.primary,
+  //       title: 'Xác nhận',
+  //       body: 'Xác nhận Ứng tuyển đơn việc?',
+  //       cancelLabel: 'Đóng',
+  //       confirmLabel: 'Xác nhận',
+  //       confirmColor: ColorConfig.primary,
+  //       onConfirm: () {},
+  //     ),
+  //   );
+  //
+  //   if (result == true && mounted) {
+  //     showDialog(
+  //       context: context,
+  //       barrierDismissible: false,
+  //       builder: (context) => Center(child: CircularProgressIndicator(color: ColorConfig.primary)),
+  //     );
+  //
+  //     try {
+  //       if (mounted) Navigator.of(context).pop();
+  //       if (mounted) {
+  //         appLog("Apply order: $idOrder");
+  //         SnackBarHelper.showWarning(context, "Chức năng đang được phát triển!!");
+  //       }
+  //     } catch (e) {
+  //       if (mounted) Navigator.of(context).pop();
+  //       SnackBarHelper.showError(context, "Ứng tuyển đơn việc: $e");
+  //     }
+  //   }
+  // }
+
+  Future<void> _showConfirmApplyJobDialog(String idOrder) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => SpaDialog(
         iconColor: ColorConfig.primary,
         title: 'Xác nhận',
-        body: 'Xác nhận Ứng tuyển đơn việc?',
+        body: 'Xác nhận ứng tuyển đơn việc?',
         cancelLabel: 'Đóng',
         confirmLabel: 'Xác nhận',
         confirmColor: ColorConfig.primary,
-        onConfirm: () {},
+        onConfirm: () {
+          Navigator.pop(dialogContext, true);
+        },
       ),
     );
 
-    if (result == true && mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Center(child: CircularProgressIndicator(color: ColorConfig.primary)),
-      );
+    if (result != true || !mounted) return;
 
-      try {
-        if (mounted) Navigator.of(context).pop();
-        if (mounted) {
-          SnackBarHelper.showWarning(context, "Chức năng đang được phát triển!!");
-        }
-      } catch (e) {
-        if (mounted) Navigator.of(context).pop();
-        SnackBarHelper.showError(context, "Ứng tuyển đơn việc: $e");
+    // Loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: CircularProgressIndicator(
+          color: ColorConfig.primary,
+        ),
+      ),
+    );
+
+    try {
+      // appLog("Apply order: $idOrder");
+
+      final provider = context.read<OrderProvider>();
+
+      final success = await provider.technicianApplyOrder(idOrder);
+
+      // Đóng loading
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
       }
+
+      if (!mounted) return;
+
+      if (success) {
+        SnackBarHelper.showSuccess(
+          context,
+          "Ứng tuyển đơn việc thành công!",
+        );
+      } else {
+        SnackBarHelper.showError(
+          context,
+          provider.errorMessage ?? "Ứng tuyển thất bại!",
+        );
+      }
+    } catch (e) {
+      // Đóng loading nếu lỗi
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      if (!mounted) return;
+
+      appLog("Apply order error: $e");
+
+      SnackBarHelper.showError(
+        context,
+        "Ứng tuyển đơn việc thất bại: $e",
+      );
     }
   }
 

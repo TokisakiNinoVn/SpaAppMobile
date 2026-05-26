@@ -569,302 +569,306 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
       child: isLoading
       ? const Center(child: CircularProgressIndicator())
       : RefreshIndicator(
-      color: ColorConfig.primary,
-      onRefresh: _loadUserDetail,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header: avatar + info + notification ──
-            Row(
+        color: ColorConfig.primary,
+        onRefresh: _loadUserDetail,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height,
+            ),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _isOnline ? Colors.green : Colors.grey.shade300,
-                      width: 3,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: technicianData?['avatar']?['url'] != null
-                        ? Image.network(
-                      FormatHelper.formatNetworkImageUrl(
-                          technicianData!['avatar']['url']),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                          'lib/assets/images/avatar_placeholder.png'),
-                    )
-                        : Image.asset(
-                      'lib/assets/images/avatar_placeholder.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        technicianData?['fullName'] ?? 'Không có tên',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                // ── Header: avatar + info + notification ──
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _isOnline ? Colors.green : Colors.grey.shade300,
+                          width: 3,
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            'Trạng thái: ',
-                            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                          ),
-                          Text(
-                            statusAccount == 'inactive' ? 'Offline' : 'Online',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: statusAccount == 'inactive'
-                                  ? Colors.red.shade400
-                                  : Colors.green.shade500,
-                            ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-
-                    ],
-                  ),
-                ),
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        context.push(TechnicianRouterConfig.notifications);
-                      },
-                      icon: const Icon(
-                        Icons.notifications_outlined,
-                        size: 28,
-                      ),
-                      color: Colors.grey.shade700,
-                      tooltip: 'Thông báo',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                    Positioned(
-                      right: 4,
-                      top: 4,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            if (isTechnicianActive) ...[
-              // ── Status toggle + location update ──
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: ColorConfig.white,
-                  borderRadius: BorderRadius.circular(40),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Trạng thái',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        isUpdating
-                            ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                      child: ClipOval(
+                        child: technicianData?['avatar']?['url'] != null
+                            ? Image.network(
+                          FormatHelper.formatNetworkImageUrl(
+                              technicianData!['avatar']['url']),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Image.asset(
+                              'lib/assets/images/avatar_placeholder.png'),
                         )
-                            : Tooltip(
-                          message: 'Bật/tắt nhận việc',
-                          child: Switch(
-                            value: statusAccount == 'active',
-                            activeColor: ColorConfig.secondary,
-                            activeTrackColor:
-                            ColorConfig.secondary.withOpacity(0.3),
-                            inactiveThumbColor: Colors.grey.shade400,
-                            inactiveTrackColor: Colors.grey.shade300,
-                            onChanged:
-                            isProfileActive ? (_) => toggleUserStatus() : null,
+                            : Image.asset(
+                          'lib/assets/images/avatar_placeholder.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            technicianData?['fullName'] ?? 'Không có tên',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(
+                                'Trạng thái: ',
+                                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                              ),
+                              Text(
+                                statusAccount == 'inactive' ? 'Offline' : 'Online',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: statusAccount == 'inactive'
+                                      ? Colors.red.shade400
+                                      : Colors.green.shade500,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                        ],
+                      ),
+                    ),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            context.push(TechnicianRouterConfig.notifications);
+                          },
+                          icon: const Icon(
+                            Icons.notifications_outlined,
+                            size: 28,
+                          ),
+                          color: Colors.grey.shade700,
+                          tooltip: 'Thông báo',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        Positioned(
+                          right: 4,
+                          top: 4,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
                       ],
                     ),
+                  ],
+                ),
 
-                    Tooltip(
-                      message: 'Cập nhật vị trí hiện tại',
-                      child: Material(
-                        color: ColorConfig.primary,
-                        borderRadius: BorderRadius.circular(40),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(40),
-                          onTap: isUpdatingLocation
-                              ? null
-                              : () async {
-                            final shouldUpdate =
-                            await _showLocationUpdateConfirmation();
+                const SizedBox(height: 16),
 
-                            if (shouldUpdate == true) {
-                              await _getCurrentLocation(context);
-                              await _updateLocation();
-                            }
-                          },
-
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 10,
-                            ),
-
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(30),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
-                            ),
-
-                            child: isUpdatingLocation
-                                ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                if (isTechnicianActive) ...[
+                  // ── Status toggle + location update ──
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: ColorConfig.white,
+                      borderRadius: BorderRadius.circular(40),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Trạng thái',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
                               ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            isUpdating
+                                ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                                : const Icon(
-                              Icons.my_location,
-                              size: 20,
-                              color: Colors.white,
+                                : Tooltip(
+                              message: 'Bật/tắt nhận việc',
+                              child: Switch(
+                                value: statusAccount == 'active',
+                                activeColor: ColorConfig.secondary,
+                                activeTrackColor:
+                                ColorConfig.secondary.withOpacity(0.3),
+                                inactiveThumbColor: Colors.grey.shade400,
+                                inactiveTrackColor: Colors.grey.shade300,
+                                onChanged:
+                                isProfileActive ? (_) => toggleUserStatus() : null,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        Tooltip(
+                          message: 'Cập nhật vị trí hiện tại',
+                          child: Material(
+                            color: ColorConfig.primary,
+                            borderRadius: BorderRadius.circular(40),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(40),
+                              onTap: isUpdatingLocation
+                                  ? null
+                                  : () async {
+                                final shouldUpdate =
+                                await _showLocationUpdateConfirmation();
+
+                                if (shouldUpdate == true) {
+                                  await _getCurrentLocation(context);
+                                  await _updateLocation();
+                                }
+                              },
+
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 10,
+                                ),
+
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(30),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+
+                                child: isUpdatingLocation
+                                    ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                    : const Icon(
+                                  Icons.my_location,
+                                  size: 20,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildShortcutItem(
-                      icon: Icons.history,
-                      label: 'Lịch sử đơn',
-                      onTap: () => context.push(TechnicianRouterConfig.historyOrder),
-                    ),
-                    _buildShortcutItem(
-                      icon: Icons.attach_money,
-                      label: 'Doanh thu',
-                      onTap: () => context.push(TechnicianRouterConfig.statistical),
-                    ),
-                    _buildShortcutItem(
-                      icon: Icons.account_tree,
-                      label: 'Dịch vụ',
-                      onTap: () => context.push(TechnicianRouterConfig.updateTechnicianService),
-                    ),
-                    _buildShortcutItem(
-                      icon: Icons.person,
-                      label: 'Cập nhật',
-                      onTap: () => context.push(TechnicianRouterConfig.updateProfileTechnician),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              _buildOrderCard(),
-              _buildListNextBookOrder(),
-
-            ] else ...[
-              // ── Inactive profile warning ──
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Hồ sơ chưa được duyệt. Vui lòng liên hệ quản trị viên.',
-                        style: TextStyle(fontSize: 14, color: Colors.orange.shade800),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: _checkApprovalStatus,
-                      child: const Text('Kiểm tra'),
-                    ),
-                  ],
-                ),
-              ),
-              if (_remainingSeconds > 0)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    "Kiểm tra lại sau: "
-                        "${(_remainingSeconds ~/ 60).toString().padLeft(2, '0')}:"
-                        "${(_remainingSeconds % 60).toString().padLeft(2, '0')}",
-                    style: TextStyle(color: Colors.orange.shade700, fontSize: 13),
                   ),
-                ),
-              const SizedBox(height: 24),
-            ],
-          ],
+                  const SizedBox(height: 10),
+
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildShortcutItem(
+                          icon: Icons.history,
+                          label: 'Lịch sử đơn',
+                          onTap: () => context.push(TechnicianRouterConfig.historyOrder),
+                        ),
+                        _buildShortcutItem(
+                          icon: Icons.attach_money,
+                          label: 'Doanh thu',
+                          onTap: () => context.push(TechnicianRouterConfig.statistical),
+                        ),
+                        _buildShortcutItem(
+                          icon: Icons.account_tree,
+                          label: 'Dịch vụ',
+                          onTap: () => context.push(TechnicianRouterConfig.updateTechnicianService),
+                        ),
+                        _buildShortcutItem(
+                          icon: Icons.person,
+                          label: 'Cập nhật',
+                          onTap: () => context.push(TechnicianRouterConfig.updateProfileTechnician),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  _buildOrderCard(),
+                  // _buildListNextBookOrder(),
+
+                ] else ...[
+                  // ── Inactive profile warning ──
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Hồ sơ chưa được duyệt. Vui lòng liên hệ quản trị viên.',
+                            style: TextStyle(fontSize: 14, color: Colors.orange.shade800),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _checkApprovalStatus,
+                          child: const Text('Kiểm tra'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_remainingSeconds > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(
+                        "Kiểm tra lại sau: "
+                            "${(_remainingSeconds ~/ 60).toString().padLeft(2, '0')}:"
+                            "${(_remainingSeconds % 60).toString().padLeft(2, '0')}",
+                        style: TextStyle(color: Colors.orange.shade700, fontSize: 13),
+                      ),
+                    ),
+                  const SizedBox(height: 24),
+                ],
+              ],
+            ),
+          ),
         ),
-      ),
       )
     );
-
   }
 
   Widget _buildShortcutItem({
