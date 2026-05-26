@@ -149,8 +149,7 @@ class ImageDownloadUtil {
       final fileName =
           "spa_${DateTime.now().millisecondsSinceEpoch}.jpg";
 
-      final tempFile =
-      File("${tempDir.path}/$fileName");
+      final tempFile = File("${tempDir.path}/$fileName");
 
       await tempFile.writeAsBytes(bytes);
 
