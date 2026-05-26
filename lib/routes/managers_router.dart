@@ -1,0 +1,327 @@
+import 'package:go_router/go_router.dart';
+import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/screens/customer/address/add.dart';
+import 'package:spa_app/screens/customer/address/edit.dart';
+import 'package:spa_app/screens/customer/address/list.dart';
+import 'package:spa_app/screens/customer/order/canceled_screen.dart';
+import 'package:spa_app/screens/customer/rate/create_rate_screen.dart';
+import 'package:spa_app/screens/customer/rate/view_update_rate_screen.dart';
+import 'package:spa_app/screens/customer/services/automatic_matching/create_automatic_matching_order.dart';
+import 'package:spa_app/screens/customer/services/books/create_book_order.dart';
+import 'package:spa_app/screens/customer/services/now/create_order_customer.dart';
+import 'package:spa_app/screens/customer/deposit/choose_package.dart';
+import 'package:spa_app/screens/customer/deposit/history.dart';
+import 'package:spa_app/screens/customer/deposit/qr_code.dart';
+import 'package:spa_app/screens/customer/discount/list_discount_screen.dart';
+import 'package:spa_app/screens/customer/list_like_screen.dart';
+import 'package:spa_app/screens/customer/list_like_technician.dart';
+import 'package:spa_app/screens/customer/notification/customer_notification.dart';
+import 'package:spa_app/screens/customer/services/automatic_matching/automatic_matching.dart';
+import 'package:spa_app/screens/customer/services/books/book.dart';
+import 'package:spa_app/screens/customer/profile/update_profile.dart';
+import 'package:spa_app/screens/customer/services/now/order_now.dart';
+import 'package:spa_app/screens/customer/to_technician/create_profile_technician.dart';
+import 'package:spa_app/screens/customer/withdraw/confirm_request.dart';
+import 'package:spa_app/screens/customer/withdraw/create_request.dart';
+import 'package:spa_app/screens/customer/withdraw/history.dart';
+
+import '../helper/check_login_helper.dart';
+import '../screens/customer/detail_technician.dart';
+import '../screens/customer/history_order.dart';
+import '../screens/customer/home_customer_screen.dart';
+import '../screens/customer/list_technician.dart';
+import '../screens/customer/order/detail_order_screen.dart';
+
+final List<GoRoute> managerRoutes = [
+  GoRoute(
+      path: '/home-customer',
+      builder: (context, state) => const HomeCustomerScreen(),
+      routes: [
+        GoRoute(
+          path: 'detail-order/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return DetailsOrderScreen(id: id);
+          },
+        ),
+
+        GoRoute(
+          path: 'cancel-order/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return CanceledOrderScreen(idOrder: id);
+          },
+        ),
+
+        GoRoute(
+          path: 'order-now',
+          builder: (context, state) => ListTechnicianOrderNow(),
+            routes: [
+              GoRoute(
+                path: 'list-like-technician',
+                builder: (context, state) => const ListLikeTechnicianScreen(),
+              ),
+              GoRoute(
+                  path: 'details/:id',
+                  // redirect: (context, state) async {
+                  //   final loggedIn = await CheckLoginHelper.isLoggedIn();
+                  //   if (!loggedIn) return '/login-otp';
+                  //   return null;
+                  // },
+                  builder: (context, state) {
+                    final id = state.pathParameters['id']!;
+                    final type = state.extra as String?;
+                    return DetailsTechnicianScreen(
+                      id: id,
+                      type: type ?? '',
+                    );
+                  },
+                  // routes: [
+                  //   GoRoute(
+                  //     path: 'create-order-technician',
+                  //     // builder: (context, state) => const CreateOrderTechnicianScreen(),
+                  //     // path: 'service/edit',
+                  //     builder: (context, state) {
+                  //       final data = state.extra as Map<String, dynamic>;
+                  //       return CreateOrderTechnicianScreen(data: data);
+                  //     },
+                  //   ),
+                  // ]
+              ),
+              GoRoute(
+                path: 'create-order',
+                // builder: (context, state) => const CreateOrderTechnicianScreen(),
+                // path: 'service/edit',
+                builder: (context, state) {
+                  final data = state.extra as Map<String, dynamic>;
+                  return CreateOrderNowScreen(data: data);
+                },
+              ),
+            ]
+        ),
+
+        GoRoute(
+          path: 'discounts',
+          builder: (context, state) => ListDiscountScreen(),
+        ),
+        GoRoute(
+          path: 'create-profile-technician',
+          builder: (context, state) => CreateProfileTechnician(),
+        ),
+
+        GoRoute(
+          path: 'create-rate',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+
+            final orderId = extra?['orderId'];
+            final technicianId = extra?['technicianId'];
+
+            return CreateRateScreen(
+              orderId: orderId,
+              technicianId: technicianId,
+            );
+          },
+        ),
+
+        GoRoute(
+          path: 'view-update-rate',
+          builder: (context, state) {
+            final data = state.extra as Map<String, dynamic>?;
+
+            return ViewOrUpdateRateScreen(
+              data: data,
+            );
+          },
+        ),
+
+
+        GoRoute(
+          path: 'book',
+          builder: (context, state) => ListTechnicianOrderBook(),
+          routes: [
+            GoRoute(
+                path: 'details/:id',
+                // redirect: (context, state) async {
+                //   final loggedIn = await CheckLoginHelper.isLoggedIn();
+                //   if (!loggedIn) return '/login-otp';
+                //   return null;
+                // },
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  final type = state.extra as String?;
+                  return DetailsTechnicianScreen(
+                    id: id,
+                    type: type ?? '',
+                  );
+                },
+                routes: [
+                  // GoRoute(
+                  //   path: 'create-book-order',
+                  //   builder: (context, state) {
+                  //     final data = state.extra as Map<String, dynamic>;
+                  //     return CreateBookOrderScreen(data: data);
+                  //   },
+                  // ),
+                ]
+            ),
+            GoRoute(
+              path: 'create-order',
+              builder: (context, state) {
+                final data = state.extra as Map<String, dynamic>;
+                return CreateBookOrderScreen(data: data);
+              },
+            ),
+          ]
+        ),
+
+        GoRoute(
+          path: 'automatic-matching',
+          builder: (context, state) => AutomaticMatchingScreen(),
+          routes: [
+            GoRoute(
+              path: 'create-order',
+              builder: (context, state) {
+                final data = state.extra as Map<String, dynamic>;
+                return CreateAutoMatchingOrderScreen(data: data);
+              },
+            ),
+          ]
+        ),
+
+        GoRoute(
+          path: 'list-address',
+          builder: (context, state) => const ListAddressScreen(),
+          routes: [
+            GoRoute(
+              path: 'add-address',
+              builder: (context, state) => AddAddressScreen(),
+            ),
+            GoRoute(
+              path: '/edit-address',
+              builder: (context, state) {
+                final data = state.extra as Map<String, dynamic>;
+                return EditAddressScreen(
+                  address: data["address"],
+                  id: data["id"],
+                  isDefault: data["isDefault"],
+                );
+              },
+            ),
+
+          ]
+        ),
+        // GoRoute(
+        //   path: 'detail-order/:id',
+        //   builder: (context, state) {
+        //     final id = state.pathParameters['id']!;
+        //     return DetailsOrderScreen(id: id);
+        //   },
+        // ),
+        GoRoute(
+          path: 'likes',
+          builder: (context, state) => const ListLikeScreen(),
+        ),
+        GoRoute(
+          path: 'withdraw',
+          builder: (context, state) => const CreateRequestWithdraw(),
+          routes: [
+            GoRoute(
+              path: 'confirm',
+              builder: (context, state) {
+                final data = state.extra as Map<String, dynamic>;
+                return ConfirmRequestWithdraw(data: data);
+              },
+            ),
+
+            GoRoute(
+              path: 'history',
+              builder: (context, state) => HistoryWithdrawScreen(),
+            ),
+          ]
+        ),
+        GoRoute(
+          path: 'choose-package',
+          builder: (context, state) => const ChoosePackage(),
+          routes: [
+            GoRoute(
+              path: 'history-deposit',
+              builder: (context, state) => HistoryDepositScreen(),
+            ),
+            GoRoute(
+              path: 'qr-deposit/:amount',
+              builder: (context, state) {
+                final amountStr = state.pathParameters['amount'];
+                final amount = int.tryParse(amountStr ?? '0') ?? 0;
+
+                return QRCodeScreen(amount: amount);
+              },
+            ),
+
+          ]
+        ),
+        // GoRoute(
+        //   path: 'order-now',
+        //   builder: (context, state) => const ListTechnicianScreen(),
+        //   routes: [
+        //     GoRoute(
+        //       path: 'list-like-technician',
+        //       builder: (context, state) => const ListLikeTechnicianScreen(),
+        //     ),
+        //     GoRoute(
+        //         path: 'detail/:id',
+        //         // redirect: (context, state) async {
+        //         //   final loggedIn = await CheckLoginHelper.isLoggedIn();
+        //         //   if (!loggedIn) return '/login-otp';
+        //         //   return null;
+        //         // },
+        //         builder: (context, state) {
+        //           final id = state.pathParameters['id']!;
+        //           final type = state.extra as String?;
+        //           return DetailsTechnicianScreen(
+        //             id: id,
+        //             type: type ?? '',
+        //           );
+        //         },
+        //         routes: [
+        //           // GoRoute(
+        //           //   path: 'create-order-technician',
+        //           //   // builder: (context, state) => const CreateOrderTechnicianScreen(),
+        //           //   // path: 'service/edit',
+        //           //   builder: (context, state) {
+        //           //     final data = state.extra as Map<String, dynamic>;
+        //           //     return CreateOrderTechnicianScreen(data: data);
+        //           //   },
+        //           // ),
+        //         ]
+        //     ),
+        //     // GoRoute(
+        //     //   path: 'create-order-technician',
+        //     //   // builder: (context, state) => const CreateOrderTechnicianScreen(),
+        //     //   // path: 'service/edit',
+        //     //   builder: (context, state) {
+        //     //     final data = state.extra as Map<String, dynamic>;
+        //     //     return CreateOrderTechnicianScreen(data: data);
+        //     //   },
+        //     // ),
+        //   ]
+        // ),
+        GoRoute(
+          path: 'history-order',
+          builder: (context, state) => const HistoryOrderScreen(),
+        ),
+        GoRoute(
+          path: 'update-profile',
+          builder: (context, state) => const UpdateProfileScreen(),
+        ),
+        GoRoute(
+          path: 'notifications',
+          builder: (context, state) => ListNotificationScreen(),
+        ),
+        GoRoute(
+          path: 'likes-technician',
+          builder: (context, state) => const ListLikeTechnicianScreen(),
+        ),
+      ]
+  ),
+];
