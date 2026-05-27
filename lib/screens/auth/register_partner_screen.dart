@@ -120,23 +120,7 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
           await prefs.setString('token', response['token']);
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: const [
-                    Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                    SizedBox(width: 8),
-                    Text('Đăng ký tài khoản thành công!'),
-                  ],
-                ),
-                backgroundColor: const Color(0xFF27AE60),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(40),
-                ),
-                duration: const Duration(seconds: 2),
-              ),
-            );
+            SnackBarHelper.showSuccess(context, "ký tài khoản thành công!");
             context.push('/create-technician');
           }
         }

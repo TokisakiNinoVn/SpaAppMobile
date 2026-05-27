@@ -88,10 +88,16 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
         imageQuality: 85,
       );
       if (pickedFile != null) {
+        // final File? croppedImage = await _fileUtils.cropImage(
+        //     File(pickedFile.path),
+        //     16.0,
+        //     9.0
+        // );
         final File? croppedImage = await _fileUtils.cropImage(
-            File(pickedFile.path),
-            16.0,
-            9.0
+          context,
+          File(pickedFile.path),
+          16.0,
+          9.0,
         );
 
         if (croppedImage != null) {
@@ -283,11 +289,20 @@ class _CreateBannerScreenState extends State<CreateBannerScreen>
     if (_selectedImage == null) return;
 
     try {
-      final File? croppedImage = await _fileUtils.cropImage(
-          _selectedImage!,
-          16.0,
-          9.0
+      // final File? croppedImage = await _fileUtils.cropImage(
+      //     _selectedImage!,
+      //     16.0,
+      //     9.0
+      // );
+
+      final File? croppedImage =
+      await _fileUtils.cropImage(
+        context,
+        _selectedImage!,
+        16.0,
+        9.0,
       );
+
 
       if (croppedImage != null) {
         setState(() => _selectedImage = croppedImage);

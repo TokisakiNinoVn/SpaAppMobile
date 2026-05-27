@@ -341,11 +341,20 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
       // Tỉ lệ crop: avatar 1:1, ảnh thường 16:9
       final double ratioX = isAvatar ? 1.0 : 1.0;
       final double ratioY = isAvatar ? 1.0 : 1.0;
+      // final File? croppedImage = await _fileUtils.cropImage(
+      //   File(pickedFile.path),
+      //   ratioX,
+      //   ratioY,
+      // );
+
       final File? croppedImage = await _fileUtils.cropImage(
+        context,
         File(pickedFile.path),
         ratioX,
         ratioY,
       );
+
+
       if (croppedImage != null) {
         await uploadImage(croppedImage.path, isAvatar: isAvatar);
       } else {

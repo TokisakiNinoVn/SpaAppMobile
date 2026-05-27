@@ -323,19 +323,48 @@ class _EditTechnicianScreenState extends State<EditTechnicianScreen> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
+    // if (pickedFile != null) {
+    //   // Tỉ lệ crop: avatar 1:1, ảnh thường 16:9
+    //   final double ratioX = isAvatar ? 1.0 : 1.0;
+    //   final double ratioY = isAvatar ? 1.0 : 1.0;
+    //   final File? croppedImage = await _fileUtils.cropImage(
+    //     File(pickedFile.path),
+    //     ratioX,
+    //     ratioY,
+    //   );
+    //   if (croppedImage != null) {
+    //     await uploadImage(croppedImage.path, isAvatar: isAvatar);
+    //   } else {
+    //     SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
+    //   }
+    // }
+
     if (pickedFile != null) {
-      // Tỉ lệ crop: avatar 1:1, ảnh thường 16:9
-      final double ratioX = isAvatar ? 1.0 : 1.0;
-      final double ratioY = isAvatar ? 1.0 : 1.0;
-      final File? croppedImage = await _fileUtils.cropImage(
+      // Tỉ lệ crop
+      final double ratioX =
+      isAvatar ? 1.0 : 16.0;
+
+      final double ratioY =
+      isAvatar ? 1.0 : 9.0;
+
+      final File? croppedImage =
+      await _fileUtils.cropImage(
+        context,
         File(pickedFile.path),
         ratioX,
         ratioY,
       );
+
       if (croppedImage != null) {
-        await uploadImage(croppedImage.path, isAvatar: isAvatar);
+        await uploadImage(
+          croppedImage.path,
+          isAvatar: isAvatar,
+        );
       } else {
-        SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
+        SnackBarHelper.showWarning(
+          context,
+          'Đã huỷ cắt ảnh',
+        );
       }
     }
   }

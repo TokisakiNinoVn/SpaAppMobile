@@ -3,7 +3,7 @@ description: "Serene Spa"
 
 publish_to: 'none'
 
-version: 1.5.2+24
+version: 1.5.2+25
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
@@ -46,6 +46,9 @@ dependencies:
   provider: ^6.1.4
   fl_chart: ^0.69.0
   gallery_saver_plus: ^3.2.0
+  crop_your_image: ^2.0.0
+  extended_image: ^9.0.0
+  image: ^4.6.0
 
 #  image_gallery_saver: ^2.0.3
 #  saver_gallery: ^4.0.1

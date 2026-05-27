@@ -247,21 +247,21 @@ Future<void> main() async {
   FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
   // appLog("🎯 Background handler registered");
 
-  await _setupLocalNotifications();
+  // await _setupLocalNotifications();
   // appLog("🔔 Local notifications initialized");
 
   /// Request permission
-  final settings = await FirebaseMessaging.instance.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-    provisional: false,
-  );
+  // final settings = await FirebaseMessaging.instance.requestPermission(
+  //   alert: true,
+  //   badge: true,
+  //   sound: true,
+  //   provisional: false,
+  // );
   // appLog("🔐 Permission status: ${settings.authorizationStatus}");
 
   /// Lấy FCM token
-  final token = await FirebaseMessaging.instance.getToken();
-  appLog("📱 FCM Token: $token");
+  // final token = await FirebaseMessaging.instance.getToken();
+  // appLog("📱 FCM Token: $token");
 
   /// Realtime service
   // final realtimeService = RealtimeService();

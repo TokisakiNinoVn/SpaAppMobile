@@ -377,7 +377,13 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
       // Tỉ lệ crop: avatar 1:1, ảnh thường 16:9
       final double ratioX = isAvatar ? 1.0 : 1.0;
       final double ratioY = isAvatar ? 1.0 : 1.0;
+      // final File? croppedImage = await _fileUtils.cropImage(
+      //   File(pickedFile.path),
+      //   ratioX,
+      //   ratioY,
+      // );
       final File? croppedImage = await _fileUtils.cropImage(
+        context,
         File(pickedFile.path),
         ratioX,
         ratioY,
@@ -1552,10 +1558,52 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
           ),
         ),
         const SizedBox(height: 8),
+        // TextField(
+        //   controller: controller,
+        //   maxLines: maxLines,
+        //   maxLength: maxLength,
+        //   decoration: InputDecoration(
+        //     hintText: hint,
+        //     hintStyle: TextStyle(
+        //       color: Colors.grey[400],
+        //       fontSize: 14,
+        //     ),
+        //     filled: true,
+        //     fillColor: Colors.grey[50],
+        //     border: OutlineInputBorder(
+        //       borderRadius: BorderRadius.circular(12),
+        //       borderSide: BorderSide(color: Colors.grey[300]!),
+        //     ),
+        //     enabledBorder: OutlineInputBorder(
+        //       borderRadius: BorderRadius.circular(12),
+        //       borderSide: BorderSide(color: Colors.grey[300]!),
+        //     ),
+        //     focusedBorder: OutlineInputBorder(
+        //       borderRadius: BorderRadius.circular(12),
+        //       borderSide: const BorderSide(color: Color(0xFF8B5E3C), width: 1.5),
+        //     ),
+        //     contentPadding: const EdgeInsets.symmetric(
+        //       vertical: 14,
+        //       horizontal: 16,
+        //     ),
+        //   ),
+        // ),
+
         TextField(
           controller: controller,
           maxLines: maxLines,
           maxLength: maxLength,
+          textInputAction:
+          maxLines > 1 ? TextInputAction.done : TextInputAction.next,
+
+          onSubmitted: (_) {
+            FocusManager.instance.primaryFocus?.unfocus();
+          },
+
+          onTapOutside: (_) {
+            FocusManager.instance.primaryFocus?.unfocus();
+          },
+
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
@@ -1574,14 +1622,17 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF8B5E3C), width: 1.5),
+              borderSide: BorderSide(
+                color: ColorConfig.primary,
+                width: 1.5,
+              ),
             ),
             contentPadding: const EdgeInsets.symmetric(
               vertical: 14,
               horizontal: 16,
             ),
           ),
-        ),
+        )
       ],
     );
   }

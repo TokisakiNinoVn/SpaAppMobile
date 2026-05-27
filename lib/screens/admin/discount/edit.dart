@@ -154,7 +154,13 @@ class _EditDiscountScreenState extends State<EditDiscountScreen> {
     if (pickedFile != null) {
       const double ratioX = 1.0;
       const double ratioY = 1.0;
+      // final File? croppedImage = await _fileUtils.cropImage(
+      //   File(pickedFile.path),
+      //   ratioX,
+      //   ratioY,
+      // );
       final File? croppedImage = await _fileUtils.cropImage(
+        context,
         File(pickedFile.path),
         ratioX,
         ratioY,
