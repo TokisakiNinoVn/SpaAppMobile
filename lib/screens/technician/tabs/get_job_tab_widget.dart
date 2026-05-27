@@ -6,10 +6,12 @@ import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/providers/order_provider.dart';
+import 'package:spa_app/providers/selected_tab_provider.dart';
 import 'package:spa_app/routes/config/technician_router_config.dart';
 import 'package:spa_app/screens/customer/tabs/components/SpaDialog.dart';
 import 'package:spa_app/screens/technician/tabs/components/accept_order_dialog.dart';
 import 'package:spa_app/screens/technician/tabs/components/job_card_get_job.dart';
+import 'package:spa_app/screens/widgets/empty_refresh_widget.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'package:spa_app/services/realtime_service.dart';
 import 'package:spa_app/services/service_service.dart';
@@ -60,62 +62,96 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
     _loadBookOrders();
     _startCountdownTimer();
 
-    _realtimeService = RealtimeService(
-      onOrderRemoved: (orderId) {
-        if (!mounted) return;
-        setState(() {
-          listJobs.removeWhere((e) => e['_id'] == orderId);
-          _remainingTimes.remove(orderId);
-          _applyFilter();
-        });
-      },
-      onNewOrderAutoMatching: _handleNewOrder,
-    );
-
-    _realtimeService.connect();
-
+    // _realtimeService = RealtimeService(
+    //   onOrderRemoved: (orderId) {
+    //     if (!mounted) return;
+    //     setState(() {
+    //       listJobs.removeWhere((e) => e['_id'] == orderId);
+    //       _remainingTimes.remove(orderId);
+    //       _applyFilter();
+    //     });
+    //   },
+    //   onNewOrderAutoMatching: _handleNewOrder,
+    // );
+    //
+    // _realtimeService.connect();
     _searchController.addListener(() {
       if (mounted) {
         setState(() {});
       }
     });
+
+    _realtimeService = RealtimeService.instance;
+
+    // Đăng ký callback sau khi có instance
+    _realtimeService.onOrderRemoved = (orderId) {
+      if (!mounted) return;
+      setState(() {
+        listJobs.removeWhere((e) => e['_id'] == orderId);
+        _remainingTimes.remove(orderId);
+        _applyFilter();
+      });
+    };
+
+    _realtimeService.onNewOrderAutoMatching = _handleNewOrder;
+
+    // QUAN TRỌNG: gọi init để kết nối WebSocket
+    _realtimeService.init(context: context);
   }
 
-  void _handleNewOrder(Map<String, dynamic> order) {
+  void _handleNewOrder(Map<String, dynamic> payload) {
+    // Lấy order thật
+    final Map<String, dynamic> actualOrder = (payload['data'] is Map<String, dynamic>)
+        ? payload['data']
+        : payload;
+
+    // appLog("Data new order: $actualOrder");
+
+    // Nếu đang làm việc thì bỏ qua
     if (isWorking) return;
 
-    final actualOrder = order['data'] ?? order;
-    final orderId = actualOrder['_id'];
+    final String? orderId = actualOrder['_id']?.toString();
+    if (orderId == null) return;
 
-    if (listJobs.any((o) => o['_id'] == orderId)) return;
+    // Tránh duplicate order
+    final bool alreadyExists = listJobs.any(
+          (o) => o['_id']?.toString() == orderId,
+    );
 
-    final expiresAtStr = actualOrder['expiresAt'];
-    if (expiresAtStr != null && expiresAtStr is String) {
-      final expiryTime = DateTime.parse(expiresAtStr);
-      if (expiryTime.isBefore(DateTime.now())) return;
-    }
+    if (alreadyExists) return;
 
+    // Parse expiresAt
     Duration? initialRemaining;
-    if (expiresAtStr != null && expiresAtStr is String) {
-      final expiryTime = DateTime.parse(expiresAtStr);
-      final now = DateTime.now();
-      if (expiryTime.isAfter(now)) {
+
+    try {
+      final expiresAtStr = actualOrder['expiresAt'];
+
+      if (expiresAtStr is String && expiresAtStr.isNotEmpty) {
+        final expiryTime = DateTime.parse(expiresAtStr);
+        final now = DateTime.now();
+
+        // Nếu hết hạn rồi thì bỏ
+        if (expiryTime.isBefore(now)) return;
+
         initialRemaining = expiryTime.difference(now);
       }
+    } catch (e) {
+      appLog("Parse expiresAt error: $e");
     }
 
-    Future.microtask(() {
-      if (mounted) {
-        setState(() {
-          listJobs.insert(0, actualOrder);
-          if (initialRemaining != null && initialRemaining.inSeconds > 0) {
-            _remainingTimes[orderId] = initialRemaining;
-          }
-        });
-        _startTimerForSingleOrder(actualOrder);
-        _applyFilter();
+    if (!mounted) return;
+
+    setState(() {
+      listJobs.insert(0, actualOrder);
+
+      if (initialRemaining != null &&
+          initialRemaining!.inSeconds > 0) {
+        _remainingTimes[orderId] = initialRemaining!;
       }
     });
+
+    _startTimerForSingleOrder(actualOrder);
+    _applyFilter();
   }
 
   void _applyFilter() {
@@ -207,8 +243,11 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
 
   @override
   void dispose() {
-    _realtimeService.dispose();
-    _realtimeService.disconnect();
+    // _realtimeService.dispose();
+    // _realtimeService.disconnect();
+    _realtimeService.onOrderRemoved = null;
+    _realtimeService.onNewOrderAutoMatching = null;
+
     _countdownTimer?.cancel();
     _searchController.dispose();
     for (var timer in _timers.values) {
@@ -361,14 +400,12 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
         },
       );
     }
-
-
   }
 
   Future<void> _acceptOrderWithMessage(Map<String, dynamic> order, String message) async {
     try {
       final idOrder = order["_id"];
-      if (order['typeOrder'] == 'order-now') {
+      if (order['subTypeOrder'] == 'now' ) {
         final data = {
           'orderId': idOrder,
           'result': 'approved',
@@ -384,9 +421,11 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
           await SharedPrefs.saveValue(PrefType.string, "idOrderWorking", idOrder);
           await SharedPrefs.saveValue(PrefType.string, "acceptedAt", acceptedAt);
           SnackBarHelper.showSuccess(context, "Nhận đơn thành công!");
+          // context.go(TechnicianRouterConfig.homeTechnician);
+          context.read<SelectedTabProvider>().setIndex(0);
           context.go(TechnicianRouterConfig.homeTechnician);
         }
-      } else if (order['typeOrder'] == 'book') {
+      } else if (order['subTypeOrder'] == 'book') {
         final data = {
           'orderId': idOrder,
           'result': 'approved'
@@ -430,40 +469,6 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
     );
   }
 
-  // Future<void> _showConfirmApplyJobDialog(String idOrder) async {
-  //   final result = await showDialog<bool>(
-  //     context: context,
-  //     builder: (dialogContext) => SpaDialog(
-  //       iconColor: ColorConfig.primary,
-  //       title: 'Xác nhận',
-  //       body: 'Xác nhận Ứng tuyển đơn việc?',
-  //       cancelLabel: 'Đóng',
-  //       confirmLabel: 'Xác nhận',
-  //       confirmColor: ColorConfig.primary,
-  //       onConfirm: () {},
-  //     ),
-  //   );
-  //
-  //   if (result == true && mounted) {
-  //     showDialog(
-  //       context: context,
-  //       barrierDismissible: false,
-  //       builder: (context) => Center(child: CircularProgressIndicator(color: ColorConfig.primary)),
-  //     );
-  //
-  //     try {
-  //       if (mounted) Navigator.of(context).pop();
-  //       if (mounted) {
-  //         appLog("Apply order: $idOrder");
-  //         SnackBarHelper.showWarning(context, "Chức năng đang được phát triển!!");
-  //       }
-  //     } catch (e) {
-  //       if (mounted) Navigator.of(context).pop();
-  //       SnackBarHelper.showError(context, "Ứng tuyển đơn việc: $e");
-  //     }
-  //   }
-  // }
-
   Future<void> _showConfirmApplyJobDialog(String idOrder) async {
     final result = await showDialog<bool>(
       context: context,
@@ -497,7 +502,6 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
       // appLog("Apply order: $idOrder");
 
       final provider = context.read<OrderProvider>();
-
       final success = await provider.technicianApplyOrder(idOrder);
 
       // Đóng loading
@@ -594,18 +598,9 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
                             child: Text(service['name'] ?? 'Không tên'),
                           )),
                         ],
-                        // onChanged: (value) {
-                        //   setStateBottomSheet(() {
-                        //     _selectedServiceId = value ?? 'all';
-                        //   });
-                        //   setState(() {
-                        //     _selectedServiceId = value ?? 'all';
-                        //     _applyFilter();
-                        //   });
-                        // },
                         onChanged: (value) {
                           setStateBottomSheet(() {
-                            _tempServiceId = value ?? 'all'; // chỉ cập nhật biến tạm
+                            _tempServiceId = value ?? 'all';
                           });
                         },
                       ),
@@ -614,81 +609,11 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
 
                   const SizedBox(height: 20),
 
-                  // Time filter
-                  // const Text(
-                  //   'Thời gian dịch vụ',
-                  //   style: TextStyle(
-                  //     fontSize: 16,
-                  //     fontWeight: FontWeight.w600,
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 12),
-                  // Container(
-                  //   height: 50,
-                  //   decoration: BoxDecoration(
-                  //     border: Border.all(color: Colors.grey.shade300),
-                  //     borderRadius: BorderRadius.circular(12),
-                  //   ),
-                  //   child: DropdownButtonHideUnderline(
-                  //     child: DropdownButton<String>(
-                  //       value: _selectedTimeFilter,
-                  //       isExpanded: true,
-                  //       padding: const EdgeInsets.symmetric(horizontal: 16),
-                  //       items: const [
-                  //         DropdownMenuItem(
-                  //           value: 'all',
-                  //           child: Text('Tất cả'),
-                  //         ),
-                  //         DropdownMenuItem(
-                  //           value: '60',
-                  //           child: Text('Dưới 60 phút'),
-                  //         ),
-                  //         DropdownMenuItem(
-                  //           value: '90',
-                  //           child: Text('Dưới 90 phút'),
-                  //         ),
-                  //         DropdownMenuItem(
-                  //           value: '120',
-                  //           child: Text('Dưới 120 phút'),
-                  //         ),
-                  //       ],
-                  //       // onChanged: (value) {
-                  //       //   setStateBottomSheet(() {
-                  //       //     _selectedTimeFilter = value ?? 'all';
-                  //       //   });
-                  //       //   setState(() {
-                  //       //     _selectedTimeFilter = value ?? 'all';
-                  //       //     _applyFilter();
-                  //       //   });
-                  //       // },
-                  //       onChanged: (value) {
-                  //         setStateBottomSheet(() {
-                  //           _tempTimeFilter = value ?? 'all'; // chỉ cập nhật biến tạm
-                  //         });
-                  //       },
-                  //     ),
-                  //   ),
-                  // ),
-
-                  const SizedBox(height: 24),
-
                   // Reset button
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          // onPressed: () {
-                          //   setStateBottomSheet(() {
-                          //     _selectedServiceId = 'all';
-                          //     _selectedTimeFilter = 'all';
-                          //   });
-                          //   setState(() {
-                          //     _selectedServiceId = 'all';
-                          //     _selectedTimeFilter = 'all';
-                          //     _applyFilter();
-                          //   });
-                          //   Navigator.pop(context);
-                          // },
                           onPressed: () {
                             setStateBottomSheet(() {
                               _tempServiceId = 'all';
@@ -928,41 +853,57 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
       );
     }
 
+    // if (filteredJobs.isEmpty) {
+    //   return Center(
+    //     child: Column(
+    //       mainAxisAlignment: MainAxisAlignment.center,
+    //       children: [
+    //         Container(
+    //           padding: const EdgeInsets.all(20),
+    //           decoration: BoxDecoration(
+    //             color: Colors.grey.shade100,
+    //             shape: BoxShape.circle,
+    //           ),
+    //           child: Icon(
+    //             _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
+    //                 ? Icons.inbox_outlined
+    //                 : Icons.search_off_rounded,
+    //             size: 48,
+    //             color: Colors.grey.shade400,
+    //           ),
+    //         ),
+    //         const SizedBox(height: 16),
+    //         Text(
+    //           _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
+    //               ? 'Không có đơn việc nào'
+    //               : 'Không tìm thấy đơn việc',
+    //           style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
+    //         ),
+    //         const SizedBox(height: 8),
+    //         Text(
+    //           _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
+    //               ? 'Hãy kiểm tra lại sau'
+    //               : 'Hãy thử thay đổi bộ lọc tìm kiếm',
+    //           style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
+    //         ),
+    //       ],
+    //     ),
+    //   );
+    // }
+
     if (filteredJobs.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
-                    ? Icons.inbox_outlined
-                    : Icons.search_off_rounded,
-                size: 48,
-                color: Colors.grey.shade400,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
-                  ? 'Không có đơn việc nào'
-                  : 'Không tìm thấy đơn việc',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
-                  ? 'Hãy kiểm tra lại sau'
-                  : 'Hãy thử thay đổi bộ lọc tìm kiếm',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
-            ),
-          ],
-        ),
+      // ✅ Dùng EmptyRefreshWidget thay vì Center thông thường
+      return EmptyRefreshWidget(
+        onRefresh: _loadBookOrders,
+        title: _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
+            ? 'Hiện tại chưa có đơn việc nào'
+            : 'Không tìm thấy đơn việc',
+        subTitle: "Nơi này khá trống trải...!",
+        icon: _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
+            ? Icons.inbox_outlined
+            : Icons.search_off_rounded,
+        buttonText: 'Tải lại',
+        heightFactor: 0.65,  // Có thể điều chỉnh theo ý muốn
       );
     }
 

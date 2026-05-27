@@ -11,6 +11,7 @@ import 'package:spa_app/screens/technician/tabs/components/accept_order_dialog.d
 import 'package:spa_app/screens/technician/tabs/components/book_order_card.dart';
 import 'package:spa_app/screens/technician/tabs/components/reject_order_bottom_sheet.dart';
 import 'package:spa_app/screens/technician/tabs/components/request_order_card.dart';
+import 'package:spa_app/screens/widgets/empty_refresh_widget.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'dart:async';
 import 'package:spa_app/services/realtime_service.dart';
@@ -51,16 +52,21 @@ class _OrderTabState extends State<OrderTab> {
     super.initState();
     _loadData();
 
-    _realtimeService = RealtimeService(
-      onNewOrder: _handleNewOrder,
-      onOrderExpired: _handleOrderExpired,
-    );
+    _realtimeService = RealtimeService.instance;
 
-    _realtimeService.connect();
+    // Đăng ký callback
+    _realtimeService.onNewOrder = _handleNewOrder;
+    _realtimeService.onOrderExpired = _handleOrderExpired;
+
+    // Khởi tạo WebSocket (bên trong sẽ gọi connect)
+    _realtimeService.init(context: context);
   }
 
   @override
   void dispose() {
+    _realtimeService.onNewOrder = null;
+    _realtimeService.onOrderExpired = null;
+
     // Hủy tất cả timer khi dispose
     for (var timer in _timers.values) {
       timer.cancel();
@@ -281,7 +287,7 @@ class _OrderTabState extends State<OrderTab> {
           });
           _startTimersForOrders(newOrders);
         } else {
-          throw Exception(requestResponse['message'] ?? 'Không thể tải danh sách đơn hàng');
+          throw Exception(requestResponse['message'] ?? 'Không thể tải danh sách đơn việc');
         }
       } else {
         // Nếu đang làm việc thì clear list request orders
@@ -310,7 +316,7 @@ class _OrderTabState extends State<OrderTab> {
         _errorMessage = e.toString();
         _isLoading = false;
       });
-      print('Error loading data: $e');
+      appLog('Error loading data: $e');
     }
   }
 
@@ -562,19 +568,29 @@ class _OrderTabState extends State<OrderTab> {
       }
 
       // Nếu không có đơn
+      // if (filteredRequestOrders.isEmpty) {
+      //   return Center(
+      //     child: Column(
+      //       mainAxisAlignment: MainAxisAlignment.center,
+      //       children: [
+      //         Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade400),
+      //         const SizedBox(height: 16),
+      //         Text(
+      //           'Không có yêu cầu đơn mới',
+      //           style: TextStyle(color: Colors.grey.shade600),
+      //         ),
+      //       ],
+      //     ),
+      //   );
+      // }
+
+      // Nếu không có đơn
       if (filteredRequestOrders.isEmpty) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade400),
-              const SizedBox(height: 16),
-              Text(
-                'Không có yêu cầu đơn mới',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-            ],
-          ),
+        return EmptyRefreshWidget(
+          onRefresh: _loadData,
+          title: 'Không có yêu cầu đơn mới',
+          icon: Icons.inbox_outlined,
+          buttonText: 'Tải lại',
         );
       }
 
@@ -589,21 +605,29 @@ class _OrderTabState extends State<OrderTab> {
       );
     }
 
-    // ⭐ Tab 1 - Đơn đặt trước (giữ nguyên)
     else {
-      if (filteredBookOrders.isEmpty) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade400),
-              const SizedBox(height: 16),
-              Text(
-                'Không có đơn đặt trước',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-            ],
-          ),
+      // if (filteredBookOrders.isEmpty) {
+      //   return Center(
+      //     child: Column(
+      //       mainAxisAlignment: MainAxisAlignment.center,
+      //       children: [
+      //         Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade400),
+      //         const SizedBox(height: 16),
+      //         Text(
+      //           'Không có đơn đặt trước',
+      //           style: TextStyle(color: Colors.grey.shade600),
+      //         ),
+      //       ],
+      //     ),
+      //   );
+      // }
+
+      if (filteredRequestOrders.isEmpty) {
+        return EmptyRefreshWidget(
+          onRefresh: _loadData,
+          title: 'Không có đơn đặt trước',
+          icon: Icons.inbox_outlined,
+          buttonText: 'Tải lại',
         );
       }
 
@@ -679,8 +703,6 @@ class _OrderTabState extends State<OrderTab> {
             setState(() {
               filteredBookOrders.removeWhere((e) => e['_id'] == idOrder);
             });
-
-
           }
 
         })

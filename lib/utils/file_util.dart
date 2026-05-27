@@ -16,12 +16,23 @@ class FileUtils {
           initAspectRatio: CropAspectRatioPreset.square,
           lockAspectRatio: true,
         ),
+        // IOSUiSettings(
+        //   title: 'Cắt ảnh',
+        //   aspectRatioLockEnabled: true,
+        //   resetAspectRatioEnabled: false,
+        //   aspectRatioPickerButtonHidden: true,
+        // ),
         IOSUiSettings(
           title: 'Cắt ảnh',
           aspectRatioLockEnabled: true,
           resetAspectRatioEnabled: false,
           aspectRatioPickerButtonHidden: true,
-        ),
+
+          rotateButtonsHidden: false,
+          rotateClockwiseButtonHidden: false,
+          doneButtonTitle: 'Xong',
+          cancelButtonTitle: 'Huỷ',
+        )
       ],
     );
 

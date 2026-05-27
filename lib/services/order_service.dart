@@ -53,7 +53,7 @@ class OrderService {
   }
   Future<Map<String, dynamic>> listPostOrder(String query) async {
     final uri = '${OrderApiRoutes.listPostAdmin}?$query';
-    appLog("URI: $uri");
+    // appLog("URI: $uri");
     return await ApiMethodsPrivate.getRequest('$uri');
   }
 

@@ -205,10 +205,10 @@ class RealtimeService {
         if (orderId != null) {
           onOrderRemoved?.call(orderId);
 
-          _showNotification(
-            title: 'Đơn việc đã bị xoá',
-            body: data['data']?['message'] ?? '',
-          );
+          // _showNotification(
+          //   title: 'Đơn việc đã bị xoá',
+          //   body: data['data']?['message'] ?? '',
+          // );
         }
       }
 

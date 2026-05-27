@@ -4,11 +4,10 @@ import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:spa_app/config/app_config.dart';
-import 'package:spa_app/config/color_config.dart';
-import 'package:spa_app/config/theme_config.dart';
 import 'package:flutter/foundation.dart';
 
+import 'package:spa_app/config/app_config.dart';
+import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
@@ -29,9 +28,9 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
   String? _fcmToken;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
+  bool _isRequestingOTP = false;
 
-  final FlutterLocalNotificationsPlugin _localNotifications =
-  FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'otp_channel',
@@ -223,55 +222,41 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
   }
 
   Future<void> requestOTP() async {
+    // Chặn nếu đang gửi request hoặc đang countdown
+    if (_isRequestingOTP || _isButtonDisabled) return;
+
     final phone = _phoneController.text.trim();
 
     if (phone.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Vui lòng nhập số điện thoại'),
-            backgroundColor: const Color(0xFFE74C3C),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        SnackBarHelper.showWarning(context, "Vui lòng nhập số điện thoại");
       }
       return;
     }
 
+    setState(() => _isRequestingOTP = true);
+
     try {
       final authService = AuthService();
 
-      final response = await authService.getOTPService(
-          {'phone': phone, 'fcm_token': _fcmToken, "type": "otp_login"});
+      final response = await authService.getOTPService({
+        'phone': phone,
+        'fcm_token': _fcmToken,
+        "type": "otp_login"
+      });
 
-      if (response != null && response['status'] == 'success') {
+      if (response['status'] == 'success') {
         final data = response['data'] as Map<String, dynamic>?;
         final String? lastOTP = data?['lastOTP'] as String?;
 
         startCountdown();
         await _showOTPNotification(phone: phone, lastOTP: lastOTP);
 
-        // if (mounted) {
-        //   final String message = response['message'] as String? ??
-        //       'Đã gửi mã OTP đến số điện thoại của bạn';
-        //
-        //   ScaffoldMessenger.of(context).showSnackBar(
-        //     SnackBar(
-        //       content: Text(message),
-        //       backgroundColor: const Color(0xFF27AE60),
-        //       behavior: SnackBarBehavior.floating,
-        //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        //       duration: const Duration(seconds: 2),
-        //     ),
-        //   );
-        // }
-
         if (mounted) {
           context.push('${GlobalRouterConfig.confirmLoginOTP}/$phone');
         }
       } else {
-        final String errMsg = response?['message'] as String? ?? 'Có lỗi xảy ra';
+        final String errMsg = response['message'] as String? ?? 'Có lỗi xảy ra';
         if (mounted) SnackBarHelper.showError(context, errMsg);
       }
     } catch (error) {
@@ -279,6 +264,8 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
       if (mounted) {
         SnackBarHelper.showError(context, 'Đã xảy ra lỗi: $error');
       }
+    } finally {
+      if (mounted) setState(() => _isRequestingOTP = false);
     }
   }
 
@@ -405,19 +392,27 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
 
                 const SizedBox(height: 32),
 
-                // OTP Button - minimal but elegant
                 GestureDetector(
-                  onTap: _isButtonDisabled ? null : requestOTP,
+                  onTap: (_isButtonDisabled || _isRequestingOTP) ? null : requestOTP,
                   child: Container(
-                    height: 52,
+                    height: 46,
                     decoration: BoxDecoration(
-                      color: _isButtonDisabled
+                      color: (_isButtonDisabled || _isRequestingOTP)
                           ? const Color(0xFFCCCCCC)
                           : ColorConfig.primary,
                       borderRadius: BorderRadius.circular(40),
                     ),
                     child: Center(
-                      child: _isButtonDisabled
+                      child: _isRequestingOTP
+                          ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                          : _isButtonDisabled
                           ? Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

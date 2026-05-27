@@ -238,7 +238,6 @@ void _showOrderDialog(String orderId) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   // appLog("🚀 App starting...");
 
   await Firebase.initializeApp();
@@ -265,13 +264,13 @@ Future<void> main() async {
   appLog("📱 FCM Token: $token");
 
   /// Realtime service
-  final realtimeService = RealtimeService();
-  try {
-    realtimeService.connect();
-    appLog("🔌 Realtime connected");
-  } catch (e) {
-    appLog("❌ Realtime connection failed: $e");
-  }
+  // final realtimeService = RealtimeService();
+  // try {
+  //   realtimeService.connect();
+  //   appLog("🔌 Realtime connected");
+  // } catch (e) {
+  //   appLog("❌ Realtime connection failed: $e");
+  // }
 
   // *** XỬ LÝ KHI APP ĐANG MỞ (FOREGROUND) ***
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:marquee/marquee.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 
 import 'package:spa_app/screens/admin/widgets/user_detail.dart';
 import 'package:spa_app/services/user_service.dart';
@@ -25,8 +26,9 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
   final UserService userService = UserService();
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _provinceSearchController = TextEditingController();
+  late Function(Map<String, dynamic>) _userStatusListener;
 
-  late RealtimeService _realtimeService;
+  // late RealtimeService _realtimeService;
   final tinhThanhService = TinhThanhService();
   final technicianService = TechnicianService();
 
@@ -60,17 +62,15 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
   void initState() {
     super.initState();
     _loadTechnicians();
-    _realtimeService = RealtimeService(
-      context: context,
-      onUserStatusUpdate: (data) {
-        if (!mounted) return;
-        setState(() {
-          _handleRealtimeUserStatusUpdate(data);
-        });
-      },
-    );
-    _realtimeService.connect();
     _loadDistricts();
+
+    _userStatusListener = (Map<String, dynamic> data) {
+      // appLog("Realtime user status: $data");
+      if (!mounted) return;
+      _handleRealtimeUserStatusUpdate(data);
+    };
+
+    RealtimeService.instance.onUserStatusUpdateListeners.add(_userStatusListener);
   }
 
   void _handleRealtimeUserStatusUpdate(Map<String, dynamic> data) {
@@ -104,6 +104,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
 
         setState(() {
           technicians = techniciansData;
+          appLog("Technician data: $technicians");
           allServices = serviceSet.toList();
           _applyFilters();
         });
@@ -711,6 +712,7 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    RealtimeService.instance.onUserStatusUpdateListeners.remove(_userStatusListener);
     _provinceSearchController.dispose();
     super.dispose();
   }

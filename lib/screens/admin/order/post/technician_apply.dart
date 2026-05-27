@@ -6,7 +6,6 @@ import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/providers/order_provider.dart';
 import 'package:spa_app/services/realtime_service.dart';
-import 'package:spa_app/services/user_discount_service.dart';
 
 class ListTechnicianApply extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -21,7 +20,6 @@ class ListTechnicianApply extends StatefulWidget {
 }
 
 class _ListTechnicianApplyState extends State<ListTechnicianApply> {
-  final UserDiscountService _userDiscountService = UserDiscountService();
 
   late Map<String, dynamic> _order;
 
@@ -29,58 +27,93 @@ class _ListTechnicianApplyState extends State<ListTechnicianApply> {
 
   bool _isLoading = true;
   String? _error;
+  late Function(dynamic) _listener;
 
+
+  @override
   @override
   void initState() {
     super.initState();
-
     _order = widget.data;
 
-    // appLog("ID order: ${_order["_id"]}");
+    // Đảm bảo RealtimeService được kết nối (nếu chưa)
+    RealtimeService.instance.init(context: context);
 
-    _listenRealtime();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadListTechnicianApply();
     });
-  }
 
-  void _listenRealtime() {
-    RealtimeService.instance.onNewTechnicianApplyOrder = (dynamic dataApply) {
+    _listener = (dynamic dataApply) {
+      if (!mounted) return;
+
       try {
-        if (!mounted) return;
-
         final apply = Map<String, dynamic>.from(dataApply);
 
+        // ✅ LỌC THEO ORDER ID – chỉ nhận ứng viên của đơn này
+        final applyOrderId = apply['orderId']?.toString();
+        if (applyOrderId != _order['_id']?.toString()) return;
+
         final applyId = apply["applyId"];
-
-        // tránh duplicate
         final existed = _technicians.any(
-              (e) => e["applyId"] == applyId,
+              (e) => e["applyId"] == applyId || e["_id"] == applyId,
         );
-
         if (existed) return;
 
         setState(() {
           _technicians.insert(0, apply);
         });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "${apply["technician"]?["fullName"] ?? "KTV"} vừa ứng tuyển",
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
       } catch (e) {
         appLog("Realtime technician_apply error: $e");
       }
     };
+
+    RealtimeService.instance
+        .onNewTechnicianApplyOrderListeners
+        .add(_listener);
   }
+
+  // void _listenRealtime() {
+  //   appLog("REGISTER technician_apply listener");
+  //
+  //   RealtimeService.instance.onNewTechnicianApplyOrder =
+  //       (dynamic dataApply) {
+  //
+  //     appLog("Data technician apply: $dataApply");
+  //
+  //     try {
+  //       if (!mounted) return;
+  //
+  //       final apply = Map<String, dynamic>.from(dataApply);
+  //
+  //       final applyId = apply["applyId"];
+  //
+  //       final existed = _technicians.any(
+  //             (e) => e["applyId"] == applyId,
+  //       );
+  //
+  //       appLog("EXISTED: $existed");
+  //
+  //       if (existed) return;
+  //
+  //       setState(() {
+  //         _technicians.insert(0, apply);
+  //       });
+  //
+  //       appLog("UPDATED TECHNICIANS: ${_technicians.length}");
+  //
+  //     } catch (e) {
+  //       appLog("Realtime technician_apply error: $e");
+  //     }
+  //   };
+  // }
 
   @override
   void dispose() {
-    RealtimeService.instance.onNewTechnicianApplyOrder = null;
+    // RealtimeService.instance.onNewTechnicianApplyOrder = null;
+
+    RealtimeService.instance
+        .onNewTechnicianApplyOrderListeners
+        .remove(_listener);
     super.dispose();
   }
 
@@ -102,6 +135,8 @@ class _ListTechnicianApplyState extends State<ListTechnicianApply> {
           _technicians = List<Map<String, dynamic>>.from(
             provider.listTechnicianApplyPost,
           );
+
+          // appLog("List technician: $_technicians");
         });
       } else if (mounted) {
         setState(() {
@@ -126,7 +161,10 @@ class _ListTechnicianApplyState extends State<ListTechnicianApply> {
   }
 
   void _showTechnicianDetails(Map<String, dynamic> applyData) {
-    final tech = applyData["technician"] as Map<String, dynamic>;
+    // final tech = applyData["technician"] as Map<String, dynamic>;
+    final tech = Map<String, dynamic>.from(
+      applyData["technician"] ?? {},
+    );
 
     showModalBottomSheet(
       context: context,
@@ -465,29 +503,32 @@ class _ListTechnicianApplyState extends State<ListTechnicianApply> {
       )
           : Padding(
         padding: const EdgeInsets.all(12),
-        child: GridView.builder(
-          itemCount: _technicians.length,
-
-          gridDelegate:
-          const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.72,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+        child: RefreshIndicator(
+          onRefresh: _loadListTechnicianApply,
+          child: GridView.builder(
+            itemCount: _technicians.length,
+          
+            gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.72,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+          
+            itemBuilder: (_, index) {
+              final apply = _technicians[index];
+          
+              final tech = Map<String, dynamic>.from(
+                apply["technician"] ?? {},
+              );
+          
+              return _buildTechnicianCard(
+                tech,
+                apply,
+              );
+            },
           ),
-
-          itemBuilder: (_, index) {
-            final apply = _technicians[index];
-
-            final tech =
-            apply["technician"]
-            as Map<String, dynamic>;
-
-            return _buildTechnicianCard(
-              tech,
-              apply,
-            );
-          },
         ),
       ),
     );
@@ -501,98 +542,73 @@ class _ListTechnicianApplyState extends State<ListTechnicianApply> {
       onTap: () {
         _showTechnicianDetails(applyData);
       },
-
       child: Card(
         elevation: 2,
         color: Colors.white,
-
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
-
         child: Column(
-          crossAxisAlignment:
-          CrossAxisAlignment.start,
           children: [
-            Expanded(
-              flex: 3,
-              child: ClipRRect(
-                borderRadius:
-                const BorderRadius.vertical(
-                  top: Radius.circular(8),
-                ),
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(8),
+              ),
+              child: SizedBox(
+                height: 170,
+                width: double.infinity,
                 child: tech["avatar"] != null
                     ? Image.network(
-                  FormatHelper
-                      .formatNetworkImageUrl(
+                  FormatHelper.formatNetworkImageUrl(
                     tech["avatar"],
                   ),
-                  width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder:
-                      (_, __, ___) {
+                  errorBuilder: (_, __, ___) {
                     return Container(
                       color: Colors.grey[200],
-                      child: const Icon(
-                        Icons.person,
-                        size: 50,
-                      ),
+                      child: const Icon(Icons.person, size: 50),
                     );
                   },
                 )
                     : Container(
                   color: Colors.grey[200],
-                  child: const Icon(
-                    Icons.person,
-                    size: 50,
-                  ),
+                  child: const Icon(Icons.person, size: 50),
                 ),
               ),
             ),
 
-            Center(
-              child: Expanded(
-                flex: 2,
-                child: Padding(
-                  padding:
-                  const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                    mainAxisAlignment:
-                    MainAxisAlignment.center,
-                    children: [
-                      Align(
-                        child: Text(
-                          tech["fullName"] ??
-                              "Không tên",
-                          style: const TextStyle(
-                            fontWeight:
-                            FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                          maxLines: 1,
-                          overflow:
-                          TextOverflow.ellipsis,
-                        ),
+            // 👤 INFO - căn giữa hoàn toàn
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      tech["fullName"] ?? "Không tên",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
 
-                      const SizedBox(height: 4),
+                    const SizedBox(height: 6),
 
-                      Align(
-                        child: Text(
-                          tech["phone"] ?? "Chưa có số",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: ColorConfig.textBlack,
-                          ),
-                          maxLines: 1,
-                          overflow:
-                          TextOverflow.ellipsis,
-                        ),
+                    Text(
+                      tech["phone"] ?? "Chưa có số",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: ColorConfig.textBlack,
                       ),
-                    ],
-                  ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/routes/config/admin_router_config.dart';
 
 import 'package:spa_app/services/user_service.dart';
@@ -20,7 +21,9 @@ class ManagementAccountTechnician extends StatefulWidget {
 class _ManagementAccountTechnicianState extends State<ManagementAccountTechnician> {
   final UserService userService = UserService();
   final TextEditingController _searchController = TextEditingController();
-  late RealtimeService _realtimeService;
+  // late RealtimeService _realtimeService;
+  late Function(Map<String, dynamic>) _userStatusListener;
+
 
   List<Map<String, dynamic>> users = [];
   List<Map<String, dynamic>> filteredUsers = [];
@@ -34,16 +37,24 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
   void initState() {
     super.initState();
     _loadUsers();
-    _realtimeService = RealtimeService(
-      context: context,
-      onUserStatusUpdate: (data) {
-        if (!mounted) return;
-        setState(() {
-          _handleRealtimeUserStatusUpdate(data);
-        });
-      },
-    );
-    _realtimeService.connect();
+    // _realtimeService = RealtimeService(
+    //   context: context,
+    //   onUserStatusUpdate: (data) {
+    //     if (!mounted) return;
+    //     setState(() {
+    //       _handleRealtimeUserStatusUpdate(data);
+    //     });
+    //   },
+    // );
+    // _realtimeService.connect();
+    _userStatusListener = (Map<String, dynamic> data) {
+      appLog("Realtime user status: $data");
+      if (!mounted) return;
+      _handleRealtimeUserStatusUpdate(data);
+    };
+
+    RealtimeService.instance.onUserStatusUpdateListeners.add(_userStatusListener);
+
   }
 
   void _handleRealtimeUserStatusUpdate(Map<String, dynamic> data) {
@@ -817,6 +828,7 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
 
   @override
   void dispose() {
+    RealtimeService.instance.onUserStatusUpdateListeners.remove(_userStatusListener);
     _searchController.dispose();
     super.dispose();
   }

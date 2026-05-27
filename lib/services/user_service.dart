@@ -130,4 +130,11 @@ class UserService {
         '${UserApiRoutes.balance}'
     );
   }
+
+  // Technician
+  Future<Map<String, dynamic>> getStatisticalTechnicianService(String query) async {
+    return await ApiMethodsPrivate.getRequest(
+      '${UserApiRoutes.statisticalTechnician}?${query}',
+    );
+  }
 }

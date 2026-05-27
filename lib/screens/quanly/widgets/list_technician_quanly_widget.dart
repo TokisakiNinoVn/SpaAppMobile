@@ -49,17 +49,20 @@ class _QuanLyListTechnicianTabState extends State<QuanLyListTechnicianTab> {
   void initState() {
     super.initState();
     _loadUsers();
-    _realtimeService = RealtimeService(
-      context: context,
-      onUserStatusUpdate: (data) {
-        if (!mounted) return;
-        setState(() {
-          _handleRealtimeUserStatusUpdate(data);
-        });
-      },
-    );
-    _realtimeService.connect();
     _loadProvinces();
+
+    _realtimeService = RealtimeService.instance;
+
+    // Đăng ký callback nhận cập nhật trạng thái
+    _realtimeService.onUserStatusUpdate = (data) {
+      if (!mounted) return;
+      setState(() {
+        _handleRealtimeUserStatusUpdate(data);
+      });
+    };
+
+    // Khởi tạo kết nối WebSocket (bên trong sẽ gọi connect)
+    _realtimeService.init(context: context);
   }
 
   void _handleRealtimeUserStatusUpdate(Map<String, dynamic> data) {
@@ -578,6 +581,8 @@ class _QuanLyListTechnicianTabState extends State<QuanLyListTechnicianTab> {
 
   @override
   void dispose() {
+    _realtimeService.onUserStatusUpdate = null;
+
     _searchController.dispose();
     _provinceSearchController.dispose();
     super.dispose();
