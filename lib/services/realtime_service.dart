@@ -1,70 +1,111 @@
 // file lib/services/realtime_service.dart
+
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:spa_app/helper/logger_utils.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:web_socket_channel/status.dart' as status;
-import 'package:web_socket_channel/io.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:spa_app/config/app_config.dart';
+import 'package:spa_app/helper/logger_utils.dart';
+import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/status.dart' as status;
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
 
 class RealtimeService {
-  static RealtimeService? _instance;
-  static RealtimeService get instance {
-    _instance ??= RealtimeService();
-    return _instance!;
-  }
-  static void setInstance(RealtimeService service) {
-    _instance = service;
-  }
+  // =========================================================
+  // SINGLETON THẬT
+  // =========================================================
 
-  late WebSocketChannel _channel;
-  final BuildContext? context;
-  final void Function(Map<String, dynamic>)? onUserStatusUpdate;
-  final void Function(Map<String, dynamic>)? onNewOrder;
-  final void Function(String orderId)? onOrderExpired;
-  final void Function(String orderId)? onOrderRemoved;
-  final void Function(Map<String, dynamic>)? onNewOrderAutoMatching;
-  final void Function(String orderId)? onOrderAutoMatchingRemove;
-  void Function(Map<String, dynamic>)? onNewTechnicianApplyOrder;
+  RealtimeService._internal();
+
+  static final RealtimeService _instance = RealtimeService._internal();
+
+  static RealtimeService get instance => _instance;
+
+  // =========================================================
+  // VARIABLES
+  // =========================================================
+
+  WebSocketChannel? _channel;
+
   bool _isDisposed = false;
+  bool _isConnecting = false;
+  bool _isConnected = false;
 
-  RealtimeService({
-    this.context,
-    this.onUserStatusUpdate,
-    this.onNewOrder,
-    this.onOrderExpired,
-    this.onOrderRemoved,
-    this.onNewOrderAutoMatching,
-    this.onOrderAutoMatchingRemove,
-    this.onNewTechnicianApplyOrder
-  });
+  BuildContext? context;
 
-  void dispose() {
-    _isDisposed = true;
-    // Hủy subscription...
+  int _reconnectDelay = 2000;
+  final int _maxReconnectDelay = 30000;
+
+  StreamSubscription? _socketSubscription;
+
+  // =========================================================
+  // CALLBACKS
+  // =========================================================
+
+  void Function(Map<String, dynamic>)? onUserStatusUpdate;
+  void Function(Map<String, dynamic>)? onNewOrder;
+  void Function(String orderId)? onOrderExpired;
+  void Function(String orderId)? onOrderRemoved;
+  void Function(Map<String, dynamic>)? onNewOrderAutoMatching;
+  void Function(String orderId)? onOrderAutoMatchingRemove;
+
+  // =========================================================
+  // LISTENERS
+  // =========================================================
+
+  final List<Function(dynamic data)> onNewTechnicianApplyOrderListeners = [];
+  List<Function(Map<String, dynamic>)> onUserStatusUpdateListeners = [];
+
+  // =========================================================
+  // INIT
+  // =========================================================
+
+  Future<void> init({
+    BuildContext? context,
+  }) async {
+    this.context = context;
+
+    appLog('[RealtimeService] INSTANCE => ' '${identityHashCode(this)}');
+
+    await connect();
   }
 
-  int _reconnectDelay = 2000; // bắt đầu 2s
-  final int _maxReconnectDelay = 30000;
+  // =========================================================
+  // CONNECT
+  // =========================================================
 
   Future<void> connect() async {
     if (_isDisposed) return;
 
+    if (_isConnecting) {
+      appLog('[RealtimeService] ⚠️ Đang connect rồi');
+      return;
+    }
+
+    if (_isConnected) {
+      appLog('[RealtimeService] ⚠️ Đã connected');
+      return;
+    }
+
+    _isConnecting = true;
+
     final prefs = await SharedPreferences.getInstance();
+
     final token = prefs.getString('token');
 
     if (token == null || token.isEmpty) {
       appLog("[RealtimeService] ❌ Không có token");
+
+      _isConnecting = false;
       return;
     }
 
@@ -77,82 +118,126 @@ class RealtimeService {
       path: '/api/private/ws/realtime',
     );
 
-    // appLog("URI connect Wss: $uri");
-
     try {
       appLog('[RealtimeService] 🔌 Connecting...');
 
       final socket = await WebSocket.connect(
         uri.toString(),
-        headers: {'Authorization': 'Bearer $token'},
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
       );
 
       _channel = IOWebSocketChannel(socket);
 
-      // reset delay khi connect thành công
+      _isConnected = true;
+      _isConnecting = false;
+
       _reconnectDelay = 5000;
 
-      _channel.stream.listen(
+      appLog('[RealtimeService] ✅ Connected');
+
+      _socketSubscription = _channel!.stream.listen(
         _handleEvent,
         onError: (error) {
           appLog('[RealtimeService] ❌ Error: $error');
+
+          _isConnected = false;
+          _isConnecting = false;
+
           _reconnect();
         },
         onDone: () {
-          // appLog('[RealtimeService] 🔴 Closed');
+          appLog('[RealtimeService] 🔴 Closed');
+
+          _isConnected = false;
+          _isConnecting = false;
+
           _reconnect();
         },
         cancelOnError: true,
       );
     } catch (e) {
       appLog('[RealtimeService] ❌ Connect fail: $e');
+
+      _isConnected = false;
+      _isConnecting = false;
+
       _reconnect();
     }
   }
 
+  // =========================================================
+  // RECONNECT
+  // =========================================================
+
   void _reconnect() {
     if (_isDisposed) return;
 
-    // appLog('[RealtimeService] 🔄 Reconnecting in ${_reconnectDelay / 1000}s');
+    Future.delayed(
+      Duration(milliseconds: _reconnectDelay),
+          () async {
+        if (_isDisposed) return;
 
-    Future.delayed(Duration(milliseconds: _reconnectDelay), () {
-      if (_isDisposed) return;
+        appLog('[RealtimeService] 🔄 Reconnecting...');
 
-      connect();
+        await connect();
 
-      // exponential backoff
-      _reconnectDelay = (_reconnectDelay * 2).clamp(2000, _maxReconnectDelay);
-    });
+        _reconnectDelay = (_reconnectDelay * 2).clamp(2000, _maxReconnectDelay);
+      },
+    );
   }
 
+  // =========================================================
+  // HANDLE EVENT
+  // =========================================================
 
   Future<void> _handleEvent(dynamic event) async {
     try {
       final data = jsonDecode(event);
+      appLog("[RealtimeService] 📩 Data realtime: ${data}");
 
-      if (data is Map<String, dynamic> && data['type'] == 'user_status_updated') {
-        // final userId = data['userId'];
+      if (data is! Map<String, dynamic>) {
+        return;
+      }
+
+      final type = data['type'];
+
+      // =====================================================
+      // USER STATUS
+      // =====================================================
+
+      if (type == 'user_status_updated') {
         final technicianName = data['technicianName'];
+
         final status = data['status'] == true;
+
         final prefs = await SharedPreferences.getInstance();
-        final String role =
-            prefs.getString('role')?.replaceAll('"', '') ?? 'admin';
+
+        final String role = prefs.getString('role')?.replaceAll('"', '') ?? 'admin';
 
         if (status && role == 'admin') {
           _showNotification(
-            title: 'Đã có nhân viên viên mới hoạt động',
+            title: 'Đã có nhân viên mới hoạt động',
             body: 'Nhân viên $technicianName đang hoạt động.',
           );
         }
-        onUserStatusUpdate?.call(data);
-      }
-      else if (data is Map<String, dynamic> &&
-          data['type'] == 'notification_from_admin') {
-        final prefs = await SharedPreferences.getInstance();
-        final String role =
-            prefs.getString('role')?.replaceAll('"', '') ?? 'admin';
 
-        // Nếu role là kỹ thuật viên thì nhận thông báo từ admin
+        // onUserStatusUpdate?.call(data);
+        for (final listener in onUserStatusUpdateListeners) {
+          listener(data);
+        }
+      }
+
+      // =====================================================
+      // NOTIFICATION
+      // =====================================================
+
+      else if (type == 'notification_from_admin') {
+        final prefs = await SharedPreferences.getInstance();
+
+        final String role = prefs.getString('role')?.replaceAll('"', '') ?? 'admin';
+
         if (role == 'ktv') {
           _showNotification(
             title: data['title'] ?? 'Thông báo từ admin',
@@ -160,55 +245,129 @@ class RealtimeService {
           );
         }
       }
-      else if (data['type'] == 'NEW_ORDER') {
-        final order = data['data'];
+
+      // =====================================================
+      // NEW ORDER
+      // =====================================================
+
+      else if (type == 'NEW_ORDER') {
+        final order = Map<String, dynamic>.from(data['data'] ?? {});
 
         onNewOrder?.call(order);
-
-        // 🔔 optional: show local notification nếu muốn
-        // _showNotification(
-        //   title: 'Đơn mới',
-        //   body: 'Bạn có một đơn việc mới',
-        // );
       }
-      else if (data['type'] == 'new_auto_matching') {
-        final order = data['data'];
+
+      // =====================================================
+      // AUTO MATCHING
+      // =====================================================
+
+      else if (type == 'new_automatching_order') {
+        final order = Map<String, dynamic>.from(data['data'] ?? {});
+
+        appLog("[RealtimeService] 📦 Auto matching: $order");
 
         onNewOrderAutoMatching?.call(order);
-
-        // 🔔 optional: show local notification nếu muốn
-        // _showNotification(
-        //   title: 'Đơn mới',
-        //   body: 'Bạn có một đơn việc mới',
-        // );
       }
-      else if (data['type'] == 'ORDER_EXPIRED') {
-        final orderId = data['orderId'];
 
-        onOrderExpired?.call(orderId);
-      }
-      else if (data['type'] == 'technician_apply') {
-        final dataApply = data['data'];
+      // =====================================================
+      // ORDER EXPIRED
+      // =====================================================
 
-        onNewTechnicianApplyOrder?.call(dataApply);
+      else if (type == 'ORDER_EXPIRED') {
+        final orderId = data['orderId']?.toString();
+
+        if (orderId != null) {
+          onOrderExpired?.call(orderId);
+        }
       }
-      else if (data['type'] == 'remove-order') {
-        final orderId = data['data']?['orderId'];
+
+      // =====================================================
+      // TECHNICIAN APPLY
+      // =====================================================
+
+      else if (type == 'technician_apply') {
+        final dataApply = Map<String, dynamic>.from(data['data'] ?? {});
+
+        // appLog("[RealtimeService] 👨‍🔧 Technician apply: $dataApply");
+        //
+        // appLog("[RealtimeService] 👂 Listener count: ${onNewTechnicianApplyOrderListeners.length}");
+
+        for (final listener in onNewTechnicianApplyOrderListeners) {
+          try {
+            listener(dataApply);
+          } catch (e) {
+            appLog('[RealtimeService] ❌ Listener error: $e');
+          }
+        }
+      }
+
+      // =====================================================
+      // REMOVE ORDER
+      // =====================================================
+
+      else if (type == 'remove-order') {
+        final orderId = data['data']?['orderId']?.toString();
 
         if (orderId != null) {
           onOrderRemoved?.call(orderId);
 
-          _showNotification(
-            title: 'Đơn việc đã bị xoá',
-            body: data['data']?['message'] ?? '',
-          );
+          // _showNotification(
+          //   title: 'Đơn việc đã bị xoá',
+          //   body: data['data']?['message'] ?? '',
+          // );
         }
       }
-
     } catch (e) {
-      appLog('[RealtimeService] ❌ Lỗi khi decode dữ liệu: $e');
+      appLog('[RealtimeService] ❌ Lỗi handle event: $e');
     }
   }
+
+  // =========================================================
+  // ADD LISTENER
+  // =========================================================
+
+  void addTechnicianApplyListener(Function(dynamic data) listener) {
+    final existed = onNewTechnicianApplyOrderListeners.contains(listener);
+
+    if (existed) return;
+
+    onNewTechnicianApplyOrderListeners.add(listener);
+
+    appLog('[RealtimeService] ➕ Add listener | Total: ${onNewTechnicianApplyOrderListeners.length}');
+  }
+
+  void addUserStatusListener(Function(Map<String, dynamic>) listener) {
+    final existed = onUserStatusUpdateListeners.contains(listener);
+
+    if (existed) return;
+
+    onUserStatusUpdateListeners.add(listener);
+
+    appLog(
+      '[RealtimeService] ➕ Add user status listener | Total: ${onUserStatusUpdateListeners.length}',
+    );
+  }
+
+  // =========================================================
+  // REMOVE LISTENER
+  // =========================================================
+
+  void removeTechnicianApplyListener(Function(dynamic data) listener) {
+    onNewTechnicianApplyOrderListeners.remove(listener);
+
+    appLog( '[RealtimeService] ➖ Remove listener | Total: ${onNewTechnicianApplyOrderListeners.length}');
+  }
+  void removeUserStatusListener(Function(Map<String, dynamic>) listener) {
+    onUserStatusUpdateListeners.remove(listener);
+
+    appLog(
+      '[RealtimeService] ➖ Remove user status listener | Total: ${onUserStatusUpdateListeners.length}',
+    );
+  }
+
+
+  // =========================================================
+  // NOTIFICATION
+  // =========================================================
 
   Future<void> _showNotification({
     required String title,
@@ -218,81 +377,78 @@ class RealtimeService {
 
     if (Platform.isAndroid) {
       final androidInfo = await DeviceInfoPlugin().androidInfo;
+
       if (androidInfo.version.sdkInt >= 33) {
-        // Kiểm tra quyền
         var status = await Permission.notification.status;
+
         if (!status.isGranted) {
           final result = await Permission.notification.request();
+
           hasPermission = result.isGranted;
-        } else {
-          hasPermission = true;
         }
       }
     }
 
-    if (hasPermission) {
-      const androidDetails = AndroidNotificationDetails(
-        'account_status_channel',
-        'Trạng thái tài khoản',
-        channelDescription: 'Thông báo khi trạng thái người dùng thay đổi',
-        importance: Importance.max,
-        priority: Priority.high,
-        showWhen: true,
-        icon: 'ic_stat_check_circle',
-      );
-
-      const notificationDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: DarwinNotificationDetails(),
-      );
-
-      await flutterLocalNotificationsPlugin.show(
-        0,
-        title,
-        body,
-        notificationDetails,
-      );
-    } else {
+    if (!hasPermission) {
       appLog("🛑 Không có quyền hiển thị thông báo");
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final scaffoldMessenger = ScaffoldMessenger.maybeOf(context!);
-        if (scaffoldMessenger != null) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                '❌ Vui lòng cấp quyền thông báo để nhận thông báo',
-                style: GoogleFonts.lora(color: Colors.white),
-              ),
-              backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        } else {
-          appLog("⚠️ ScaffoldMessenger chưa sẵn sàng.");
-        }
-      });
+      return;
     }
+
+    const androidDetails = AndroidNotificationDetails(
+      'account_status_channel',
+      'Trạng thái tài khoản',
+      channelDescription: 'Thông báo realtime',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+      icon: 'ic_stat_check_circle',
+    );
+
+    const notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(),
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      title,
+      body,
+      notificationDetails,
+    );
   }
 
-  // void disconnect() {
-  //   try {
-  //     _channel.sink.close(status.goingAway);
-  //   } catch (_) {}
-  //
-  //   appLog('[RealtimeService] 🔌 Ngắt kết nối WebSocket');
-  // }
+  // =========================================================
+  // DISCONNECT
+  // =========================================================
+
   void disconnect() {
     try {
-      // Kiểm tra _channel đã được khởi tạo chưa
-      // Dùng normalClosure (1000) thay vì goingAway (1001)
-      _channel.sink.close(status.normalClosure);
+      _socketSubscription?.cancel();
+
+      _channel?.sink.close(status.normalClosure);
+
+      _isConnected = false;
+
+      appLog('[RealtimeService] 🔌 Disconnected');
     } catch (e) {
-      appLog('[RealtimeService] ❌ Lỗi khi đóng WebSocket: $e');
+      appLog('[RealtimeService] ❌ Disconnect error: $e');
     }
-    appLog('[RealtimeService] 🔌 Ngắt kết nối WebSocket');
   }
 
+  // =========================================================
+  // DISPOSE
+  // =========================================================
+
+  void dispose() {
+    _isDisposed = true;
+
+    disconnect();
+
+    onNewTechnicianApplyOrderListeners.clear();
+    onNewTechnicianApplyOrderListeners.clear();
+    onUserStatusUpdateListeners.clear();
+
+    appLog('[RealtimeService] 🗑 Dispose');
+  }
 }

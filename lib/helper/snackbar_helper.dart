@@ -78,7 +78,10 @@ class SnackBarHelper {
 
     _currentOverlay = OverlayEntry(
       builder: (context) {
-        final topPadding = MediaQuery.of(context).padding.top;
+        final mediaQuery = MediaQuery.of(context);
+
+        final keyboardHeight = mediaQuery.viewInsets.bottom;
+        final bottomSafe = mediaQuery.padding.bottom;
 
         return SafeArea(
           child: Material(
@@ -86,7 +89,9 @@ class SnackBarHelper {
             child: Stack(
               children: [
                 Positioned(
-                  bottom: topPadding + 12,
+                  bottom: keyboardHeight > 0
+                      ? keyboardHeight + 16
+                      : bottomSafe + 16,
                   left: 18,
                   right: 18,
                   child: _AnimatedSnackBar(

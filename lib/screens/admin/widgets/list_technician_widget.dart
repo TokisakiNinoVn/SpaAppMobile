@@ -19,10 +19,11 @@ class ListTechnicianTab extends StatefulWidget {
 class _ListTechnicianTabState extends State<ListTechnicianTab> {
   final UserService userService = UserService();
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _provinceSearchController =
-      TextEditingController();
+  final TextEditingController _provinceSearchController = TextEditingController();
 
-  late RealtimeService _realtimeService;
+  final RealtimeService _realtimeService = RealtimeService.instance;
+  late Function(Map<String, dynamic>) _userStatusListener;
+
   final tinhThanhService = TinhThanhService();
 
   List<Map<String, dynamic>> users = [];
@@ -46,31 +47,62 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
   ];
 
   @override
+  // void initState() {
+  //   super.initState();
+  //   _loadUsers();
+  //   _realtimeService = RealtimeService(
+  //     context: context,
+  //     onUserStatusUpdate: (data) {
+  //       if (!mounted) return;
+  //       setState(() {
+  //         _handleRealtimeUserStatusUpdate(data);
+  //       });
+  //     },
+  //   );
+  //   _realtimeService.connect();
+  //
+  //   _loadProvinces();
+  // }
+
+  @override
   void initState() {
     super.initState();
-    _loadUsers();
-    _realtimeService = RealtimeService(
-      context: context,
-      onUserStatusUpdate: (data) {
-        if (!mounted) return;
-        setState(() {
-          _handleRealtimeUserStatusUpdate(data);
-        });
-      },
-    );
-    _realtimeService.connect();
 
+    _loadUsers();
     _loadProvinces();
+
+    _realtimeService.init(context: context);
+
+    _realtimeService.addUserStatusListener(
+      _handleRealtimeUserStatusUpdate,
+    );
   }
 
+  // void _handleRealtimeUserStatusUpdate(Map<String, dynamic> data) {
+  //   final String userId = data['userId'];
+  //   final bool status = data['status'];
+  //
+  //   final int index = users.indexWhere((user) => user['_id'] == userId);
+  //   if (index != -1) {
+  //     setState(() {
+  //       users[index]['status'] = status ? 'active' : 'inactive';
+  //       _applyFilters();
+  //     });
+  //   }
+  // }
   void _handleRealtimeUserStatusUpdate(Map<String, dynamic> data) {
     final String userId = data['userId'];
     final bool status = data['status'];
 
-    final int index = users.indexWhere((user) => user['_id'] == userId);
+    final int index = users.indexWhere(
+          (user) => user['_id'] == userId,
+    );
+
     if (index != -1) {
       setState(() {
-        users[index]['status'] = status ? 'active' : 'inactive';
+        users[index]['status'] =
+        status ? 'active' : 'inactive';
+
         _applyFilters();
       });
     }
@@ -579,6 +611,10 @@ class _ListTechnicianTabState extends State<ListTechnicianTab> {
 
   @override
   void dispose() {
+    _realtimeService.removeUserStatusListener(
+      _handleRealtimeUserStatusUpdate,
+    );
+
     _searchController.dispose();
     _provinceSearchController.dispose();
     super.dispose();

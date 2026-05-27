@@ -90,7 +90,7 @@ final List<GoRoute> technicianRoutes = [
         ),
         GoRoute(
           path: 'statistical',
-          builder: (context, state) => const StatisticalScreen(),
+          builder: (context, state) => const StatisticalTechnicianScreen(),
         ),
         GoRoute(
           path: 'add-technician',

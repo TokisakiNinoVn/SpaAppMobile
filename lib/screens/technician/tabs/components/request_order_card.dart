@@ -36,6 +36,8 @@ class RequestOrderCard extends StatelessWidget {
     final isExpiringSoon = order['isExpiringSoon'] ?? false;
 
     final customer = order['customerId'];
+    // appLog("Details customer: $customer | ${order['customerId']}");
+
     final gender = customer?['gender'] ?? 'male';
 
     final duration = order['serviceTimePriceId']?['duration'] ?? 0;

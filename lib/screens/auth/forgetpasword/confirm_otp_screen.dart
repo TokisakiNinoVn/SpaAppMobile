@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 import '../../../helper/snackbar_helper.dart';
 import '../../../services/auth_service.dart';
@@ -20,15 +22,22 @@ class ConfirmOTPScreen extends StatefulWidget {
 class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
     with SingleTickerProviderStateMixin {
 
-  final List<TextEditingController> _otpControllers = List.generate(6, (_) => TextEditingController());
+  // ─── iOS: single hidden TextField approach ───────────────────────────────
+  final TextEditingController _hiddenController = TextEditingController();
+  final FocusNode _hiddenFocusNode = FocusNode();
+
+  // ─── Android: 6 TextFields riêng lẻ ────────────────────────────────────
+  final List<TextEditingController> _otpControllers =
+  List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _otpFocusNodes = List.generate(6, (_) => FocusNode());
 
+  // ─── Shared state ────────────────────────────────────────────────────────
   final List<String> _digits = List.filled(6, '');
   bool _isResendDisabled = false;
   int _countdown = 0;
   Timer? _timer;
   bool isLoading = false;
-  final FocusNode _hiddenFocusNode = FocusNode();
+  bool _isIOS = false;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -37,6 +46,7 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
   @override
   void initState() {
     super.initState();
+    _detectPlatform();
     startCountdown();
 
     _animController = AnimationController(
@@ -49,72 +59,147 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
+  }
 
-    for (int i = 0; i < 6; i++) {
-      _otpControllers[i].addListener(() => _onOtpChanged(i));
+  Future<void> _detectPlatform() async {
+    if (Platform.isIOS) {
+      final deviceInfo = DeviceInfoPlugin();
+      final iosInfo = await deviceInfo.iosInfo;
+      setState(() => _isIOS = true);
+      _setupIOS();
+    } else {
+      _setupAndroid();
     }
   }
 
-  void _onOtpChanged(int index) {
-    String text = _otpControllers[index].text;
+  // ─── iOS Setup ───────────────────────────────────────────────────────────
+
+  void _setupIOS() {
+    _hiddenController.addListener(_onHiddenControllerChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _hiddenFocusNode.requestFocus();
+    });
+  }
+
+  void _onHiddenControllerChanged() {
+    if (!_isIOS) return;
+    final raw = _hiddenController.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (raw.length > 6) {
+      _hiddenController.removeListener(_onHiddenControllerChanged);
+      _hiddenController.text = raw.substring(0, 6);
+      _hiddenController.selection = TextSelection.collapsed(offset: 6);
+      _hiddenController.addListener(_onHiddenControllerChanged);
+    }
+
+    final clamped = raw.length > 6 ? raw.substring(0, 6) : raw;
+
+    setState(() {
+      for (int i = 0; i < 6; i++) {
+        _digits[i] = i < clamped.length ? clamped[i] : '';
+      }
+    });
+
+    if (clamped.length == 6 && !isLoading) {
+      Future.delayed(const Duration(milliseconds: 50), () {
+        if (mounted && _digits.every((d) => d.isNotEmpty)) {
+          verifyOTP();
+        }
+      });
+    }
+  }
+
+  // ─── Android Setup ───────────────────────────────────────────────────────
+
+  void _setupAndroid() {
+    for (int i = 0; i < 6; i++) {
+      final index = i;
+      _otpControllers[index].addListener(() => _onAndroidOtpChanged(index));
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _otpFocusNodes[0].requestFocus();
+    });
+  }
+
+  void _onAndroidOtpChanged(int index) {
+    if (_isIOS) return;
+    final text = _otpControllers[index].text;
 
     if (text.length > 1) {
-      final List<String> digits = text.split('');
-      for (int i = 0; i < 6 && i < digits.length; i++) {
-        _otpControllers[i].text = digits[i];
-        _digits[i] = digits[i];
+      final digits = text.replaceAll(RegExp(r'[^0-9]'), '').split('');
+      for (int i = 0; i < 6; i++) {
+        _otpControllers[i].text = i < digits.length ? digits[i] : '';
+        _digits[i] = _otpControllers[i].text;
       }
       FocusScope.of(context).unfocus();
-      if (_digits.every((d) => d.isNotEmpty)) verifyOTP();
       setState(() {});
+      if (_digits.every((d) => d.isNotEmpty) && !isLoading) verifyOTP();
       return;
     }
 
     if (text.isNotEmpty && index < 5) {
       FocusScope.of(context).requestFocus(_otpFocusNodes[index + 1]);
     }
+
     setState(() {
       for (int i = 0; i < 6; i++) {
         _digits[i] = _otpControllers[i].text;
       }
     });
-    if (_digits.every((d) => d.isNotEmpty)) {
+
+    if (_digits.every((d) => d.isNotEmpty) && !isLoading) {
       FocusScope.of(context).unfocus();
       verifyOTP();
     }
   }
 
-  void _onKey(RawKeyEvent event, int index) {
+  void _onAndroidKey(RawKeyEvent event, int index) {
+    if (_isIOS) return;
     if (event is RawKeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.backspace) {
       if (_otpControllers[index].text.isEmpty && index > 0) {
         _otpControllers[index - 1].clear();
-
-        FocusScope.of(context).requestFocus(
-          _otpFocusNodes[index - 1],
-        );
-
+        FocusScope.of(context).requestFocus(_otpFocusNodes[index - 1]);
         setState(() {
           _digits[index - 1] = '';
-          _digits[index] = '';
         });
       }
     }
   }
 
+  // ─── Shared Helpers ──────────────────────────────────────────────────────
+
   void _clearAllFields() {
-    for (int i = 0; i < 6; i++) {
-      _otpControllers[i].clear();
-      _digits[i] = '';
+    if (_isIOS) {
+      _hiddenController.removeListener(_onHiddenControllerChanged);
+      _hiddenController.clear();
+      _hiddenController.addListener(_onHiddenControllerChanged);
+    } else {
+      for (int i = 0; i < 6; i++) {
+        _otpControllers[i].clear();
+      }
     }
-    setState(() {});
-    FocusScope.of(context).requestFocus(_otpFocusNodes[0]);
+    setState(() {
+      for (int i = 0; i < 6; i++) _digits[i] = '';
+    });
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      if (_isIOS) {
+        _hiddenFocusNode.requestFocus();
+      } else {
+        _otpFocusNodes[0].requestFocus();
+      }
+    });
   }
+
+  // ─── OTP Verify ─────────────────────────────────────────────────────────
 
   Future<void> verifyOTP() async {
     if (isLoading) return;
     final otp = _digits.join();
-    if (otp.length != 6) {
+
+    if (otp.length != 6 || _digits.any((d) => d.isEmpty)) {
       SnackBarHelper.showError(context, 'Vui lòng nhập đầy đủ mã OTP');
       return;
     }
@@ -184,9 +269,6 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
       if (response['success'] == true || response['status'] == 'success') {
         startCountdown();
         _clearAllFields();
-        Future.delayed(const Duration(milliseconds: 100), () {
-          _hiddenFocusNode.requestFocus();
-        });
       } else {
         SnackBarHelper.showError(
           context,
@@ -200,15 +282,18 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
 
   @override
   void dispose() {
+    _hiddenController.dispose();
+    _hiddenFocusNode.dispose();
     for (int i = 0; i < 6; i++) {
       _otpControllers[i].dispose();
       _otpFocusNodes[i].dispose();
     }
-    _hiddenFocusNode.dispose();
     _timer?.cancel();
     _animController.dispose();
     super.dispose();
   }
+
+  // ─── Build ───────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -280,63 +365,8 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
 
                   const SizedBox(height: 48),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(6, (index) {
-                      return SizedBox(
-                        width: 48,
-                        height: 56,
-                        child: Focus(
-                          onKey: (node, event) {
-                            _onKey(event, index);
-                            return KeyEventResult.ignored;
-                          },
-                          child: TextField(
-                            controller: _otpControllers[index],
-                            focusNode: _otpFocusNodes[index],
-                            textAlign: TextAlign.center,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: _otpFocusNodes[index].hasFocus
-                                  ? Colors.white
-                                  : (_otpControllers[index].text.isNotEmpty
-                                  ? Colors.grey.shade100
-                                  : const Color(0xFFF8F8F8)),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: _otpFocusNodes[index].hasFocus
-                                      ? const Color(0xFF1A1A1A)
-                                      : (_otpControllers[index].text.isNotEmpty
-                                      ? Colors.grey.shade400
-                                      : Colors.grey.shade200),
-                                  width: _otpFocusNodes[index].hasFocus ? 1.5 : 1,
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: _otpControllers[index].text.isNotEmpty
-                                      ? Colors.grey.shade400
-                                      : Colors.grey.shade200,
-                                  width: 1,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFF1A1A1A), width: 1.5),
-                              ),
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-                            onChanged: (_) => _onOtpChanged(index),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
+                  // OTP input row (platform-specific)
+                  _isIOS ? _buildIOSOTPRow() : _buildAndroidOTPRow(),
 
                   const SizedBox(height: 48),
 
@@ -352,7 +382,10 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
                     ),
                   )
                       : GestureDetector(
-                    onTap: isLoading ? null : verifyOTP,
+                    onTap: isLoading ? null : () {
+                      FocusScope.of(context).unfocus();
+                      verifyOTP();
+                    },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       height: 52,
@@ -362,17 +395,8 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
                             : ColorConfig.primary.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(40),
                       ),
-                      child: Center(
-                        child: isLoading
-                            ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                            : const Text(
+                      child: const Center(
+                        child: Text(
                           'Xác nhận',
                           style: TextStyle(
                             color: Colors.white,
@@ -458,6 +482,202 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ─── iOS OTP Row ─────────────────────────────────────────────────────────
+  Widget _buildIOSOTPRow() {
+    return GestureDetector(
+      onTap: () => _hiddenFocusNode.requestFocus(),
+      child: Stack(
+        children: [
+          Positioned(
+            left: -300,
+            child: SizedBox(
+              width: 1,
+              height: 1,
+              child: TextField(
+                controller: _hiddenController,
+                focusNode: _hiddenFocusNode,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
+                decoration: const InputDecoration(border: InputBorder.none),
+                style: const TextStyle(color: Colors.transparent, fontSize: 1),
+                cursorColor: Colors.transparent,
+                showCursor: false,
+                autofocus: true,
+              ),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(6, (index) {
+              final isFilled = _digits[index].isNotEmpty;
+              final filledCount = _digits.where((d) => d.isNotEmpty).length;
+              final isActive = index == filledCount && _hiddenFocusNode.hasFocus;
+
+              return _IOSOTPBox(
+                digit: _digits[index],
+                isActive: isActive,
+                isFilled: isFilled,
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Android OTP Row ─────────────────────────────────────────────────────
+  Widget _buildAndroidOTPRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(6, (index) {
+        return SizedBox(
+          width: 48,
+          height: 56,
+          child: Focus(
+            onKey: (node, event) {
+              _onAndroidKey(event, index);
+              return KeyEventResult.ignored;
+            },
+            child: TextField(
+              controller: _otpControllers[index],
+              focusNode: _otpFocusNodes[index],
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(1),
+              ],
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: _otpFocusNodes[index].hasFocus
+                    ? Colors.white
+                    : (_otpControllers[index].text.isNotEmpty
+                    ? Colors.grey.shade100
+                    : const Color(0xFFF8F8F8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: _otpFocusNodes[index].hasFocus
+                        ? const Color(0xFF1A1A1A)
+                        : (_otpControllers[index].text.isNotEmpty
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade200),
+                    width: _otpFocusNodes[index].hasFocus ? 1.5 : 1,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: _otpControllers[index].text.isNotEmpty
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade200,
+                    width: 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF1A1A1A), width: 1.5),
+                ),
+                contentPadding: EdgeInsets.zero,
+              ),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+              onChanged: (_) => _onAndroidOtpChanged(index),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+// ─── iOS OTP Box ─────────────────────────────────────────────────────────────
+class _IOSOTPBox extends StatelessWidget {
+  final String digit;
+  final bool isActive;
+  final bool isFilled;
+
+  const _IOSOTPBox({
+    required this.digit,
+    required this.isActive,
+    required this.isFilled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      width: 48,
+      height: 56,
+      decoration: BoxDecoration(
+        color: isActive
+            ? Colors.white
+            : (isFilled ? Colors.grey.shade100 : const Color(0xFFF8F8F8)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isActive
+              ? const Color(0xFF1A1A1A)
+              : (isFilled ? Colors.grey.shade400 : Colors.grey.shade200),
+          width: isActive ? 1.5 : 1,
+        ),
+      ),
+      child: Center(
+        child: digit.isNotEmpty
+            ? Text(
+          digit,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1A1A1A),
+          ),
+        )
+            : (isActive ? const _BlinkingCursor() : const SizedBox.shrink()),
+      ),
+    );
+  }
+}
+
+// ─── Blinking Cursor ──────────────────────────────────────────────────────────
+class _BlinkingCursor extends StatefulWidget {
+  const _BlinkingCursor();
+
+  @override
+  State<_BlinkingCursor> createState() => _BlinkingCursorState();
+}
+
+class _BlinkingCursorState extends State<_BlinkingCursor>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _ctrl,
+      child: Container(
+        width: 1.5,
+        height: 24,
+        color: const Color(0xFF1A1A1A),
       ),
     );
   }

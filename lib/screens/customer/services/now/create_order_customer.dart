@@ -56,6 +56,8 @@ class _CreateOrderNowScreenState
   // bool _isLoadingAddress = false;
   int? nowBalance;
 
+  bool _isCreatingOrder = false;
+
   List<Map<String, dynamic>> _addresses = [];
   List<dynamic> _discounts = [];
 
@@ -237,7 +239,67 @@ class _CreateOrderNowScreenState
     }
   }
 
+  // Future<void> _createOrder() async {
+  //   final moneyPrioritize = _extraFee;
+  //   final price = widget.data['serviceTimePrice']['price'] as int;
+  //   final data = {
+  //     'typeOrder': 'order-now',
+  //     "technicianId": widget.data['technician']['id'],
+  //     "serviceTimePriceId": widget.data['serviceTimePrice']['_id'],
+  //     "nameService": widget.data['nameService'],
+  //     "address": _addressController.text.trim(),
+  //     "paymentMethod": _paymentMethod!.name,
+  //     "noteCustomer": _noteController.text.trim(),
+  //     "moneyPrioritize": moneyPrioritize,
+  //     if (_discountData != null)
+  //       'discountInput': {
+  //         "discountId": _discountData!['discountId'],
+  //         "code": _discountData!['code'],
+  //         "typeDiscount": _discountData!['typeDiscount'],
+  //         "value": _discountData!['value'],
+  //         "amountDiscount": _discountData!['amountDiscount'],
+  //       },
+  //   };
+  //
+  //   try {
+  //     final response = await _orderService.createOrder(data);
+  //     // appLog("response: $response");
+  //     if (response['success'] == true) {
+  //       context.go('/home-customer');
+  //       SnackBarHelper.showSuccess(context, "Tạo yêu cầu đơn thành công! Vui lòng chờ kỹ thuật viên phản hồi!");
+  //       if (_paymentMethod == PaymentMethod.zenhome) {
+  //         int finalPrice = _discountData != null
+  //             ? (_discountData!['orderValueAfterDiscount'] as int)
+  //             : price;
+  //         int newBalance = balance - finalPrice;
+  //         await SharedPrefs.saveValue(PrefType.int, "balance", newBalance);
+  //         setState(() {
+  //           balance = newBalance;
+  //         });
+  //       }
+  //     } else {
+  //       SnackBarHelper.showError(context, response['message'] ?? 'Không thể tạo đơn hàng');
+  //     }
+  //   } catch (e) {
+  //     appLog("Lỗi tạo đơn: ", data: e);
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text(e.toString()),
+  //           backgroundColor: Colors.red,
+  //           behavior: SnackBarBehavior.floating,
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
+
   Future<void> _createOrder() async {
+    // Chặn nếu đang tạo đơn
+    if (_isCreatingOrder) return;
+
+    setState(() => _isCreatingOrder = true);
+
     final moneyPrioritize = _extraFee;
     final price = widget.data['serviceTimePrice']['price'] as int;
     final data = {
@@ -289,6 +351,8 @@ class _CreateOrderNowScreenState
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isCreatingOrder = false);
     }
   }
 
@@ -755,13 +819,30 @@ class _CreateOrderNowScreenState
                         child: const Text("Nạp tiền"),
                       ),
                     ),
+                  // ElevatedButton(
+                  //   onPressed: _canSubmit ? _createOrder : null,
+                  //   style: ElevatedButton.styleFrom(
+                  //     backgroundColor: _canSubmit ? ColorConfig.primary : Colors.grey,
+                  //     foregroundColor: Colors.white,
+                  //   ),
+                  //   child: const Text("Đặt ngay"),
+                  // ),
                   ElevatedButton(
-                    onPressed: _canSubmit ? _createOrder : null,
+                    onPressed: (_canSubmit && !_isCreatingOrder) ? _createOrder : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _canSubmit ? ColorConfig.primary : Colors.grey,
+                      backgroundColor: (_canSubmit && !_isCreatingOrder) ? ColorConfig.primary : Colors.grey,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text("Đặt ngay"),
+                    child: _isCreatingOrder
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                        : const Text("Đặt ngay"),
                   ),
                 ],
               ),

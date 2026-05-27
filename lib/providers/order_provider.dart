@@ -63,7 +63,7 @@ class OrderProvider extends ChangeNotifier {
 
       final res = await _orderService.applyPostOrder(body);
 
-      appLog("Response ứng việc KTV: $res");
+      // appLog("Response ứng việc KTV: $res");
 
       if (res['success'] == true) {
         return true;

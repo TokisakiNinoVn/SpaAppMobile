@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/screens/components/dashed_divider_component.dart';
 
 class JobCard extends StatelessWidget {
@@ -70,8 +71,15 @@ class JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // appLog("Job: $job");
     final customer = job['customerId'] ?? {};
-    final serviceTimePrice = job['serviceTimePriceId'] ?? {};
+
+    final rawServiceTimePrice = job['serviceTimePrice'] ?? job['serviceTimePriceId'];
+
+    final serviceTimePrice = (rawServiceTimePrice is Map)
+        ? rawServiceTimePrice
+        : {};
+    // appLog("Job: $serviceTimePrice");
 
     final isPrioritize = job['isPrioritize'] ?? false;
     final isExpired = remainingTime.isNegative;
@@ -247,7 +255,7 @@ class JobCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 5),
 
                     /// BUTTON Handling the matter
                     if (!isExpired) ...[
@@ -260,12 +268,12 @@ class JobCard extends StatelessWidget {
                               isAdminPost
                                   ? Icons.send_rounded
                                   : Icons.handshake_rounded,
-                              size: 18,
+                              size: 16,
                             ),
                             label: Text(
                               actionText,
                               style: const TextStyle(
-                                fontSize: 15,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
