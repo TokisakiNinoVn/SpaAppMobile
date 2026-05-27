@@ -1,5 +1,5 @@
 // auth_routes.dart
-import '../config/app_config.dart';
+import 'package:spa_app/config/app_config.dart';
 
 class AuthApiRoutes {
   static const String login = '${AppConfig.apiUrlPublic}/auth/login';

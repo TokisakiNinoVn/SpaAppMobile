@@ -46,10 +46,8 @@ class _BannerManagementState extends State<BannerManagement>
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
-    _fadeAnim =
-        CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
     loadBanners();
   }
@@ -548,7 +546,16 @@ class _BannerManagementState extends State<BannerManagement>
         final banner = banners[index];
         return _BannerCard(
           banner: banner,
-          onEdit: () => context.push(AdminRouterConfig.editBanner, extra: banner),
+          // onEdit: () => context.push(AdminRouterConfig.editBanner, extra: banner),
+          onEdit: () async {
+            final result = await context.push(
+                AdminRouterConfig.editBanner, extra: banner
+            );
+
+            if (result == true) {
+              loadBanners();
+            }
+          },
           onDelete: () =>
               deleteBanner(banner['_id'] ?? '', banner['title'] ?? ''),
         );
@@ -558,7 +565,16 @@ class _BannerManagementState extends State<BannerManagement>
 
   Widget _buildFAB() {
     return FloatingActionButton.extended(
-      onPressed: () => context.push(AdminRouterConfig.createBanner),
+      // onPressed: () => context.push(AdminRouterConfig.createBanner),
+      onPressed: () async {
+        final result = await context.push(
+          AdminRouterConfig.createBanner,
+        );
+
+        if (result == true) {
+          loadBanners();
+        }
+      },
       icon: const Icon(Icons.add_rounded),
       label: const Text('Thêm banner',
           style: TextStyle(fontWeight: FontWeight.w600)),

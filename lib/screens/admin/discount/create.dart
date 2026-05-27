@@ -231,18 +231,39 @@ class _CreateDiscountScreenState extends State<CreateDiscountScreen> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
+    // if (pickedFile != null) {
+    //   final double ratioX = 1.0;
+    //   final double ratioY = 1.0;
+    //   final File? croppedImage = await _fileUtils.cropImage(
+    //     File(pickedFile.path),
+    //     ratioX,
+    //     ratioY,
+    //   );
+    //   if (croppedImage != null) {
+    //     await uploadImage(croppedImage.path);
+    //   } else {
+    //     SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
+    //   }
+    // }
     if (pickedFile != null) {
       final double ratioX = 1.0;
       final double ratioY = 1.0;
-      final File? croppedImage = await _fileUtils.cropImage(
+
+      final File? croppedImage =
+      await _fileUtils.cropImage(
+        context,
         File(pickedFile.path),
         ratioX,
         ratioY,
       );
+
       if (croppedImage != null) {
         await uploadImage(croppedImage.path);
       } else {
-        SnackBarHelper.showWarning(context, 'Đã hủy cắt ảnh');
+        SnackBarHelper.showWarning(
+          context,
+          'Đã hủy cắt ảnh',
+        );
       }
     }
   }

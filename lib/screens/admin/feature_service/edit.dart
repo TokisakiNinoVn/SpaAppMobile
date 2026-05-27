@@ -81,10 +81,16 @@ class _EditFeatureServiceState extends State<EditFeatureService> {
 
       try {
         // Cắt ảnh với tỷ lệ phù hợp (ví dụ: 4:3 hoặc 16:9 tùy theo design)
+        // final File? croppedImage = await _fileUtils.cropImage(
+        //   File(pickedFile.path),
+        //   16,
+        //   9,
+        // );
         final File? croppedImage = await _fileUtils.cropImage(
+          context,
           File(pickedFile.path),
-          16,
-          9,
+          16.0,
+          9.0,
         );
 
         // Đóng dialog loading
@@ -136,7 +142,13 @@ class _EditFeatureServiceState extends State<EditFeatureService> {
     );
 
     try {
+      // final File? croppedImage = await _fileUtils.cropImage(
+      //   _newImageFile!,
+      //   16,
+      //   9,
+      // );
       final File? croppedImage = await _fileUtils.cropImage(
+        context,
         _newImageFile!,
         16,
         9,

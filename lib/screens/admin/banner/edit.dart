@@ -88,10 +88,17 @@ class _EditBannerScreenState extends State<EditBannerScreen>
       );
 
       if (pickedFile != null) {
+        // final File? croppedImage = await _fileUtils.cropImage(
+        //     File(pickedFile.path),
+        //     16.0,
+        //     9.0
+        // );
+
         final File? croppedImage = await _fileUtils.cropImage(
-            File(pickedFile.path),
-            16.0,
-            9.0
+          context,
+          File(pickedFile.path),
+          16.0,
+          9.0,
         );
 
         if (croppedImage != null) {
