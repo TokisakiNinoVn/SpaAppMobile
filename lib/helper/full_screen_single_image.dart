@@ -104,7 +104,7 @@ class _FullScreenSingleImageViewerState
                   icon: const Icon(
                     Icons.close,
                     color: Colors.white,
-                    size: 28,
+                    size: 40,
                   ),
                 ),
               ),

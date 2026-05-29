@@ -98,7 +98,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
             top: 16,
             right: 16,
             child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+              icon: const Icon(Icons.close, color: Colors.white, size: 40),
               onPressed: () => Navigator.pop(context),
             ),
           ),

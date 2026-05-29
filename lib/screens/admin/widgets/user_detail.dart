@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/utils/image_download_util.dart';
 
 import '../../../helper/format_helper.dart';
 import '../../../helper/full_screen_list_image.dart';
@@ -280,7 +281,10 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               IconButton(
-                icon: const Icon(Icons.close),
+                icon: const Icon(
+                  Icons.close,
+                  size: 40,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -303,6 +307,16 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                           );
                         }
                       },
+
+                      onDoubleTap: () async {
+                        final imageUrl = widget.user['avatar']?['url'];
+                        await ImageDownloadUtil.downloadImage(
+                          imageUrl: FormatHelper.formatNetworkImageUrl(imageUrl),
+                          context: context,
+                          onComplete: (_) {},
+                        );
+                      },
+
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: widget.user['avatar']?['url'] != null
@@ -404,6 +418,11 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                         itemCount: (widget.user['images'] as List).length,
                         itemBuilder: (context, index) {
                           final image = (widget.user['images'] as List)[index];
+
+                          final imageUrl = FormatHelper.formatNetworkImageUrl(
+                            image['url'] ?? '',
+                          );
+
                           return Padding(
                             padding: const EdgeInsets.only(right: 8.0),
                             child: GestureDetector(
@@ -412,24 +431,38 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                                 widget.user['images'],
                                 index,
                               ),
+
+                              onDoubleTap: () async {
+                                await ImageDownloadUtil.downloadImage(
+                                  imageUrl: imageUrl,
+                                  context: context,
+                                  onComplete: (_) {},
+                                );
+                              },
+
                               child: Image.network(
-                                FormatHelper.formatNetworkImageUrl(image['url'] ?? ''),
+                                imageUrl,
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(
-                                      width: 100,
-                                      height: 100,
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.image_not_supported, size: 50),
-                                    ),
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  width: 100,
+                                  height: 100,
+                                  color: Colors.grey[300],
+                                  child: const Icon(
+                                    Icons.image_not_supported,
+                                    size: 50,
+                                  ),
+                                ),
                               ),
                             ),
                           );
                         },
                       ),
                     ),
+                    const SizedBox(height: 100),
+
+
                   ],
                 ],
               ),

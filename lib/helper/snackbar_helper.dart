@@ -84,16 +84,18 @@ class SnackBarHelper {
         final bottomSafe = mediaQuery.padding.bottom;
 
         return SafeArea(
-          child: Material(
-            color: Colors.transparent,
-            child: Stack(
-              children: [
-                Positioned(
-                  bottom: keyboardHeight > 0
-                      ? keyboardHeight + 16
-                      : bottomSafe + 16,
-                  left: 18,
-                  right: 18,
+          child: Stack(
+            children: [
+              Positioned(
+                bottom: keyboardHeight > 0
+                    ? keyboardHeight + 16
+                    : bottomSafe + 16,
+                left: 18,
+                right: 18,
+                // ✅ Fix: Chỉ wrap đúng phần snackbar bằng Material,
+                // phần còn lại của Stack là transparent và không chặn input
+                child: Material(
+                  color: Colors.transparent,
                   child: _AnimatedSnackBar(
                     title: title,
                     message: message,
@@ -103,8 +105,8 @@ class SnackBarHelper {
                     onClose: hide,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -187,71 +189,68 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar>
       opacity: _fade,
       child: SlideTransition(
         position: _slide,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            decoration: BoxDecoration(
-              color: widget.color,
-              borderRadius: BorderRadius.circular(widget.radius),
-              boxShadow: [
-                BoxShadow(
-                  color: widget.color.withOpacity(0.25),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                _IconBox(icon: widget.icon),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          decoration: BoxDecoration(
+            color: widget.color,
+            borderRadius: BorderRadius.circular(widget.radius),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(0.25),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              _IconBox(icon: widget.icon),
 
-                const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.title,
-                        style: ThemeConfig.appTextStyle(
-                          color: ColorConfig.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: ThemeConfig.appTextStyle(
+                        color: ColorConfig.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
                       ),
-
-                      const SizedBox(height: 2),
-
-                      Text(
-                        widget.message,
-                        style: ThemeConfig.appTextStyle(
-                          color: ColorConfig.white.withOpacity(0.96),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                InkWell(
-                  borderRadius: BorderRadius.circular(100),
-                  onTap: widget.onClose,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 18,
-                      color: ColorConfig.white.withOpacity(0.9),
                     ),
+
+                    const SizedBox(height: 2),
+
+                    Text(
+                      widget.message,
+                      style: ThemeConfig.appTextStyle(
+                        color: ColorConfig.white.withOpacity(0.96),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              InkWell(
+                borderRadius: BorderRadius.circular(100),
+                onTap: widget.onClose,
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: ColorConfig.white.withOpacity(0.9),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

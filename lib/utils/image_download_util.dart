@@ -79,42 +79,42 @@ class ImageDownloadUtil {
   /// =========================
   /// SHOW SUCCESS NOTIFICATION
   /// =========================
-  static Future<void> _showSuccessNotification() async {
-    bool hasPermission = true;
-
-    if (Platform.isAndroid) {
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-
-      if (androidInfo.version.sdkInt >= 33) {
-        hasPermission = await Permission.notification.isGranted;
-      }
-    }
-
-    if (!hasPermission) {
-      return;
-    }
-
-    const androidDetails = AndroidNotificationDetails(
-      'image_download_channel',
-      'Image Download',
-      channelDescription: 'Notifications for image downloads',
-      importance: Importance.max,
-      priority: Priority.high,
-      showWhen: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: DarwinNotificationDetails(),
-    );
-
-    await _notificationsPlugin.show(
-      0,
-      'Tải ảnh thành công',
-      'Ảnh đã được lưu vào thư viện',
-      details,
-    );
-  }
+  // static Future<void> _showSuccessNotification() async {
+  //   bool hasPermission = true;
+  //
+  //   if (Platform.isAndroid) {
+  //     final androidInfo = await DeviceInfoPlugin().androidInfo;
+  //
+  //     if (androidInfo.version.sdkInt >= 33) {
+  //       hasPermission = await Permission.notification.isGranted;
+  //     }
+  //   }
+  //
+  //   if (!hasPermission) {
+  //     return;
+  //   }
+  //
+  //   const androidDetails = AndroidNotificationDetails(
+  //     'image_download_channel',
+  //     'Image Download',
+  //     channelDescription: 'Notifications for image downloads',
+  //     importance: Importance.max,
+  //     priority: Priority.high,
+  //     showWhen: true,
+  //   );
+  //
+  //   const details = NotificationDetails(
+  //     android: androidDetails,
+  //     iOS: DarwinNotificationDetails(),
+  //   );
+  //
+  //   await _notificationsPlugin.show(
+  //     0,
+  //     'Tải ảnh thành công',
+  //     'Ảnh đã được lưu vào thư viện',
+  //     details,
+  //   );
+  // }
 
   /// =========================
   /// DOWNLOAD IMAGE
@@ -160,7 +160,7 @@ class ImageDownloadUtil {
       );
 
       if (result == true) {
-        await _showSuccessNotification();
+        // await _showSuccessNotification();
 
         if (context != null && context.mounted) {
           SnackBarHelper.showSuccess(
