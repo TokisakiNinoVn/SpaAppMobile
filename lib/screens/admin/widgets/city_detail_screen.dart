@@ -244,9 +244,18 @@ class _CityDetailScreenState extends State<CityDetailScreen> {
 
                 _buildSearchSection(),
 
+                // Expanded(
+                //   child: _buildTechnicianListSection(),
+                // ),
                 Expanded(
-                  child: _buildTechnicianListSection(),
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      await _loadTechnicians();
+                    },
+                    child: _buildTechnicianListSection(),
+                  ),
                 ),
+
               ],
             ),
 

@@ -331,20 +331,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
 
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Đã có tài khoản?',
-                    style: TextStyle(
-                      color: Color(0xFF666666),
-                      fontSize: 14,
+              GestureDetector(
+                onTap: () => context.push(GlobalRouterConfig.loginOTP),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Đã có tài khoản?',
+                      style: TextStyle(
+                        color: Color(0xFF666666),
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: () => context.push(GlobalRouterConfig.loginOTP),
-                    child: Text(
+                    const SizedBox(width: 4),
+                    Text(
                       'Đăng nhập',
                       style: TextStyle(
                         color: ColorConfig.textPrimary,
@@ -352,25 +352,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Đăng ký đối tác với',
-                    style: TextStyle(
-                      color: Color(0xFF666666),
-                      fontSize: 14,
+              GestureDetector(
+                onTap: () => context.push('/register-partner'),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Đăng ký đối tác với',
+                      style: TextStyle(
+                        color: Color(0xFF666666),
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: () => context.push('/register-partner'),
-                    child: Text(
+                    const SizedBox(width: 4),
+                    Text(
                       '${AppConfig.appName}',
                       style: TextStyle(
                         color: ColorConfig.textPrimary,
@@ -378,8 +378,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 48),

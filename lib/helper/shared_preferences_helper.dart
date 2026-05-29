@@ -2,6 +2,7 @@
 // import '../../../config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/helper/logger_utils.dart';
+import 'package:spa_app/services/auth_service.dart';
 
 class SharedPreferencesHelper {
   static Future<bool> listAllKeyValue() async {
@@ -48,9 +49,30 @@ class SharedPreferencesHelper {
     }
   }
 
+  // static Future<void> logOut() async {
+  //
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.clear();
+  //   await prefs.setBool('isLogin', false);
+  // }
+
   static Future<void> logOut() async {
+    try {
+      // gọi API logout
+      final response = await AuthService().logoutAuthService();
+      // appLog("Response: $response");
+    } catch (e) {
+      // có thể log lỗi nếu cần
+      // nhưng vẫn cho logout local
+      appLog('Logout API error: $e');
+    }
+
     final prefs = await SharedPreferences.getInstance();
+
+    // xóa toàn bộ dữ liệu local
     await prefs.clear();
+
+    // set lại trạng thái
     await prefs.setBool('isLogin', false);
   }
 }

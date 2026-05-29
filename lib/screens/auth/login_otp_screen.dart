@@ -473,20 +473,20 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Chưa có tài khoản?',
-                            style: TextStyle(
-                              color: Color(0xFF666666),
-                              fontSize: 14,
+                      GestureDetector(
+                        onTap: () => context.push(GlobalRouterConfig.register),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Chưa có tài khoản?',
+                              style: TextStyle(
+                                color: Color(0xFF666666),
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          GestureDetector(
-                            onTap: () => context.push(GlobalRouterConfig.register),
-                            child: Text(
+                            const SizedBox(width: 4),
+                            Text(
                               'Đăng ký ngay',
                               style: TextStyle(
                                 color: ColorConfig.textPrimary,
@@ -494,8 +494,8 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),

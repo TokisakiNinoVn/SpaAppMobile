@@ -369,20 +369,20 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
 
               const SizedBox(height: 20),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Đã có tài khoản?',
-                    style: TextStyle(
-                      color: Color(0xFF666666),
-                      fontSize: 14,
+              GestureDetector(
+                onTap: () => context.go(GlobalRouterConfig.loginOTP),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Đã có tài khoản?',
+                      style: TextStyle(
+                        color: Color(0xFF666666),
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: () => context.go(GlobalRouterConfig.loginOTP),
-                    child: Text(
+                    const SizedBox(width: 4),
+                    Text(
                       'Đăng nhập',
                       style: TextStyle(
                         color: ColorConfig.textPrimary,
@@ -390,8 +390,8 @@ class _RegisterPartnerScreenState extends State<RegisterPartnerScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 48),

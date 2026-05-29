@@ -1,3 +1,4 @@
+import 'package:http/http.dart';
 import 'package:spa_app/apis/helper/api_methods_public.dart';
 import 'package:spa_app/apis/helper/api_methods_private.dart';
 import 'package:spa_app/apis/auth_api.dart';
@@ -7,6 +8,10 @@ import '../helper/logger_utils.dart';
 class AuthService {
   Future<Map<String, dynamic>> loginService(data) async {
     return await ApiMethodsPublic.postRequest(AuthApiRoutes.login, body: data);
+  }
+
+  Future<Map<String, dynamic>> logoutAuthService() async {
+    return await ApiMethodsPrivate.postRequest(AuthApiRoutes.logout, {});
   }
 
   Future<Map<String, dynamic>> getOTPService(data) async {
