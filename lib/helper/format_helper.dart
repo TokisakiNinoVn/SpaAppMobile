@@ -5,9 +5,14 @@ import '../config/app_config.dart';
 
 class FormatHelper {
   static String formatNetworkImageUrl(String url) {
-    // print("URL origin image: $url - ${AppConfig.apiUrlImage}$url");
+    // Nếu đã là full URL thì trả về luôn
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
     return '${AppConfig.apiUrlImage}$url';
   }
+
   static String formatImageUrl(String url) {
     // print("URL origin image: $url");
     return '$url';
