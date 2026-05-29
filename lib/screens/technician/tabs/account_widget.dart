@@ -354,15 +354,16 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
   }
 
   Future<void> _logout() async {
-    final response = await authService.logoutService({});
+    // final response = await authService.logoutService({});
     try {
-      if (response['success'] == true || response['status'] == "success") {
+      await SharedPreferencesHelper.logOut();
+      // if (response['success'] == true || response['status'] == "success") {
         context.go(GlobalRouterConfig.loginOTP);
-      } else {
-        SnackBarHelper.showError(context, "Lỗi đăng xuất");
-      }
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+      // } else {
+      //   SnackBarHelper.showError(context, "Lỗi đăng xuất");
+      // }
+      // final prefs = await SharedPreferences.getInstance();
+      // await prefs.clear();
     } catch(e) {
       appLog('Error: $e');
     }

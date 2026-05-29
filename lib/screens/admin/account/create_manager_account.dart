@@ -57,19 +57,25 @@ class _CreateManagementAccountState extends State<CreateManagementAccount> {
       "gender": _selectedGender,
     };
 
-    final success = await _userProvider.createManagementAccount(data);
+    final bool success = await _userProvider.createManagementAccount(data);
+
     if (!mounted) return;
 
     if (success) {
-      SnackBarHelper.showSuccess(context, 'Tạo tài khoản quản lý thành công!');
-      context.pop();
-    } else {
-      if (_userProvider.errorMessage != null) {
-        SnackBarHelper.showError(context, _userProvider.errorMessage!);
-      } else {
-        SnackBarHelper.showError(context, 'Có lỗi xảy ra, vui lòng thử lại sau.');
-      }
+      SnackBarHelper.showSuccess(
+        context,
+        'Tạo tài khoản quản lý thành công!',
+      );
+
+      context.pop(true);
+      return;
     }
+
+    SnackBarHelper.showError(
+      context,
+      _userProvider.errorMessage ??
+          'Có lỗi xảy ra, vui lòng thử lại sau.',
+    );
   }
 
   @override

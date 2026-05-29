@@ -362,20 +362,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Đăng nhập bằng',
-                    style: TextStyle(
-                      color: Color(0xFF666666),
-                      fontSize: 14,
+              GestureDetector(
+                onTap: () => context.push(GlobalRouterConfig.loginOTP),
+
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Đăng nhập bằng',
+                      style: TextStyle(
+                        color: Color(0xFF666666),
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: () => context.push(GlobalRouterConfig.loginOTP),
-                    child: Text(
+                    const SizedBox(width: 4),
+                      Text(
                       'OTP',
                       style: TextStyle(
                         color: ColorConfig.textPrimary,
@@ -383,26 +384,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 16),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Chưa có tài khoản?',
-                    style: TextStyle(
-                      color: Color(0xFF666666),
-                      fontSize: 14,
+              GestureDetector(
+                onTap: () => context.push(GlobalRouterConfig.register),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Chưa có tài khoản?',
+                      style: TextStyle(
+                        color: Color(0xFF666666),
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: () => context.push(GlobalRouterConfig.register),
-                    child: Text(
+                    const SizedBox(width: 4),
+                    Text(
                       'Đăng ký',
                       style: TextStyle(
                         color: ColorConfig.textPrimary,
@@ -410,8 +411,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
               TextButton(

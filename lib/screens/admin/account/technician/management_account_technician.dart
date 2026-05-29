@@ -476,8 +476,17 @@ class _ManagementAccountTechnicianState extends State<ManagementAccountTechnicia
             IconButton(
               icon: const Icon(Icons.person_add, size: 22),
               color: Colors.black,
-              onPressed: () {
-                context.push(AdminRouterConfig.createManageAccount);
+              // onPressed: () {
+              //   context.push(AdminRouterConfig.createManageAccount);
+              // },
+              onPressed: () async {
+                final result = await context.push(
+                  AdminRouterConfig.createManageAccount,
+                );
+
+                if (result == true) {
+                  _loadUsers();
+                }
               },
               tooltip: 'Thêm tài khoản quản lý',
             ),

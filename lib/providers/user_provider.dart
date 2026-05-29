@@ -42,13 +42,12 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final res = await _userService.createManagementAccountService(data);
-      // appLog("$res");
-      // Lấy balance từ response
-      // nowBalance = res['data']['balance'] ?? 0;
-      // appLog("nowBalance: $nowBalance");
-
-      return true;
+      final response = await _userService.createManagementAccountService(data);
+      if(response["success"] == true) {
+        return true;
+      }
+      errorMessage = response["message"];
+      return false;
     } catch (e) {
       errorMessage = 'Đã xảy ra lỗi: $e';
       return false;
