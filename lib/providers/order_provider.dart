@@ -12,6 +12,7 @@ class OrderProvider extends ChangeNotifier {
 
   List listPost = [];
   List listTechnicianApplyPost = [];
+  Map<String, dynamic> workingOrder = {};
 
   Future<bool> loadListPostOrderAdmin(String query) async {
     isLoading = true;
@@ -21,6 +22,25 @@ class OrderProvider extends ChangeNotifier {
     try {
       final res = await _orderService.listPostOrder(query);
       listPost = res['data'] ?? [];
+
+      return true;
+    } catch (e) {
+      errorMessage = 'Đã xảy ra lỗi: $e';
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> checkWorkingOrder() async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _orderService.currentWorkingOrder();
+      workingOrder = res['data'] ?? [];
 
       return true;
     } catch (e) {

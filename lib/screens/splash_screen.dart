@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/helper/fcm_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/permission_helper.dart';
 import 'package:spa_app/helper/shared_preferences_helper.dart';
@@ -143,9 +144,15 @@ class _SplashScreenState extends State<SplashScreen>
     //   appLog("Chưa đăng nhập - $isLogin");
     // }
 
-    final response = await authService.checkTokenService();
+    final fcmToken = await FcmHelper.getFCMToken();
+    // appLog("FCM new token: $fcmToken");
+    final response = await authService.checkTokenService({
+      'fcmToken': fcmToken
+      }
+    );
 
     if (response['success'] == true || response['status'] == 'success') {
+      // appLog("Đã check token: $response");
       switch (role) {
         case 'customer':
           context.go('/home-customer');

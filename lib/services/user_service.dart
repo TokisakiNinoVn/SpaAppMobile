@@ -137,4 +137,16 @@ class UserService {
       '${UserApiRoutes.statisticalTechnician}?${query}',
     );
   }
+
+  Future<Map<String, dynamic>> accountRecoveryService(Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.postRequest(
+      '${UserApiRoutes.accountRecovery}',
+      data,
+    );
+  }
+  Future<Map<String, dynamic>> deleteAccountService() async {
+    return await ApiMethodsPrivate.putRequest(
+      '${UserApiRoutes.deleteAccount}', {}
+    );
+  }
 }

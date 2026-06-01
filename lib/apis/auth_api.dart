@@ -13,4 +13,6 @@ class AuthApiRoutes {
   static const String changePassword = '${AppConfig.apiUrlPublic}/auth/change-password';
 
   static const String changeRolePrivate = '${AppConfig.apiUrlPrivate}/auth-private/change-role';
+
+  static const String checkTokenUser = '${AppConfig.apiUrlPrivate}/auth-private/me';
 }

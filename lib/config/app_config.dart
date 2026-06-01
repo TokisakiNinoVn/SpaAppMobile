@@ -47,48 +47,48 @@ class AppConfig {
   ];
 
   static var supportChannels = [
-    SupportChannel(
-      iconAsset: 'lib/assets/images/zalo.png',
-      name: 'Zalo',
-      description: 'Nhắn tin qua Zalo',
-      color: Color(0xFF0068FF),
-      type: SupportType.zalo,
-      url: 'https://zalo.me/123456789', // Thay bằng số Zalo thật
-      packageName: 'com.zing.zalo', // Package name cho Zalo
-    ),
-     SupportChannel(
-      iconAsset: 'lib/assets/images/messenger.png',
-      name: 'Messenger',
-      description: 'Chat qua Facebook Messenger',
-      color: Color(0xFF0084FF),
-      type: SupportType.messenger,
-      url: 'https://m.me/your_page_id', // Thay bằng link Messenger thật
-      packageName: 'com.facebook.orca',
-    ),
-     SupportChannel(
-      iconAsset: 'lib/assets/images/hotline.png',
-      name: 'Hotline',
-      description: 'Gọi tổng đài hỗ trợ',
-      color: Color(0xFF34B7F1),
-      type: SupportType.phone,
-      url: 'tel:1900xxxx', // Thay bằng số hotline thật
-    ),
+    // SupportChannel(
+    //   iconAsset: 'lib/assets/images/zalo.png',
+    //   name: 'Zalo',
+    //   description: 'Nhắn tin qua Zalo',
+    //   color: Color(0xFF0068FF),
+    //   type: SupportType.zalo,
+    //   url: 'https://zalo.me/0777378727', // Thay bằng số Zalo thật
+    //   packageName: 'com.zing.zalo', // Package name cho Zalo
+    // ),
+    //  SupportChannel(
+    //   iconAsset: 'lib/assets/images/messenger.png',
+    //   name: 'Messenger',
+    //   description: 'Chat qua Facebook Messenger',
+    //   color: Color(0xFF0084FF),
+    //   type: SupportType.messenger,
+    //   url: 'https://m.me/your_page_id', // Thay bằng link Messenger thật
+    //   packageName: 'com.facebook.orca',
+    // ),
+    //  SupportChannel(
+    //   iconAsset: 'lib/assets/images/hotline.png',
+    //   name: 'Hotline',
+    //   description: 'Gọi tổng đài hỗ trợ',
+    //   color: Color(0xFF34B7F1),
+    //   type: SupportType.phone,
+    //   url: 'tel:1900xxxx', // Thay bằng số hotline thật
+    // ),
      SupportChannel(
       iconAsset: 'lib/assets/images/email.png',
       name: 'Email',
       description: 'Gửi email hỗ trợ',
       color: Color(0xFFEA4335),
       type: SupportType.email,
-      url: 'mailto:support@spaapp.com', // Thay bằng email thật
+      url: 'mailto:app.zenhome.spa@gmail.com',
     ),
-     SupportChannel(
-      iconAsset: 'lib/assets/images/telegram.png',
-      name: 'Telegram',
-      description: 'Nhắn tin qua Telegram',
-      color: Color(0xFF26A5E4),
-      type: SupportType.telegram,
-      url: 'https://t.me/your_username', // Thay bằng link Telegram thật
-      packageName: 'org.telegram.messenger',
-    ),
+    //  SupportChannel(
+    //   iconAsset: 'lib/assets/images/telegram.png',
+    //   name: 'Telegram',
+    //   description: 'Nhắn tin qua Telegram',
+    //   color: Color(0xFF26A5E4),
+    //   type: SupportType.telegram,
+    //   url: 'https://t.me/your_username', // Thay bằng link Telegram thật
+    //   packageName: 'org.telegram.messenger',
+    // ),
   ];
 }

@@ -3,12 +3,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/shared_preferences_helper.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/providers/order_provider.dart';
 import 'package:spa_app/routes/config/technician_router_config.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'package:spa_app/services/user_service.dart';
@@ -31,7 +33,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   final OrderService _orderService = OrderService();
 
   Map<String, dynamic>? technicianData;
-  List<dynamic>? inforService;
+  // List<dynamic>? inforService;
   Map<String, dynamic>? inforLogin;
 
   bool isLoading = true;
@@ -44,6 +46,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   String role = '';
   String statusAccount = '';
   Map<String, dynamic>? userData;
+  String _errorMessage = '';
   double? currentLat;
   double? currentLng;
 
@@ -61,7 +64,11 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   void initState() {
     super.initState();
     _loadUserDetail();
-    loadServiceInfor();
+    // loadServiceInfor();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await loadCheckWorkingOrder();
+    });
   }
 
   @override
@@ -70,57 +77,140 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
     super.dispose();
   }
 
-// Sửa _getCurrentLocation thành:
-  Future<void> _getCurrentLocation(BuildContext context) async {
-    // Kiểm tra xem dịch vụ vị trí có bật không
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      // Yêu cầu bật GPS
-      final bool? shouldOpenSettings = await _showEnableGPSSettingsDialog();
-      if (shouldOpenSettings == true) {
-        await Geolocator.openLocationSettings();
-      }
-      return;
-    }
+  // Future<void> _getCurrentLocation(BuildContext context) async {
+  //   try {
+  //     // 1. Kiểm tra permission
+  //     LocationPermission permission =
+  //     await Geolocator.checkPermission();
+  //
+  //     if (permission == LocationPermission.denied) {
+  //       permission = await Geolocator.requestPermission();
+  //     }
+  //
+  //     // Chỉ hiện popup custom khi bị từ chối vĩnh viễn
+  //     if (permission == LocationPermission.deniedForever) {
+  //       await _showEnableGPSSettingsDialog();
+  //       return;
+  //     }
+  //
+  //     if (permission != LocationPermission.whileInUse &&
+  //         permission != LocationPermission.always) {
+  //       SnackBarHelper.showError(
+  //         context,
+  //         "Không có quyền truy cập vị trí",
+  //       );
+  //       return;
+  //     }
+  //
+  //     // 2. Kiểm tra GPS
+  //     bool serviceEnabled =
+  //     await Geolocator.isLocationServiceEnabled();
+  //
+  //     if (!serviceEnabled) {
+  //       await Geolocator.openLocationSettings();
+  //       return;
+  //     }
+  //
+  //     // 3. Yêu cầu vị trí thật
+  //     // Đây là chỗ Google Play Services có thể tự hiện
+  //     // popup Location Accuracy như ảnh bạn gửi
+  //     final location = await Geolocator.getCurrentPosition(
+  //       desiredAccuracy: LocationAccuracy.high,
+  //     );
+  //
+  //     setState(() {
+  //       currentLat = location.latitude;
+  //       currentLng = location.longitude;
+  //     });
+  //   } catch (e) {
+  //     SnackBarHelper.showError(
+  //       context,
+  //       "Không thể lấy vị trí hiện tại: $e",
+  //     );
+  //   }
+  // }
 
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission != LocationPermission.whileInUse && permission != LocationPermission.always) {
-        // Không có quyền
-        SnackBarHelper.showError(context, "Không có quyền truy cập vị trí");
+  /// ====================== CẬP NHẬT VỊ TRÍ ======================
+  Future<void> _getCurrentLocation(BuildContext context) async {
+    setState(() => isUpdatingLocation = true);
+
+    try {
+      // 1. Kiểm tra và yêu cầu quyền
+      LocationPermission permission = await Geolocator.checkPermission();
+
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        await _showEnableGPSSettingsDialog();
         return;
       }
-    }
 
-    final location = await LocationHelper.getCurrentLocation(); // giả sử method này dùng geolocator
-    if (location != null) {
+      if (permission == LocationPermission.denied) {
+        SnackBarHelper.showError(context, "Bạn đã từ chối quyền truy cập vị trí");
+        return;
+      }
+
+      // 2. Lấy vị trí với độ chính xác cao
+      //    → Google Play Services sẽ tự động hiện popup "Location Accuracy"
+      //      nếu cần thiết ("For a better experience...")
+      final Position location = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,     // Quan trọng: dùng high để trigger Location Accuracy
+        timeLimit: const Duration(seconds: 20),
+      );
+
       setState(() {
         currentLat = location.latitude;
         currentLng = location.longitude;
       });
-    } else {
-      SnackBarHelper.showError(context, "Không thể lấy vị trí hiện tại");
+
+      // Cập nhật lên server
+      await _updateLocation();
+
+    } on LocationServiceDisabledException {
+      // Trường hợp GPS bị tắt hoàn toàn
+      final shouldOpenSettings = await _showEnableGPSDialog();
+      if (shouldOpenSettings == true) {
+        await Geolocator.openLocationSettings();
+      }
+    } catch (e) {
+      SnackBarHelper.showError(
+        context,
+        "Không thể lấy vị trí hiện tại.\nLỗi: ${e.toString()}",
+      );
+    } finally {
+      setState(() => isUpdatingLocation = false);
     }
   }
 
-// Thêm method mới:
-  Future<bool?> _showEnableGPSSettingsDialog() async {
+  /// Dialog khi GPS bị tắt
+  Future<bool?> _showEnableGPSDialog() async {
     return showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Bật GPS'),
-          content: const Text('Vui lòng bật GPS để cập nhật vị trí của bạn.'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.location_off, color: Colors.red),
+              SizedBox(width: 12),
+              Text('Vị trí đang tắt'),
+            ],
+          ),
+          content: const Text(
+            'Để cập nhật vị trí chính xác, vui lòng bật Dịch vụ vị trí (GPS).\n\n'
+                'Hệ thống sẽ hiển thị popup của Google Play Services để cải thiện độ chính xác.',
+          ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Hủy'),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Để sau'),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Mở cài đặt'),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Bật GPS'),
             ),
           ],
         );
@@ -128,13 +218,99 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
     );
   }
 
-  Future<void> _updateLocation() async {
-    if (currentLat == null || currentLng == null) {
-      SnackBarHelper.showError(context, "Không thể lấy vị trí hiện tại");
-      return;
-    }
+  // Thêm method mới:
+  // Future<bool?> _showEnableGPSSettingsDialog() async {
+  //   return showDialog<bool>(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(20),
+  //         ),
+  //         title: const Row(
+  //           children: [
+  //             Icon(Icons.location_off_outlined),
+  //             SizedBox(width: 8),
+  //             Expanded(
+  //               child: Text('Dịch vụ vị trí đang tắt'),
+  //             ),
+  //           ],
+  //         ),
+  //         content: const Text(
+  //           'Ứng dụng cần quyền truy cập vị trí để cập nhật vị trí hiện tại của bạn. '
+  //               'Vui lòng bật Dịch vụ vị trí trong phần Cài đặt để tiếp tục.',
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.of(context).pop(false),
+  //             child: const Text('Để sau'),
+  //           ),
+  //           ElevatedButton(
+  //             onPressed: () => Navigator.of(context).pop(true),
+  //             child: const Text('Mở Cài đặt'),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
-    setState(() => isUpdatingLocation = true);
+  /// Dialog khi bị deniedForever
+  Future<bool?> _showEnableGPSSettingsDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Cần quyền vị trí'),
+        content: const Text(
+          'Bạn đã tắt quyền vị trí vĩnh viễn. Vui lòng vào Cài đặt → Quyền ứng dụng để cấp quyền "Vị trí".',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Đóng'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context, true);
+              Geolocator.openAppSettings();
+            },
+            child: const Text('Mở Cài đặt'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Future<void> _updateLocation() async {
+  //   // if (currentLat == null || currentLng == null) {
+  //   //   SnackBarHelper.showError(context, "Không thể lấy vị trí hiện tại");
+  //   //   return;
+  //   // }
+  //
+  //   setState(() => isUpdatingLocation = true);
+  //
+  //   try {
+  //     final data = {"lat": currentLat, "lng": currentLng};
+  //     final response = await technicianService.updateLocationTechnicianService(data);
+  //
+  //     if (response['success'] == true) {
+  //       SnackBarHelper.showSuccess(context, "Cập nhật vị trí thành công");
+  //     } else {
+  //       SnackBarHelper.showError(context, response['message'] ?? "Cập nhật vị trí thất bại");
+  //     }
+  //   } catch (e) {
+  //     SnackBarHelper.showError(context, "Lỗi cập nhật vị trí: $e");
+  //   } finally {
+  //     setState(() => isUpdatingLocation = false);
+  //   }
+  // }
+
+  /// Cập nhật vị trí lên server
+  Future<void> _updateLocation() async {
+    if (currentLat == null || currentLng == null) return;
 
     try {
       final data = {"lat": currentLat, "lng": currentLng};
@@ -143,148 +319,156 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
       if (response['success'] == true) {
         SnackBarHelper.showSuccess(context, "Cập nhật vị trí thành công");
       } else {
-        SnackBarHelper.showError(context, response['message'] ?? "Cập nhật vị trí thất bại");
+        SnackBarHelper.showError(context, response['message'] ?? "Cập nhật thất bại");
       }
     } catch (e) {
       SnackBarHelper.showError(context, "Lỗi cập nhật vị trí: $e");
-    } finally {
-      setState(() => isUpdatingLocation = false);
     }
   }
 
-  // Hiển thị popup xác nhận hoàn thành đơn
-  Future<void> _showCompleteOrderConfirmation() async {
+  Future<void> _showCompleteOrderConfirmation(String idOrder) async {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
+      builder: (_) {
+        return Dialog(
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
           ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.check_circle_outline,
-                color: ColorConfig.secondary,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Xác nhận hoàn thành',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Bạn có chắc chắn muốn xác nhận hoàn thành đơn việc này?',
-                style: TextStyle(fontSize: 16),
-              ),
-              // const SizedBox(height: 12),
-              // Container(
-              //   padding: const EdgeInsets.all(12),
-              //   decoration: BoxDecoration(
-              //     color: Colors.amber.shade50,
-              //     borderRadius: BorderRadius.circular(12),
-              //     border: Border.all(color: Colors.amber.shade200),
-              //   ),
-              //   child: Row(
-              //     children: [
-              //       Icon(Icons.info_outline, color: Colors.amber.shade700, size: 20),
-              //       const SizedBox(width: 8),
-              //       Expanded(
-              //         child: Text(
-              //           'Sau khi xác nhận, đơn việc sẽ được đánh dấu là hoàn thành và không thể thay đổi.',
-              //           style: TextStyle(
-              //             fontSize: 13,
-              //             color: Colors.amber.shade800,
-              //           ),
-              //         ),
-              //       ),
-              //     ],
-              //   ),
-              // ),
-              if (_expectedIncome > 0) ...[
-                const SizedBox(height: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  width: 72,
+                  height: 72,
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12),
+                    shape: BoxShape.circle,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Thu nhập dự kiến:',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                  child: Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green.shade600,
+                    size: 42,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                const Text(
+                  'Hoàn thành đơn việc?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                Text(
+                  'Sau khi xác nhận, đơn hàng sẽ được chuyển sang trạng thái hoàn thành và không thể quay lại.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    height: 1.4,
+                  ),
+                ),
+
+                if (_expectedIncome > 0) ...[
+                  const SizedBox(height: 20),
+
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.green.shade100,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'THU NHẬP DỰ KIẾN',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green.shade700,
+                            letterSpacing: 1,
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        Text(
+                          '+${FormatHelper.formatPrice(_expectedIncome)}đ',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 52),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text('Hủy'),
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await completeOrder(idOrder);
+                        },
+                        icon: const Icon(Icons.check_circle),
+                        label: const Text(
+                          'Xác nhận',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(0, 52),
+                          backgroundColor: ColorConfig.secondary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                       ),
-                      Text(
-                        '+${FormatHelper.formatPrice(_expectedIncome)}đ',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
-            ],
+            ),
           ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Hủy',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await acceptOrder();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColorConfig.secondary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(40),
-                ),
-                elevation: 2,
-              ),
-              child: const Text(
-                'Xác nhận',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
         );
       },
     );
@@ -379,13 +563,38 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
     }
   }
 
-  Future<void> loadServiceInfor() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString('inforService');
-    if (jsonString != null) {
-      inforService = jsonDecode(jsonString);
-    } else {
-      inforService = null;
+  Future<void> loadCheckWorkingOrder() async {
+    final provider = Provider.of<OrderProvider>(
+      context,
+      listen: false,
+    );
+
+    try {
+      setState(() {
+        _errorMessage = '';
+      });
+
+      final success = await provider.checkWorkingOrder();
+
+      if (success) {
+        setState(() {
+          orderDetail = provider.workingOrder["order"];
+          isWorking = provider.workingOrder["isWorking"] ?? false;
+          // appLog("orderDetail: $isWorking"); // true
+          // appLog("orderDetail: ${provider.workingOrder}");
+
+        });
+      } else {
+        setState(() {
+          _errorMessage = provider.errorMessage ?? 'Không thể lấy thông tin đơn hàng';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+
+      appLog('Error check working order: $e');
     }
   }
 
@@ -419,12 +628,12 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
     }
   }
 
-  Future<void> acceptOrder() async {
+  Future<void> completeOrder(String idOrder) async {
     setState(() => isLoading = true);
 
     try {
       final data = {
-        'orderId': idOrderWorking,
+        'orderId': idOrder,
         'result': 'done'
       };
       final response = await _orderService.updateStatus(data);
@@ -479,62 +688,20 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   /// Giá tiền
   int get _expectedIncome => (orderDetail?['pricing']['technicianReceiveAmount'] ?? 0) as int;
 
-  /// Trạng thái đơn (đã dịch sang tiếng Việt)
-  String get _orderStatusLabel {
-    final status = orderDetail?['status'] ?? '';
-    switch (status) {
-      case 'pending':
-        return 'Chờ xác nhận';
-      case 'accepted':
-        return 'Đã nhận';
-      case 'working':
-        return 'Đang thực hiện';
-      case 'done':
-        return 'Hoàn thành';
-      case 'expired':
-        return 'Hết hạn';
-      case 'rejected':
-        return 'Đã từ chối';
-      case 'cancelled':
-        return 'Đã hủy';
-      default:
-        return status;
-    }
-  }
-
-  Color get _orderStatusColor {
-    final status = orderDetail?['status'] ?? '';
-    switch (status) {
-      case 'pending':
-        return Colors.orange;
-      case 'accepted':
-      case 'working':
-        return Colors.green;
-      case 'done':
-        return Colors.blue;
-      case 'expired':
-      case 'rejected':
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  /// Tên khách hàng – field `customer` có thể null trong JSON
-  String get _orderCustomerName {
-    final customer = orderDetail?['customer'];
-    if (customer == null) return 'Không rõ';
-    String fullNameCustomer = orderDetail?['customer']['fullname'] ?? "KHông có tên";
-    return fullNameCustomer;
-  }
-
-  String get _phoneCustomer {
-    final customer = orderDetail?['customer'];
-    if (customer == null) return 'Không rõ';
-    String phoneCustomer = orderDetail?['customer']['phone'] ?? "Không có SĐT";
-    return phoneCustomer;
-  }
+  // /// Tên khách hàng – field `customer` có thể null trong JSON
+  // String get _orderCustomerName {
+  //   final customer = orderDetail?['customer'];
+  //   if (customer == null) return 'Không rõ';
+  //   String fullNameCustomer = orderDetail?['customer']['fullname'] ?? "KHông có tên";
+  //   return fullNameCustomer;
+  // }
+  //
+  // String get _phoneCustomer {
+  //   final customer = orderDetail?['customer'];
+  //   if (customer == null) return 'Không rõ';
+  //   String phoneCustomer = orderDetail?['customer']['phone'] ?? "Không có SĐT";
+  //   return phoneCustomer;
+  // }
 
   /// Thời gian thực hiện từ serviceTimePrice
   String get _orderDuration {
@@ -929,7 +1096,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
               ),
               const SizedBox(width: 12),
               const Text(
-                'Xác nhận cập nhật vị trí',
+                'Cập nhật vị trí hiện tại',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -938,8 +1105,11 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
             ],
           ),
           content: const Text(
-            'Bạn có muốn cập nhật vị trí hiện tại của mình không?',
-            style: TextStyle(fontSize: 16),
+            'Vị trí hiện tại sẽ được sử dụng để hiển thị và đề xuất các khách hàng ở gần khu vực của bạn, giúp tăng khả năng nhận việc phù hợp. Bạn có muốn cập nhật vị trí ngay bây giờ không?',
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.4,
+            ),
           ),
           actions: <Widget>[
             TextButton(
@@ -950,7 +1120,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
               child: Text(
-                'Hủy',
+                'Để sau',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey.shade700,
@@ -970,7 +1140,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                 ),
               ),
               child: const Text(
-                'Đồng ý',
+                'Cập nhật',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -984,15 +1154,16 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
   }
 
   Widget _buildOrderCard() {
+    final idOrderWorking = orderDetail?["_id"];
+    final customerId = orderDetail?["customerId"];
+
     if (isWorking && orderDetail != null) {
-      appLog("$orderDetail");
       return GestureDetector(
         onTap: () {
           context.push(
             '${TechnicianRouterConfig.detailsOrder}/${idOrderWorking}',
           );
         },
-        // borderRadius: BorderRadius.circular(20),
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
@@ -1118,14 +1289,14 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                     // Khách hàng
                     _buildInfoRow(
                       Icons.person_outline,
-                      'Khách hàng: $_orderCustomerName',
+                      'Khách hàng: ${customerId["fullname"]}',
                     ),
 
                     const SizedBox(height: 8),
 
                     _buildInfoRow(
                       Icons.phone,
-                      'SĐT: $_phoneCustomer',
+                      'SĐT: ${customerId["phone"]}',
                     ),
 
                     const SizedBox(height: 8),
@@ -1155,18 +1326,8 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                       ),
                     ],
 
-                    // Tiền đặt cọc
-                    if ((orderDetail?['deposit'] ?? 0) > 0) ...[
-                      const SizedBox(height: 8),
-                      _buildInfoRow(
-                        Icons.account_balance_wallet_outlined,
-                        'Đặt cọc: ${FormatHelper.formatPrice(orderDetail!['deposit'])}đ',
-                      ),
-                    ],
-
                     const Divider(height: 24),
 
-                    // Tổng thanh toán
                     Row(
                       mainAxisAlignment:
                       MainAxisAlignment.spaceBetween,
@@ -1195,7 +1356,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: _showCompleteOrderConfirmation,
+                        onPressed: () => _showCompleteOrderConfirmation(idOrderWorking),
                         icon: const Icon(
                           Icons.check_circle_outline,
                           size: 18,
@@ -1243,23 +1404,6 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                 color: Colors.grey.shade600,
                 fontWeight: FontWeight.w500),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildListNextBookOrder() {
-    return Container(
-      margin: EdgeInsets.only(top: 16),
-      padding: EdgeInsets.all(16),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: ColorConfig.primaryBackground,
-
-      ),
-      child: Column(
-        children: [
-          Text("Danh sách các đơn đặt trước đang có!")
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 
 import 'package:spa_app/services/like_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -51,6 +52,7 @@ class _ListNotificationScreenState extends State<ListNotificationTechnician> {
       });
 
       final response = await _notificationService.listNotificationUserService();
+      appLog("Response: $response");
 
       if (response['success'] == true) {
         setState(() {
@@ -65,7 +67,7 @@ class _ListNotificationScreenState extends State<ListNotificationTechnician> {
         _errorMessage = e.toString();
         _isLoading = false;
       });
-      print('Error loading technician details: $e');
+      appLog('Error loading technician details: $e');
     }
   }
 

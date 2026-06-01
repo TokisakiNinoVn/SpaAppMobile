@@ -121,7 +121,7 @@ class ApiMethodsPrivate {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Request failed with status: ${response.statusCode}');
+        throw Exception('Request failed with status: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -140,6 +140,7 @@ class ApiMethodsPrivate {
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        'platform': getPlatform(),
       };
 
       final response = await http.put(
@@ -156,7 +157,7 @@ class ApiMethodsPrivate {
       if (response.statusCode == 200 || response.statusCode == 204) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Request failed with status: ${response.statusCode}');
+        throw Exception('Request failed with status: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -174,6 +175,7 @@ class ApiMethodsPrivate {
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        'platform': getPlatform(),
       };
 
       final response = await http.put(
@@ -209,6 +211,7 @@ class ApiMethodsPrivate {
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        'platform': getPlatform(),
       };
 
       final response = await http.delete(

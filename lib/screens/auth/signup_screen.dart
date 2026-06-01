@@ -112,7 +112,7 @@ class _SignupScreenState extends State<SignupScreen>
                   children: [
                     // ── Top bar ──────────────────────────────────────────
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(20, 8, 16, 0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -124,10 +124,10 @@ class _SignupScreenState extends State<SignupScreen>
                           ),
 
                           // Language switcher pill
-                          _LangPill(
-                            lang: _currentLang,
-                            onTap: _showLanguageSheet,
-                          ),
+                          // _LangPill(
+                          //   lang: _currentLang,
+                          //   onTap: _showLanguageSheet,
+                          // ),
                         ],
                       ),
                     ),

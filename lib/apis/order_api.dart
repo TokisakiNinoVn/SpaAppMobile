@@ -15,4 +15,5 @@ class OrderApiRoutes {
   //Technician
   static const String listRequestOrder = '${AppConfig.apiUrlPrivate}/order';
   static const String applyOrder = '${AppConfig.apiUrlPrivate}/order/apply-order';
+  static const String currentWorking = '${AppConfig.apiUrlPrivate}/order/current-working-order';
 }

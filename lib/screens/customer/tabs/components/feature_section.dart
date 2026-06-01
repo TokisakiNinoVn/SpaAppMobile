@@ -78,26 +78,71 @@ class _FeatureSectionState extends State<FeatureSection> {
     }
   }
 
+  // void _showRoleSwitchDialog() {
+  //   showDialog<bool>(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (_) => AlertDialog(
+  //       title: const Text('Chuyển đổi vai trò'),
+  //       content: const Text('Bạn muốn chuyển sang vai trò kỹ thuật viên?'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context, false),
+  //           child: const Text('Hủy'),
+  //         ),
+  //         ElevatedButton(
+  //           onPressed: () => Navigator.pop(context, true),
+  //           style: ElevatedButton.styleFrom(
+  //             backgroundColor: ColorConfig.primary,
+  //           ),
+  //           child: Text(
+  //             'Chuyển đổi',
+  //             style: TextStyle(color: ColorConfig.textWhite),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   ).then((confirmed) {
+  //     if (confirmed == true) {
+  //       _changeRole();
+  //     }
+  //   });
+  // }
+
   void _showRoleSwitchDialog() {
     showDialog<bool>(
       context: context,
-      barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: const Text('Chuyển đổi vai trò'),
-        content: const Text('Bạn muốn chuyển sang vai trò kỹ thuật viên?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text('Chuyển vai trò'),
+        content: const Text(
+          'Bạn có muốn chuyển sang chế độ Kỹ thuật viên không?\n\n'
+              'Sau khi chuyển, giao diện và các chức năng liên quan đến kỹ thuật viên sẽ được hiển thị.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorConfig.primary,
-            ),
             child: Text(
-              'Chuyển đổi',
-              style: TextStyle(color: ColorConfig.textWhite),
+              'Để sau',
+              style: TextStyle(
+                color: ColorConfig.textBlack
+              ),
+            ),
+          ),
+          FilledButton(
+            style: ButtonStyle(
+              backgroundColor: WidgetStatePropertyAll(
+                ColorConfig.primary,
+              ),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Tiếp tục',
+              style: TextStyle(
+                  color: ColorConfig.textWhite
+              ),
             ),
           ),
         ],

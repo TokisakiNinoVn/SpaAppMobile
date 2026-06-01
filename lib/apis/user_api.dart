@@ -27,5 +27,6 @@ class UserApiRoutes {
   // Technician/Customer
   static const String balance = '${AppConfig.apiUrlPrivate}/user-app/balance';
   static const String statisticalTechnician = '${AppConfig.apiUrlPrivate}/user-app/statistical-technician';
-
+  static const String accountRecovery = '${AppConfig.apiUrlPrivate}/user-app/account-recovery';
+  static const String deleteAccount = '${AppConfig.apiUrlPrivate}/user-app/delete';
 }

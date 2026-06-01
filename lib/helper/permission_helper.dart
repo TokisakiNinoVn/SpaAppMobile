@@ -35,6 +35,9 @@ class PermissionHelper {
     return false;
   }
 
+  ///Quyền vị trí
+  ///
+
   /// Request các permission khởi tạo app
   static Future<void> requestStartupPermissions() async {
     await requestNotificationPermission();

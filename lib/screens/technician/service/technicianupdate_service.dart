@@ -56,9 +56,7 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
   }
 
   Future<void> _loadServiceIds() async {
-    final serviceProvider =
-    Provider.of<ServiceProvider>(context, listen: false);
-
+    final serviceProvider = Provider.of<ServiceProvider>(context, listen: false);
     final success = await serviceProvider.loadSelectedServices();
 
     if (!success) {
@@ -85,6 +83,7 @@ class _TechnicianUpdateServiceState extends State<TechnicianUpdateService> {
   Future<void> _loadAllServices() async {
     try {
       final response = await _serviceService.listService();
+      // appLog("response: $response");
 
       setState(() {
         allServices =

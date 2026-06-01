@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:spa_app/helper/logger_utils.dart';
 
 class ApiMethodsPublic {
   static String getPlatform() {
@@ -31,46 +32,30 @@ class ApiMethodsPublic {
 
   static Map<String, dynamic> _parseResponse(http.Response response) {
     final statusCode = response.statusCode;
+    final Map<String, dynamic> decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final String? errorCode = decoded['errorCode'] as String?;
 
     try {
-      final dynamic decoded = jsonDecode(response.body);
-
-      if (decoded is Map<String, dynamic>) {
-        // Trường hợp là JSON object như mong muốn
-        if (statusCode >= 200 && statusCode < 300) {
-          return decoded;
-        } else {
-          return {
-            'status': 'error',
-            'message': decoded['message'] ?? 'Đã xảy ra lỗi từ server.',
-            'statusCode': statusCode,
-          };
-        }
-      } else if (decoded is List) {
-        // Trường hợp là JSON array => bọc lại thành object
-        return {
-          'status': 'success',
-          'data': decoded,
-          'statusCode': statusCode,
-        };
+      if (statusCode >= 200 && statusCode < 300) {
+        return decoded;
       } else {
-        // Dạng dữ liệu không xác định
         return {
           'status': 'error',
-          'message': 'Kiểu dữ liệu từ server không hợp lệ.',
+          'message': decoded['message'] ?? 'Đã xảy ra lỗi từ server.',
           'statusCode': statusCode,
+          'errorCode': errorCode
         };
       }
     } catch (e) {
-      print('Lỗi khi parse JSON: $e');
+      appLog('Lỗi khi parse JSON: $e');
       return {
         'status': 'error',
         'message': 'Phản hồi từ server không đúng định dạng JSON.',
         'statusCode': statusCode,
+        'errorCode': errorCode
       };
     }
   }
-
 
   // Helper method to handle response
   static Map<String, dynamic> _handleResponse(http.Response response) {
@@ -82,6 +67,7 @@ class ApiMethodsPublic {
       return {
         'status': 'error',
         'message': jsonResponse['message'] ?? 'Lỗi không xác định.',
+        'errorCode': jsonResponse['errorCode'] ?? '',
       };
     }
   }
@@ -92,6 +78,7 @@ class ApiMethodsPublic {
     return {
       'status': 'error',
       'message': 'Không thể kết nối đến server. Vui lòng thử lại sau - $e',
+      'errorCode': '$e',
     };
   }
 
