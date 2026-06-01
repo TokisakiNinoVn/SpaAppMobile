@@ -471,9 +471,9 @@ class _HistoryWithdrawScreenState extends State<HistoryWithdrawScreen> {
                                                     Expanded(
                                                       child:
                                                       Text(
-                                                        item[
+                                                        _getStatusText(item[
                                                         'status'] ??
-                                                            '',
+                                                            ''),
                                                         style:
                                                         TextStyle(
                                                           fontWeight:
@@ -673,46 +673,48 @@ class _HistoryWithdrawScreenState extends State<HistoryWithdrawScreen> {
     );
   }
 
-  Widget _buildMiniInfo(
-      String title,
-      String value,
-      ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 12,
-        horizontal: 10,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(.12),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildMiniInfo(
+  //     String title,
+  //     String value,
+  //     ) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(
+  //       vertical: 12,
+  //       horizontal: 10,
+  //     ),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white.withOpacity(.12),
+  //       borderRadius: BorderRadius.circular(18),
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         Text(
+  //           title,
+  //           style: const TextStyle(
+  //             color: Colors.white70,
+  //             fontSize: 13,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 6),
+  //         Text(
+  //           value,
+  //           textAlign: TextAlign.center,
+  //           style: const TextStyle(
+  //             color: Colors.white,
+  //             fontWeight: FontWeight.bold,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   String _getStatusText(String status) {
     switch (status) {
       case 'completed':
         return 'Thành công';
+      case 'created':
+        return 'Tạo yêu cầu';
       case 'pending':
         return 'Đang xử lý';
       case 'failed':
@@ -751,7 +753,7 @@ class _HistoryWithdrawScreenState extends State<HistoryWithdrawScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorConfig.primaryBackground,
+      backgroundColor: ColorConfig.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: ColorConfig.primaryBackground,
@@ -847,107 +849,165 @@ class _HistoryWithdrawScreenState extends State<HistoryWithdrawScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
       itemCount: _historyDepositList.length,
+      separatorBuilder: (_, __) => Divider(
+        height: 1,
+        color: Colors.grey.shade200,
+      ),
       itemBuilder: (context, index) {
         final withdraw = _historyDepositList[index];
-        final transaction = withdraw as Map<String, dynamic>;
+        final transaction =
+        withdraw as Map<String, dynamic>;
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: ColorConfig.white,
+        final statusColor =
+        _getStatusColor(transaction['status']);
+
+        return InkWell(
+          onTap: () =>
+              _showTransactionDetailBottomSheet(withdraw),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: 14,
             ),
-            child: InkWell(
-              onTap: () => _showTransactionDetailBottomSheet(withdraw),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            withdraw['code'] ?? transaction['code'],
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(transaction['status']).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            _getStatusText(transaction['status']),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: _getStatusColor(transaction['status']),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Số tiền: ',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        Text(
-                          FormatHelper.formatPrice(transaction['netAmount']),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.green,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Thời gian:',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        Text(
-                          FormatHelper.formatDateTime(withdraw['createdAt']),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// ICON
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_upward_rounded,
+                    color: Colors.red,
+                  ),
                 ),
-              ),
+
+                const SizedBox(width: 12),
+
+                /// CONTENT
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Rút tiền về ngân hàng',
+                              maxLines: 1,
+                              overflow:
+                              TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight:
+                                FontWeight.w600,
+                              ),
+                            ),
+                          ),
+
+                          Text(
+                            '-${FormatHelper.formatPrice(transaction['netAmount'])}',
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 16,
+                              fontWeight:
+                              FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      Text(
+                        transaction['code'] ?? '--',
+                        maxLines: 1,
+                        overflow:
+                        TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
+                      ),
+
+                      if (transaction['bankName'] !=
+                          null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '${transaction['bankName']} • ${transaction['accountNumber'] ?? ''}',
+                          maxLines: 1,
+                          overflow:
+                          TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 6),
+
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+
+                          const SizedBox(width: 6),
+
+                          Text(
+                            _getStatusText(
+                                transaction['status']),
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 13,
+                              fontWeight:
+                              FontWeight.w500,
+                            ),
+                          ),
+
+                          const Spacer(),
+
+                          Text(
+                            FormatHelper.formatDateTime(
+                              transaction['createdAt'] ??
+                                  withdraw[
+                                  'createdAt'],
+                            ),
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey.shade400,
+                ),
+              ],
             ),
           ),
         );

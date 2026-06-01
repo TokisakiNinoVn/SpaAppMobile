@@ -16,14 +16,16 @@ class AuthResponseHandler {
     required BuildContext context,
     required Map<String, dynamic> response,
   }) async {
-    if (response['token'] == null) {
+    // appLog("Response auth handle: $response");
+
+    if (response['token'] == null && ['account_locked', 'account_deleted'].contains(response['errorCode'])) {
       SnackBarHelper.showError(
         context,
-        response['message'] ?? "Đăng nhập thất bại",
+        response['message'] ?? 'Đăng nhập thất bại',
       );
       return;
     }
-
+    
     final data = response['data'] ?? {};
 
     final role = data['rolesActive'];
@@ -52,6 +54,7 @@ class AuthResponseHandler {
     // ===== TECHNICIAN =====
     if (role == 'ktv') {
       if (isHaveTechnician) {
+        await SharedPrefs.saveValue(PrefType.bool, "isHaveTechnician", isHaveTechnician);
         await SharedPrefs.saveValue(PrefType.string, 'technician', data['technicianProfile']);
         await SharedPrefs.saveValue(PrefType.string, 'serviceIds', jsonEncode(data['technicianProfile']?['serviceIds'] ?? []));
         await SharedPrefs.saveValue(PrefType.string, 'inforService', jsonEncode(data['inforService'] ?? []));

@@ -47,7 +47,7 @@ class AuthService {
     return await ApiMethodsPrivate.postRequest(AuthApiRoutes.register, data);
   }
 
-  Future<Map<String, dynamic>> checkTokenService() async {
-    return await ApiMethodsPrivate.getRequest(AuthApiRoutes.checkToken);
+  Future<Map<String, dynamic>> checkTokenService(payload) async {
+    return await ApiMethodsPrivate.putRequest(AuthApiRoutes.checkTokenUser, payload);
   }
 }

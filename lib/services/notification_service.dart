@@ -31,9 +31,9 @@ class NotificationService {
 
   // User
   Future<Map<String, dynamic>> listNotificationUserService() async {
-    return await ApiMethodsPrivate.getRequest(
-        '${NotificationApiRoutes.listUser}'
-    );
+    String url = "${NotificationApiRoutes.listUser}";
+    appLog(url);
+    return await ApiMethodsPrivate.getRequest(url);
   }
 
    Future<Map<String, dynamic>> readNotificationService(String id) async {

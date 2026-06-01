@@ -22,7 +22,10 @@ class ServiceService {
   }
 
   Future<Map<String, dynamic>> getSelectedServices() async {
-    return await ApiMethodsPrivate.getRequest(ServiceApiRoutes.getService);
+    final response = await ApiMethodsPrivate.getRequest(ServiceApiRoutes.getService);
+    // appLog("${ServiceApiRoutes.getService} | $response");
+
+    return response;
   }
 
   Future<Map<String, dynamic>> listBaseService() async {

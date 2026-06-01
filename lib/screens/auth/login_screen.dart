@@ -117,11 +117,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await authService.loginService({
-            "phone": phone,
-            "password": password,
-            "fcm_token": fcm,
-            "device_type": "android",
-          });;
+        "phone": phone,
+        "password": password,
+        "fcm_token": fcm,
+        "device_type": "android",
+      });
+
+      appLog("response $response");
 
       await AuthResponseHandler.handleLoginResponse(
         context: context,

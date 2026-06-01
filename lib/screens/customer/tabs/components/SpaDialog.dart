@@ -41,16 +41,6 @@ class SpaDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon badge
-            // Container(
-            //   padding: const EdgeInsets.all(16),
-            //   decoration: BoxDecoration(
-            //     color: iconColor.withOpacity(0.1),
-            //     shape: BoxShape.circle,
-            //   ),
-            //   child: Icon(icon, color: iconColor, size: 32),
-            // ),
-            // const SizedBox(height: 16),
             Text(
               title,
               style: const TextStyle(
@@ -62,7 +52,7 @@ class SpaDialog extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               body,
-              textAlign: TextAlign.center,
+              textAlign: TextAlign.left,
               style: TextStyle(
                 fontSize: 14,
                 height: 1.5,
@@ -74,11 +64,11 @@ class SpaDialog extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(false), // Trả về false
+                    onPressed: () => Navigator.of(context).pop(false),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.grey,
                       side: const BorderSide(color: Color(0xFFE0D8CF)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(40),
                       ),
@@ -90,14 +80,14 @@ class SpaDialog extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Pop và trả về true, sau đó gọi onConfirm
                       Navigator.of(context).pop(true);
+                      onConfirm();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: confirmColor,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(40),
                       ),

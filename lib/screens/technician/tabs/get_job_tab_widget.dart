@@ -700,7 +700,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: ColorConfig.primaryBackground,
       body: RefreshIndicator(
         onRefresh: _loadBookOrders,
         child: SafeArea(

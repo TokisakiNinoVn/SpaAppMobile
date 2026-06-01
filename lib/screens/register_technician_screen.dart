@@ -844,10 +844,12 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Giới tính',
-          style: TextStyle(fontSize: 14, color: ColorConfig.textBlack),
-        ),
+        // Text(
+        //   'Giới tính',
+        //   style: TextStyle(fontSize: 14, color: ColorConfig.textBlack),
+        // ),
+        _buildRequiredTextField(label: 'Giới tính'),
+
         const SizedBox(height: 10),
         Row(
           children: genderOptions.map((option) {
@@ -860,7 +862,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                   margin: EdgeInsets.only(
                     right: option['value'] != 'other' ? 10 : 0,
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected ? ColorConfig.primary : const Color(0xFFF8F8F8),
                     borderRadius: BorderRadius.circular(40),
@@ -1017,13 +1019,33 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         const SizedBox(height: 12),
         TextButton.icon(
           onPressed: () => _pickImage(isAvatar: true),
-          icon: const Icon(Icons.camera_alt, size: 18, color: Color(0xFF1A1A1A)),
-          label: const Text(
-            'Chọn ảnh đại diện',
-            style: TextStyle(color: Color(0xFF1A1A1A), fontSize: 13),
+          icon: const Icon(
+            Icons.camera_alt,
+            size: 18,
+            color: Color(0xFF1A1A1A),
+          ),
+          label: RichText(
+            text: const TextSpan(
+              style: TextStyle(
+                color: Color(0xFF1A1A1A),
+                fontSize: 13,
+              ),
+              children: [
+                TextSpan(text: 'Chọn ảnh đại diện'),
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
           style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(40),
+            ),
           ),
         ),
       ],
@@ -1148,11 +1170,29 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Tỉnh/Thành phố',
-                            style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                          RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1A1A1A),
+                                letterSpacing: -0.3,
+                              ),
+                              children: [
+                                TextSpan(text: "Tỉnh/Thành phố"),
+                                  const TextSpan(
+                                    text: '*',
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           _buildLocationField(
-                            label: 'Chọn tỉnh/thành phố',
+                            label: 'Chọn',
                             value: selectedProvince?['name'],
                             onTap: _showProvinceBottomSheet,
                             isLoading: isProvincesLoading,
@@ -1165,11 +1205,10 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                           Text('Quận/Huyện',
-                              style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                          _buildRequiredTextField(label: 'Quận/Huyện'),
                           const SizedBox(height: 6),
                           _buildLocationField(
-                            label: 'Chọn quận/huyện',
+                            label: 'Chọn',
                             value: selectedDistricts.isEmpty
                                 ? null
                                 : '${selectedDistricts.length} đã chọn',
@@ -1201,7 +1240,9 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                         children: [
                           Row(
                             children: [
-                              Text('Năm sinh', style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                              // Text('Năm sinh', style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                              _buildRequiredTextField(label: 'Năm sinh'),
+
                               const SizedBox(width: 4),
                               Tooltip(
                                 message: 'Phải từ đủ 18 tuổi trở lên',
@@ -1209,7 +1250,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 1),
                           // _buildLocationField(
                           //   label: 'Chọn năm sinh',
                           //   value: selectedYear,
@@ -1245,11 +1286,13 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Kinh nghiệm',
-                              style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
-                          const SizedBox(height: 6),
+                          // Text('Kinh nghiệm',
+                          //     style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                          _buildRequiredTextField(label: 'Kinh nghiệm'),
+
+                          const SizedBox(height: 1),
                           _buildLocationField(
-                            label: 'Chọn kinh nghiệm',
+                            label: 'Chọn',
                             value: experience,
                             onTap: _showExperienceBottomSheet,
                           ),
@@ -1265,8 +1308,10 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Dịch vụ cung cấp',
-                      style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                    // Text('Dịch vụ cung cấp',
+                    //   style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                    _buildRequiredTextField(label: 'Dịch vụ cung cấp'),
+
                     const SizedBox(height: 6),
                     _buildLocationField(
                       label: 'Chọn dịch vụ',
@@ -1284,10 +1329,12 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Hình ảnh',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
-                    ),
+                    // const Text(
+                    //   'Hình ảnh',
+                    //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+                    // ),
+                    _buildRequiredTextField(label: 'Hình ảnh', isBold: true, fontSize: 16),
+
                     Text(
                       '${images.length}/5',
                       style: const TextStyle(fontSize: 13, color: Color(0xFF666666)),
@@ -1355,11 +1402,33 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
     required String label,
     String? hint,
     int maxLines = 1,
+    bool isRequired = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+        // Text(label, style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+        RichText(
+          text: TextSpan(
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A1A),
+              letterSpacing: -0.3,
+            ),
+            children: [
+              TextSpan(text: label),
+              if (isRequired)
+              const TextSpan(
+                text: '*',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -1380,6 +1449,40 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
             contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           ),
           style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRequiredTextField({
+    required String label,
+    bool isRequired = true,
+    bool isBold = true,
+    double fontSize = 14,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            style: TextStyle(
+              fontSize: fontSize == 14 ? 16 : 14,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1A1A1A),
+              letterSpacing: -0.3,
+            ),
+            children: [
+              TextSpan(text: label),
+              if (isRequired)
+              const TextSpan(
+                text: '*',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

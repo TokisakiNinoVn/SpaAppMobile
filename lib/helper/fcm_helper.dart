@@ -36,7 +36,7 @@ class FcmHelper {
 
       /// Firebase Installation ID
       final installationId = await FirebaseInstallations.instance.getId();
-      appLog('Firebase Installation ID: $installationId');
+      // appLog('Firebase Installation ID: $installationId');
 
       /// Get token
       final token = await FirebaseMessaging.instance.getToken();
@@ -47,7 +47,7 @@ class FcmHelper {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('fcm_token', token);
 
-        appLog('FCM Token: $token');
+        // appLog('FCM Token: $token');
       }
 
       /// Listen token refresh (chỉ listen 1 lần)
@@ -73,9 +73,7 @@ class FcmHelper {
   /// Lấy token cache
   static Future<String?> getSavedToken() async {
     if (_fcmToken != null) return _fcmToken;
-
     final prefs = await SharedPreferences.getInstance();
-
     _fcmToken = prefs.getString('fcm_token');
 
     return _fcmToken;

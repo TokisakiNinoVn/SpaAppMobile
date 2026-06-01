@@ -19,7 +19,7 @@ class OrderService {
 
   Future<Map<String, dynamic>> updateStatus(Map<String, dynamic> data) async {
     final response =  await ApiMethodsPrivate.putRequest(OrderApiRoutes.updateStatus, data);
-    // appLog("$data - $response");
+    appLog("$data - $response");
     return response;
   }
 
@@ -59,5 +59,9 @@ class OrderService {
 
   Future<Map<String, dynamic>> applyPostOrder(Map<String, dynamic> body) async {
     return await ApiMethodsPrivate.postRequest('${OrderApiRoutes.applyOrder}', body);
+  }
+
+  Future<Map<String, dynamic>> currentWorkingOrder() async {
+    return await ApiMethodsPrivate.getRequest('${OrderApiRoutes.currentWorking}');
   }
 }

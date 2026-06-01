@@ -17,11 +17,13 @@ import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:spa_app/routes/config/technician_router_config.dart';
 import 'package:spa_app/screens/components/wallet_balance_section.dart';
+import 'package:spa_app/screens/customer/tabs/components/SpaDialog.dart';
 import 'package:spa_app/screens/widgets/role_switcher_card.dart';
 import 'package:spa_app/services/user_service.dart';
 import 'package:spa_app/helper/full_screen_list_image.dart';
 import 'package:spa_app/services/auth_service.dart';
 import 'package:spa_app/helper/full_screen_single_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../storage/index.dart';
 
@@ -36,12 +38,14 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
 
   final UserService userService = UserService();
   final AuthService authService = AuthService();
+
   Map<String, dynamic>? userData;
   bool isLoading = true;
   bool _isRefreshing = false;
 
   bool _isSwitchingRole = false;
   bool _isLoading = false;
+  bool isTechnicianActive = false;
   String _errorMessage = '';
   int nowBalance = 0;
   late final AnimationController _fadeCtrl;
@@ -62,6 +66,7 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
 
     _loadUserDetail();
+    // _loadAllSharedPreferences();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadBalanceNow();
     });
@@ -72,6 +77,15 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
     _fadeCtrl.dispose();
     super.dispose();
   }
+
+  // Future<void> _loadAllSharedPreferences() async {
+  //
+  //   try {
+  //     await SharedPreferencesHelper.listAllKeyValue();
+  //   } catch (e) {
+  //     appLog('Load all : $e');
+  //   }
+  // }
 
   Future<void> _loadBalanceNow() async {
     final provider = context.read<UserProvider>();
@@ -95,7 +109,7 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
         _errorMessage = e.toString();
         _isLoading = false;
       });
-      print('Error get now balance: $e');
+      appLog('Error get now balance: $e');
     }
   }
 
@@ -120,8 +134,62 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
     }
   }
 
+  // void _showRoleSwitchDialog(BuildContext context) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (_) => AlertDialog(
+  //       backgroundColor: Colors.white,
+  //       shape: RoundedRectangleBorder(
+  //         borderRadius: BorderRadius.circular(20),
+  //       ),
+  //       title: Row(
+  //         children: [
+  //           Icon(Icons.change_circle_rounded, color: ColorConfig.secondary),
+  //           const SizedBox(width: 10),
+  //           Text(
+  //             "Chuyển đổi vai trò",
+  //             style: TextStyle(
+  //               color: ColorConfig.secondary,
+  //               fontWeight: FontWeight.bold,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //       content: const Text(
+  //         "Bạn muốn chuyển sang vai trò khách hàng?",
+  //         style: TextStyle(fontSize: 15, height: 1.4),
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.of(context).pop(),
+  //           child: const Text(
+  //             "Hủy",
+  //             style: TextStyle(color: Colors.grey),
+  //           ),
+  //         ),
+  //         ElevatedButton(
+  //           onPressed: () {
+  //             Navigator.of(context).pop();
+  //             _changeRole();
+  //           },
+  //           style: ElevatedButton.styleFrom(
+  //             backgroundColor: ColorConfig.secondary,
+  //             shape: RoundedRectangleBorder(
+  //               borderRadius: BorderRadius.circular(10),
+  //             ),
+  //           ),
+  //           child: const Text(
+  //             "Chuyển đổi",
+  //             style: TextStyle(color: Colors.white),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   void _showRoleSwitchDialog(BuildContext context) {
-    showDialog(
+    showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: Colors.white,
@@ -130,48 +198,57 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
         ),
         title: Row(
           children: [
-            Icon(Icons.change_circle_rounded, color: ColorConfig.secondary),
+            Icon(
+              Icons.change_circle_rounded,
+              color: ColorConfig.secondary,
+            ),
             const SizedBox(width: 10),
-            Text(
-              "Chuyển đổi vai trò",
-              style: TextStyle(
-                color: ColorConfig.secondary,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                'Chuyển vai trò',
+                style: TextStyle(
+                  color: ColorConfig.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
         ),
         content: const Text(
-          "Bạn muốn chuyển sang vai trò khách hàng?\nSau khi chuyển đổi, bạn cần đăng nhập lại bằng số điện thoại này.",
-          style: TextStyle(fontSize: 15, height: 1.4),
+          'Bạn có muốn chuyển sang chế độ Khách hàng không?\n\n'
+              'Sau khi chuyển, giao diện và các chức năng dành cho khách hàng sẽ được hiển thị.',
+          style: TextStyle(
+            fontSize: 15,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text(
-              "Hủy",
-              style: TextStyle(color: Colors.grey),
+              'Để sau',
+              style: TextStyle(
+                color: Colors.grey,
+              ),
             ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _changeRole();
-            },
-            style: ElevatedButton.styleFrom(
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
               backgroundColor: ColorConfig.secondary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text(
-              "Chuyển đổi",
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Tiếp tục'),
           ),
         ],
       ),
-    );
+    ).then((confirmed) {
+      if (confirmed == true) {
+        _changeRole();
+      }
+    });
   }
 
   Future<void> _changeRole() async {
@@ -246,6 +323,7 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
     final userInfoJson = await SharedPrefs.getValue(PrefType.string, "inforUserLogin") ?? '';
     final rolesActiveStr = await SharedPrefs.getValue(PrefType.string, "rolesActive") ?? '';
     final rolesJsonStr = await SharedPrefs.getValue(PrefType.string, "roles") ?? '[]';
+    isTechnicianActive = await SharedPrefs.getValue(PrefType.bool, "isTechnicianActive") ?? false;
 
     List<String> rolesList = [];
     if (rolesJsonStr.isNotEmpty) {
@@ -321,49 +399,42 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
     }
   }
 
-  Widget _buildInfoRow(String title, String? value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 100,
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value ?? 'Không có',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildInfoRow(String title, String? value) {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(vertical: 12),
+  //     child: Row(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Container(
+  //           width: 100,
+  //           child: Text(
+  //             title,
+  //             style: TextStyle(
+  //               fontSize: 14,
+  //               color: Colors.grey[600],
+  //               fontWeight: FontWeight.w500,
+  //             ),
+  //           ),
+  //         ),
+  //         Expanded(
+  //           child: Text(
+  //             value ?? 'Không có',
+  //             style: const TextStyle(
+  //               fontSize: 15,
+  //               fontWeight: FontWeight.w500,
+  //               color: Colors.black87,
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Future<void> _logout() async {
-    // final response = await authService.logoutService({});
     try {
       await SharedPreferencesHelper.logOut();
-      // if (response['success'] == true || response['status'] == "success") {
-        context.go(GlobalRouterConfig.loginOTP);
-      // } else {
-      //   SnackBarHelper.showError(context, "Lỗi đăng xuất");
-      // }
-      // final prefs = await SharedPreferences.getInstance();
-      // await prefs.clear();
+      context.go(GlobalRouterConfig.loginOTP);
     } catch(e) {
       appLog('Error: $e');
     }
@@ -392,6 +463,107 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
         ],
       ),
     );
+  }
+
+  Future<void> _showDeleteAccountDialog() async {
+    const minWithdraw = 10000;
+
+    // Có tiền và đủ điều kiện rút
+    if (nowBalance >= minWithdraw) {
+      await showDialog(
+        context: context,
+        builder: (_) => SpaDialog(
+          title: 'Không thể xóa tài khoản',
+          iconColor: ColorConfig.red,
+          // body:
+          // 'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
+          //     'Vui lòng rút toàn bộ số dư trước khi thực hiện xóa tài khoản.',
+          body:
+          'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
+              'Vui lòng rút toàn bộ số dư trước khi thực hiện xóa tài khoản.\n'
+              'Sau khi số dư về 0, bạn có thể tiếp tục yêu cầu xóa tài khoản.',
+          cancelLabel: 'Đóng',
+          confirmLabel: 'Đi rút tiền',
+          onConfirm: () {
+            context.push(CustomerRouterConfig.createReqWithdraw);
+            appLog("Vô đây");
+          },
+          confirmColor: ColorConfig.primary,
+        ),
+      );
+      return;
+    }
+
+    // String body =
+    //     'Bạn có chắc chắn muốn xóa tài khoản?\n\n'
+    //     'Tài khoản sẽ bị vô hiệu hóa ngay sau khi xác nhận và không thể khôi phục.\n'
+    //     'Dữ liệu sẽ được xóa hoàn toàn sau 30 ngày.';
+    String body =
+        'Bạn có chắc chắn muốn xóa tài khoản?\n\n'
+        'Sau khi xác nhận:\n'
+        '• Tài khoản sẽ bị vô hiệu hóa ngay lập tức.\n'
+        '• Bạn sẽ không thể đăng nhập lại bằng số điện thoại này.\n'
+        '• Tài khoản không thể khôi phục sau khi xóa.\n'
+        '• Dữ liệu sẽ được hệ thống xử lý và xóa hoàn toàn sau 30 ngày.';
+
+    // Số dư nhỏ hơn mức rút tối thiểu
+    if (nowBalance > 0 && nowBalance < minWithdraw) {
+      // body =
+      // 'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
+      //     'Số dư này chưa đạt mức rút tối thiểu ${FormatHelper.formatPrice(minWithdraw)}đ.\n'
+      //     'Nếu tiếp tục xóa tài khoản, số dư còn lại sẽ bị hủy và không thể hoàn lại.\n\n'
+      //     'Bạn vẫn muốn tiếp tục?';
+      body =
+      'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
+          'Số dư này chưa đạt mức rút tối thiểu ${FormatHelper.formatPrice(minWithdraw)}đ.\n'
+          'Nếu tiếp tục xóa tài khoản, số dư còn lại sẽ bị hủy và không thể hoàn lại.\n\n'
+          'Sau khi xác nhận:\n'
+          '• Bạn sẽ không thể đăng nhập lại bằng số điện thoại này.\n'
+          '• Tài khoản không thể khôi phục.\n'
+          '• Dữ liệu sẽ được xóa hoàn toàn sau 30 ngày.\n\n'
+          'Bạn vẫn muốn tiếp tục?';
+
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => SpaDialog(
+        iconColor: ColorConfig.red,
+        title: 'Xóa tài khoản',
+        body: body,
+        cancelLabel: 'Hủy',
+        confirmLabel: 'Xóa tài khoản',
+        confirmColor: ColorConfig.red,
+        onConfirm: () {},
+      ),
+    );
+
+    if (result == true && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(child: CircularProgressIndicator(color: ColorConfig.textBlack)),
+      );
+
+      try {
+        var res = await userService.deleteAccountService();
+        // appLog("Xóa tài khoản: $res");
+        if(res['success']) {
+          SnackBarHelper.showSuccess(context, res['message']);
+
+          await SharedPreferencesHelper.logOut();
+          if (mounted) Navigator.of(context).pop();
+          if (mounted) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) context.pushReplacement(GlobalRouterConfig.loginOTP);
+            });
+          }
+        }
+      } catch (e) {
+        if (mounted) Navigator.of(context).pop();
+        SnackBarHelper.showError(context, "Lỗi xóa tài khoản: $e");
+      }
+    }
   }
 
   Widget _buildActionButton({
@@ -699,17 +871,19 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
                 padding: const EdgeInsets.only(left: 20, top: 5, right: 20, bottom: 10 ),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    Container(
-                      child: WalletBalanceSection(
-                        balance: nowBalance,
-                        // onTapDeposit: () {
-                        //   context.go(CustomerRouterConfig.choosePackage);
-                        // },
-                        onTapWithdraw: () {
-                          context.push(TechnicianRouterConfig.createRequestWithdraw);
-                        },
+                    if(isTechnicianActive) ...[
+                      Container(
+                        child: WalletBalanceSection(
+                          balance: nowBalance,
+                          // onTapDeposit: () {
+                          //   context.go(CustomerRouterConfig.choosePackage);
+                          // },
+                          onTapWithdraw: () {
+                            context.push(TechnicianRouterConfig.createRequestWithdraw);
+                          },
+                        ),
                       ),
-                    ),
+                    ],
 
                     const SizedBox(height: 10),
                       Column(
@@ -765,13 +939,22 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
                               label: 'Chuyển vai trò khách hàng',
                               onTap: () => _showRoleSwitchDialog(context),
                             ),
-                            const Divider(height: 1, indent: 52),
-
+                            // const Divider(height: 1, indent: 52),
                           ],
+
+                          const SizedBox(height: 16),
+
                           _buildMenuItem(
                             icon: Icons.logout,
                             label: 'Đăng xuất',
                             onTap: () => _showLogoutDialog(context),
+                            iconColor: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildMenuItem(
+                            icon: Icons.cancel_outlined,
+                            label: 'Xóa tài khoản',
+                            onTap: () => _showDeleteAccountDialog(),
                             iconColor: Colors.red,
                           ),
                         ],
@@ -799,21 +982,21 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
                             icon: Icons.help_outline,
                             label: 'Trung tâm hỗ trợ',
                             onTap: () {
-                              // TODO: Chuyển đến trung tâm hỗ trợ
+                              launchUrl(Uri.parse(AppConfig.urlSupport));
                             },
                           ),
                           _buildMenuItem(
                             icon: Icons.privacy_tip_outlined,
                             label: 'Chính sách bảo mật',
                             onTap: () {
-                              // TODO: Chuyển đến chính sách bảo mật
+                              launchUrl(Uri.parse(AppConfig.urlPrivacy));
                             },
                           ),
                           _buildMenuItem(
                             icon: Icons.description_outlined,
                             label: 'Điều khoản dịch vụ',
                             onTap: () {
-                              // TODO: Chuyển đến điều khoản dịch vụ
+                              launchUrl(Uri.parse(AppConfig.urlTerm));
                             },
                           ),
                         ],

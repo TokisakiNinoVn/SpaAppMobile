@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:spa_app/config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/handlers/auth_response_handler.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/providers/user_provider.dart';
 import 'package:spa_app/screens/widgets/role_switcher_card.dart';
 import 'package:spa_app/services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -55,6 +57,8 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
   String rolesActive = '';
   List<String> roles = [];
   bool isAdmin = false;
+  String _errorMessage = '';
+  bool _isLoading = false;
 
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
@@ -102,7 +106,10 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
 
     if (loggedIn) {
       await _loadInforUser();
-      balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
+      // balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadBalanceNow();
+      });
       await _fetchLatestUserData();
 
     } else {
@@ -146,7 +153,10 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
   }
 
   Future<void> _loadInforUser() async {
-    balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
+    // balance = await SharedPrefs.getValue(PrefType.int, "balance") ?? 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadBalanceNow();
+    });
     isHasTechnicianProfile = await SharedPrefs.getValue(PrefType.bool, 'isHaveTechnician') ?? false;
 
     final rolesActiveStr = await SharedPrefs.getValue(PrefType.string, "role") ?? '';
@@ -178,6 +188,31 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
     } catch (e) {
       debugPrint('❌ Parse error: $e');
       if (mounted) setState(() => inforUser = null);
+    }
+  }
+
+  Future<void> _loadBalanceNow() async {
+    final provider = context.read<UserProvider>();
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
+
+      await provider.loadBalanceUser();
+      balance = provider.nowBalance;
+
+      setState(() {
+        balance = balance ?? 0;
+        _isLoading = false;
+      });
+
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+      print('Error get now balance: $e');
     }
   }
 
@@ -317,6 +352,86 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
     }
   }
 
+  Future<void> _showDeleteAccountDialog() async {
+    const minWithdraw = 10000;
+
+    // Có tiền và đủ điều kiện rút
+    if (balance >= minWithdraw) {
+      await showDialog(
+        context: context,
+        builder: (_) => SpaDialog(
+          title: 'Không thể xóa tài khoản',
+          iconColor: _kRed,
+          body:
+          'Bạn hiện còn ${FormatHelper.formatPrice(balance)}đ trong tài khoản.\n\n'
+              'Vui lòng rút toàn bộ số dư trước khi thực hiện xóa tài khoản.',
+          cancelLabel: 'Đóng',
+          confirmLabel: 'Đi rút tiền',
+          onConfirm: () {
+            context.push(CustomerRouterConfig.createReqWithdraw);
+            appLog("Vô đây");
+          },
+          confirmColor: ColorConfig.primary,
+        ),
+      );
+      return;
+    }
+
+    String body =
+        'Bạn có chắc chắn muốn xóa tài khoản?\n\n'
+        'Tài khoản sẽ bị vô hiệu hóa ngay sau khi xác nhận và không thể khôi phục.\n'
+        'Dữ liệu sẽ được xóa hoàn toàn sau 30 ngày.';
+
+    // Số dư nhỏ hơn mức rút tối thiểu
+    if (balance > 0 && balance < minWithdraw) {
+      body =
+      'Bạn hiện còn ${FormatHelper.formatPrice(balance)}đ trong tài khoản.\n\n'
+          'Số dư này chưa đạt mức rút tối thiểu ${FormatHelper.formatPrice(balance)}đ.\n'
+          'Nếu tiếp tục xóa tài khoản, số dư còn lại sẽ bị hủy và không thể hoàn lại.\n\n'
+          'Bạn vẫn muốn tiếp tục?';
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => SpaDialog(
+        iconColor: _kRed,
+        title: 'Xóa tài khoản',
+        body: body,
+        cancelLabel: 'Hủy',
+        confirmLabel: 'Xóa tài khoản',
+        confirmColor: _kRed,
+        onConfirm: () {},
+      ),
+    );
+
+    if (result == true && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator(color: _kBlack)),
+      );
+
+      try {
+        var res = await _userService.deleteAccountService();
+        // appLog("Xóa tài khoản: $res");
+        if(res['success']) {
+          SnackBarHelper.showSuccess(context, res['message']);
+
+          await SharedPreferencesHelper.logOut();
+          if (mounted) Navigator.of(context).pop();
+          if (mounted) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) context.pushReplacement(GlobalRouterConfig.loginOTP);
+            });
+          }
+        }
+      } catch (e) {
+        if (mounted) Navigator.of(context).pop();
+        SnackBarHelper.showError(context, "Lỗi xóa tài khoản: $e");
+      }
+    }
+  }
+
   void _showLanguageSheet() {
     showModalBottomSheet(
       context: context,
@@ -405,8 +520,8 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
                       ],
 
                       const SizedBox(height: 24),
-                      _buildLanguageCard(),
-                      const SizedBox(height: 24),
+                      // _buildLanguageCard(),
+                      // const SizedBox(height: 24),
                       _buildSupportSection(),
 
                       if (_isRefreshing)
@@ -666,6 +781,26 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
                   const SizedBox(width: 14),
                   const Expanded(
                     child: Text('Đăng xuất', style: TextStyle(fontSize: 14, color: _kRed)),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, size: 18, color: _kRed),
+                ],
+              ),
+            ),
+          ),
+          // const SizedBox(height: 8),
+          Divider(color: _kLightGray, height: 1),
+          // const SizedBox(height: 8),
+          InkWell(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(40)),
+            onTap: _showDeleteAccountDialog,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  const Icon(Icons.cancel_outlined, size: 20, color: _kRed),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text('Xóa tài khoản', style: TextStyle(fontSize: 14, color: _kRed)),
                   ),
                   const Icon(Icons.chevron_right_rounded, size: 18, color: _kRed),
                 ],

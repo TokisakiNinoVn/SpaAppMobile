@@ -7,18 +7,18 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:spa_app/config/app_config.dart';
-import 'package:spa_app/config/color_config.dart';
-import 'package:spa_app/config/theme_config.dart';
-import 'package:spa_app/helper/logger_utils.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import 'package:spa_app/screens/customer/tabs/components/feature_item.dart';
 import 'package:spa_app/screens/customer/tabs/components/feature_section.dart';
 import 'package:spa_app/screens/customer/tabs/components/promo_section.dart';
 import 'package:spa_app/services/customer_service.dart';
 import 'package:spa_app/services/discount_service.dart';
 import 'package:spa_app/services/user_service.dart';
-import 'package:url_launcher/url_launcher.dart';
-
+import 'package:spa_app/config/app_config.dart';
+import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/config/theme_config.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import '../../../helper/check_login_helper.dart';
@@ -27,7 +27,6 @@ import '../../../services/banner_service.dart';
 import '../../../services/information_service.dart';
 import 'package:spa_app/helper/location_helper.dart';
 import 'package:spa_app/utils/address_util.dart';
-
 import 'widgets/featured_services_widgetv2.dart';
 import 'widgets/home_header_widget.dart';
 import 'widgets/home_shortcut_item.dart';
@@ -344,6 +343,30 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
     }
   }
 
+  // ─── Cooldown timer ───────────────────────────────────────
+  void _startCooldownTimer() {
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      setState(() {
+        if (_locationCooldownSeconds > 0) {
+          _locationCooldownSeconds--;
+        } else {
+          t.cancel();
+        }
+      });
+    });
+  }
+
+  String _formatCooldown(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
   // ─── Khởi tạo trạng thái vị trí (không xin quyền) ───────
   /// Đọc quyền hiện tại + địa chỉ đã lưu + cooldown từ SharedPreferences.
   /// KHÔNG tự động xin quyền – chỉ xin khi người dùng nhấn nút.
@@ -377,32 +400,8 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
         _startCooldownTimer();
       }
     } catch (e) {
-      debugPrint('Error init location state: $e');
+      appLog('Error init location state: $e');
     }
-  }
-
-  // ─── Cooldown timer ───────────────────────────────────────
-  void _startCooldownTimer() {
-    _cooldownTimer?.cancel();
-    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) {
-        t.cancel();
-        return;
-      }
-      setState(() {
-        if (_locationCooldownSeconds > 0) {
-          _locationCooldownSeconds--;
-        } else {
-          t.cancel();
-        }
-      });
-    });
-  }
-
-  String _formatCooldown(int seconds) {
-    final m = (seconds ~/ 60).toString().padLeft(2, '0');
-    final s = (seconds % 60).toString().padLeft(2, '0');
-    return '$m:$s';
   }
 
   // ─── Xử lý nhấn nút vị trí ───────────────────────────────
@@ -569,27 +568,51 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Cần quyền vị trí'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: const [
+            Icon(
+              Icons.location_on,
+              color: Color(0xFFD4845A),
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Cho phép truy cập vị trí',
+              ),
+            ),
+          ],
+        ),
         content: const Text(
-            'Vui lòng mở Cài đặt và cấp quyền vị trí để sử dụng tính năng này.'),
+          'Ứng dụng cần quyền truy cập vị trí để hỗ trợ hiển thị và kết nối với khách hàng hoặc công việc ở gần khu vực của bạn. Vui lòng mở Cài đặt và cho phép quyền vị trí để tiếp tục sử dụng tính năng này.',
+          style: TextStyle(
+            height: 1.4,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Huỷ'),
+            child: const Text('Để sau'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD4845A),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () {
               Navigator.pop(context);
               Geolocator.openAppSettings();
             },
-            child:
-            const Text('Mở cài đặt', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Mở Cài đặt',
+              style: TextStyle(
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
@@ -1017,14 +1040,13 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                                   label: "Dịch vụ",
                                   onTap: () {
                                     context.push(CustomerRouterConfig.automaticMatching);
-
                                   }
                                 ),
-                                HomeShortcutItem(
-                                  icon: Icons.card_giftcard,
-                                  label: "Ưu đãi",
-                                  isHot: true,
-                                ),
+                                // HomeShortcutItem(
+                                //   icon: Icons.card_giftcard,
+                                //   label: "Ưu đãi",
+                                //   isHot: true,
+                                // ),
                                 // HomeShortcutItem(
                                 //   icon: Icons.article,
                                 //   label: "Tin tức",
@@ -1032,6 +1054,9 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                                 HomeShortcutItem(
                                   icon: Icons.headset_mic,
                                   label: "Hỗ trợ 24/7",
+                                  onTap: () {
+                                    launchUrl(Uri.parse(AppConfig.urlSupport));
+                                  }
                                 ),
                               ],
                             ),
@@ -1070,7 +1095,9 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                             const SizedBox(height: 10,),
 
                             PromoSection(
-                              onViewAll: () {},
+                              onViewAll: () {
+                                context.push(CustomerRouterConfig.automaticMatching);
+                              },
                               children: _displayDiscounts.isEmpty
                                   ? []
                                   : _displayDiscounts.asMap().entries.map((entry) {
@@ -1125,8 +1152,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
 
                                   onTap: () {
                                     context.push(
-                                      CustomerRouterConfig
-                                          .listOrderNowTechnician,
+                                      CustomerRouterConfig.listOrderNowTechnician,
                                     );
                                   },
                                 );
