@@ -42,7 +42,7 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
       if (response['status'] == 'success') {
         setState(() {
           _historyDepositList = response['data']['deposits'] ?? [];
-          appLog("history deposit: $_historyDepositList");
+          // appLog("history deposit: $_historyDepositList");
           _isLoading = false;
         });
       } else {
@@ -445,14 +445,14 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
                           ),
                         ),
 
-                        Divider(color: Colors.grey.shade200),
-
-                        infoRow(
-                          'Số dư mới',
-                          FormatHelper.formatPrice(
-                            transaction['newBalance'],
-                          ),
-                        ),
+                        // Divider(color: Colors.grey.shade200),
+                        //
+                        // infoRow(
+                        //   'Số dư mới',
+                        //   FormatHelper.formatPrice(
+                        //     transaction['newBalance'],
+                        //   ),
+                        // ),
 
                         Divider(color: Colors.grey.shade200),
 
@@ -785,7 +785,7 @@ class _HistoryDepositScreenState extends State<HistoryDepositScreen> {
       itemBuilder: (context, index) {
         final deposit = _historyDepositList[index];
         final transaction =
-        deposit['transaction'] as Map<String, dynamic>;
+        deposit['transaction'] as Map<String, dynamic> ?? {};
 
         final statusColor =
         _getStatusColor(transaction['status']);

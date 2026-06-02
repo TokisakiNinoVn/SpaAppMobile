@@ -190,34 +190,34 @@ class _ChoosePackageState extends State<ChoosePackage> {
                       activeColor: ColorConfig.primary,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
-                    RadioListTile<String>(
-                      title: const Text('Thanh toán qua thẻ ATM'),
-                      value: 'Thanh toán qua thẻ ATM',
-                      groupValue: selectedPaymentMethod,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedPaymentMethod = value!;
-                          _showUnsupportedPaymentMethod(context);
-                          Navigator.pop(context);
-                        });
-                      },
-                      activeColor: ColorConfig.primary,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('Thẻ Visa/MasterCard'),
-                      value: 'Thẻ Visa/MasterCard',
-                      groupValue: selectedPaymentMethod,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedPaymentMethod = value!;
-                          _showUnsupportedPaymentMethod(context);
-                          Navigator.pop(context);
-                        });
-                      },
-                      activeColor: ColorConfig.primary,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
+                    // RadioListTile<String>(
+                    //   title: const Text('Thanh toán qua thẻ ATM'),
+                    //   value: 'Thanh toán qua thẻ ATM',
+                    //   groupValue: selectedPaymentMethod,
+                    //   onChanged: (value) {
+                    //     setState(() {
+                    //       selectedPaymentMethod = value!;
+                    //       _showUnsupportedPaymentMethod(context);
+                    //       Navigator.pop(context);
+                    //     });
+                    //   },
+                    //   activeColor: ColorConfig.primary,
+                    //   contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    // ),
+                    // RadioListTile<String>(
+                    //   title: const Text('Thẻ Visa/MasterCard'),
+                    //   value: 'Thẻ Visa/MasterCard',
+                    //   groupValue: selectedPaymentMethod,
+                    //   onChanged: (value) {
+                    //     setState(() {
+                    //       selectedPaymentMethod = value!;
+                    //       _showUnsupportedPaymentMethod(context);
+                    //       Navigator.pop(context);
+                    //     });
+                    //   },
+                    //   activeColor: ColorConfig.primary,
+                    //   contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    // ),
                   ],
                 ),
               ),
@@ -350,121 +350,126 @@ class _ChoosePackageState extends State<ChoosePackage> {
           ],
         ),
       ),
-      body: Container(
-        color: ColorConfig.primaryBackground,
-        child: Column(
-          children: [
-            // Header icon section
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: ColorConfig.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Số dư hiện tại',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF777777),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          FormatHelper.formatPrice(nowBalance),
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: ColorConfig.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  const Text(
-                    'Chọn số tiền bạn muốn nạp',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF777777),
-                      fontWeight: FontWeight.bold
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Package list
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                itemCount: amounts.length,
-                itemBuilder: (context, index) {
-                  final amount = amounts[index];
-                  final isLast = index == amounts.length - 1;
-
-                  return GestureDetector(
-                    onTap: () => _onSelectAmount(amount),
-                    child: Container(
-                      margin: EdgeInsets.only(bottom: isLast ? 0 : 12),
-                      padding: const EdgeInsets.all(8),
+      body: RefreshIndicator(
+        onRefresh: _loadBalanceNow,
+        backgroundColor: ColorConfig.white,
+        color: ColorConfig.primary,
+        child: Container(
+          color: ColorConfig.primaryBackground,
+          child: Column(
+            children: [
+              // Header icon section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(40),
-                        color: const Color(0xFFFFFFFF),
+                        color: ColorConfig.white,
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(40),
-                                ),
-                                child: Icon(
-                                  Icons.attach_money_rounded,
-                                  size: 20,
-                                  color: ColorConfig.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                "${FormatHelper.formatPrice(amount)} VND",
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1A1A1A),
-                                ),
-                              ),
-                            ],
+                          const Text(
+                            'Số dư hiện tại',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF777777),
+                            ),
                           ),
-                          const Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 16,
-                            color: Color(0xFF999999),
+                          const SizedBox(height: 6),
+                          Text(
+                            FormatHelper.formatPrice(nowBalance),
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: ColorConfig.primary,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
+
+                    const SizedBox(height: 14),
+
+                    const Text(
+                      'Chọn số tiền bạn muốn nạp',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF777777),
+                        fontWeight: FontWeight.bold
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              // Package list
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  itemCount: amounts.length,
+                  itemBuilder: (context, index) {
+                    final amount = amounts[index];
+                    final isLast = index == amounts.length - 1;
+
+                    return GestureDetector(
+                      onTap: () => _onSelectAmount(amount),
+                      child: Container(
+                        margin: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(40),
+                          color: const Color(0xFFFFFFFF),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(40),
+                                  ),
+                                  child: Icon(
+                                    Icons.attach_money_rounded,
+                                    size: 20,
+                                    color: ColorConfig.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  "${FormatHelper.formatPrice(amount)} VND",
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1A1A1A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 16,
+                              color: Color(0xFF999999),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

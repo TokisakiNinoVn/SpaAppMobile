@@ -8,6 +8,7 @@ import 'package:spa_app/helper/fcm_helper.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/screens/components/required_label.dart';
 import 'package:spa_app/screens/widgets/district_picker_bottom_sheet.dart';
 import 'package:spa_app/services/upload_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -772,11 +773,12 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Giới tính',
-          style: TextStyle(fontSize: 14, color: ColorConfig.textBlack),
-        ),
-        const SizedBox(height: 10),
+        // Text(
+        //   'Giới tính',
+        //   style: TextStyle(fontSize: 14, color: ColorConfig.textBlack),
+        // ),
+        RequiredLabel(text: "Giới tính",),
+        const SizedBox(height: 5),
         Row(
           children: genderOptions.map((option) {
             final isSelected = selectedGender == option['value'];
@@ -942,14 +944,15 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        // const SizedBox(height: 12),
         TextButton.icon(
           onPressed: () => _pickImage(isAvatar: true),
           icon: const Icon(Icons.camera_alt, size: 18, color: Color(0xFF1A1A1A)),
-          label: const Text(
-            'Chọn ảnh đại diện',
-            style: TextStyle(color: Color(0xFF1A1A1A), fontSize: 13),
-          ),
+          // label: const Text(
+          //   'Chọn ảnh đại diện',
+          //   style: TextStyle(color: Color(0xFF1A1A1A), fontSize: 13),
+          // ),
+          label: RequiredLabel(text: "Chọn ảnh đại diện"),
           style: TextButton.styleFrom(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
           ),
@@ -1080,8 +1083,9 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Tỉnh/Thành phố',
-                            style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                          // Text('Tỉnh/Thành phố',
+                          //   style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                          RequiredLabel(text: "Tỉnh/Thành phố"),
                           const SizedBox(height: 6),
                           _buildLocationField(
                             label: 'Chọn',
@@ -1097,8 +1101,9 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                           Text('Quận/Huyện',
-                              style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                          RequiredLabel(text: "Quận/Huyện"),
+                           // Text('Quận/Huyện',
+                           //    style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
                           const SizedBox(height: 6),
                           _buildLocationField(
                             label: 'Chọn',
@@ -1114,7 +1119,7 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                   ],
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 6),
 
                 _buildTextField(
                   controller: addressController,
@@ -1122,7 +1127,7 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                   hint: 'Số nhà, đường, khu phố...',
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
 
                 // Year / Experience
                 Row(
@@ -1133,15 +1138,16 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                         children: [
                           Row(
                             children: [
-                              Text('Năm sinh', style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
-                              const SizedBox(width: 4),
+                              // Text('Năm sinh', style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                              RequiredLabel(text: 'Năm sinh',),
+                              const SizedBox(width: 6),
                               Tooltip(
                                 message: 'Phải từ đủ 18 tuổi trở lên',
                                 child: Icon(Icons.info_outline, size: 14, color: Colors.grey.shade400),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          // const SizedBox(height: 6),
 
                           _buildLocationField(
                             label: 'Chọn ngày sinh',
@@ -1172,8 +1178,9 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Kinh nghiệm',
-                              style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                          // Text('Kinh nghiệm',
+                          //     style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                          RequiredLabel(text: "Kinh nghiệm",),
                           const SizedBox(height: 6),
                           _buildLocationField(
                             label: 'Chọn',
@@ -1192,8 +1199,9 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Dịch vụ cung cấp',
-                      style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                    // Text('Dịch vụ cung cấp',
+                    //   style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+                    RequiredLabel(text: 'Dịch vụ cung cấp',),
                     const SizedBox(height: 6),
                     _buildLocationField(
                       label: 'Chọn dịch vụ',
@@ -1205,16 +1213,17 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
                   ],
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
                 // Images section
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Hình ảnh',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
-                    ),
+                    // const Text(
+                    //   'Hình ảnh',
+                    //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+                    // ),
+                    RequiredLabel(text: "Hình ảnh (3-5 ảnh)", fontWeight: FontWeight.bold,),
                     Text(
                       '${images.length}/5',
                       style: const TextStyle(fontSize: 13, color: Color(0xFF666666)),
@@ -1286,7 +1295,8 @@ class _CreateTechnicianScreen extends State<CreateProfileTechnician> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+        // Text(label, style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
+        RequiredLabel(text: label),
         const SizedBox(height: 6),
         TextField(
           controller: controller,

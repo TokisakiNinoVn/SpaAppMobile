@@ -84,11 +84,11 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
       switch (selectedIndex) {
         case 0:
           return const HomeTechnicianTab();
+        // case 1:
+        //   return const PolicyTabWidget();
         case 1:
-          return const PolicyTabWidget();
-        case 2:
           return const SupportTabWidget();
-        case 3:
+        case 2:
           return const AccountTab();
         default:
           return const Center(
@@ -142,10 +142,10 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
             icon: Icon(Icons.home),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.book),
-            label: 'Chính sách',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.book),
+          //   label: 'Chính sách',
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.phone),
             label: 'Hỗ trợ',

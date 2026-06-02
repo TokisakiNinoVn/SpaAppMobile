@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/services/deposit_service.dart';
 import 'package:spa_app/utils/clipboard_util.dart';
 import 'package:spa_app/utils/image_download_util.dart';
@@ -31,6 +34,13 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
   String? _depositId;
   String? _errorMessage;
 
+  Map<String, dynamic> responseCreateQR = {};
+
+  // ── Polling ──────────────────────────────────────────────
+  Timer? _pollingTimer;
+  bool _isPolling = false; // guard: chặn concurrent calls
+  // ─────────────────────────────────────────────────────────
+
   @override
   void initState() {
     super.initState();
@@ -38,14 +48,92 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
     _initializeNotifications();
   }
 
+  @override
+  void dispose() {
+    _stopPolling();
+    super.dispose();
+  }
+
+  // ── Polling helpers ───────────────────────────────────────
+
+  void _startPolling() {
+    _stopPolling(); // đảm bảo không có timer cũ
+    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      _pollVerifyDeposit();
+    });
+  }
+
+  void _stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+  }
+
+  Future<void> _pollVerifyDeposit() async {
+    if (_isPolling || _depositId == null || _isActionCompleted) return;
+    _isPolling = true;
+
+    try {
+      // Build query string từ depositId (server tự map sang code + amount)
+      // Demo: depositId=6a1ea1fe79a3aff9804d4452&code=RH8ZRAPQT5U&amount=4000&createdAt=2026-06-02T09:27:26.094+00:00&numberBank=100874628145
+      // appLog("responseCreateQR: $responseCreateQR");
+      final query = "depositId=$_depositId&code=${responseCreateQR['code']}&amount=${responseCreateQR['amount']}&createdAt=${responseCreateQR['createdAt']}&numberBank=${responseCreateQR['bankReceivingDetails']['accountNumber']}";
+      // appLog("query: $query");
+      // return;
+      final response = await _depositService.verifyDeposit(query);
+
+      // appLog("Poll verify response: ${response['success']}");
+      // appLog("Response: ${response}");
+      // Kiểm tra success + verified = true
+      final isSuccess = response['success'] == true;
+      final data = response['data'];
+      final isVerified = data != null && (data['verified'] == true);
+
+      if (isSuccess && isVerified && mounted) {
+        _stopPolling();
+
+        setState(() {
+          _isActionCompleted = true;
+        });
+
+        // // Cập nhật balance nếu có
+        // final newBalance = data['new_balance'] ?? data['balance'];
+        // if (newBalance != null) {
+        //   await SharedPrefs.saveValue(PrefType.int, "balance", newBalance);
+        // }
+
+        if (mounted) {
+          SnackBarHelper.showSuccess(
+            context,
+            "Nạp tiền thành công. Số dư sẽ được cập nhật trong giây lát.",
+          );
+
+          await Future.delayed(const Duration(milliseconds: 800));
+
+          if (mounted) {
+            Navigator.pop(context, true);
+          }
+        }
+      }
+    } catch (e) {
+      // Lỗi mạng / timeout → bỏ qua, tiếp tục poll ở lần sau
+      appLog("Poll error (ignored): $e");
+    } finally {
+      _isPolling = false;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+
   Future<void> _initializeNotifications() async {
     await ImageDownloadUtil.initializeNotifications();
   }
 
   Future<void> _createQR() async {
+    _stopPolling();
     setState(() {
       _isLoadingQR = true;
       _errorMessage = null;
+      _isActionCompleted = false;
     });
 
     try {
@@ -53,16 +141,22 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
         "amount": widget.amount,
       });
 
-      appLog("response: ${response}");
+      appLog("response: $response");
 
       if (response['status'] == 'success') {
         final data = response['data'];
+        responseCreateQR = data;
+        appLog("responseCreateQR _createQR: $responseCreateQR");
+
         setState(() {
           _qrImageUrl = data['qrUrl'];
           _qrCode = data['code'];
           _depositId = data['id'];
           _isLoadingQR = false;
         });
+
+        // ← Bắt đầu polling ngay sau khi có depositId
+        _startPolling();
       } else {
         setState(() {
           _errorMessage = response['message'] ?? 'Không thể tạo mã QR';
@@ -81,6 +175,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
     if (_qrImageUrl == null) return;
 
     final fullImageUrl = FormatHelper.formatNetworkImageUrl(_qrImageUrl!);
+    appLog("fullImageUrl: $fullImageUrl");
 
     await ImageDownloadUtil.downloadImage(
       imageUrl: fullImageUrl,
@@ -93,50 +188,6 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
         }
       },
     );
-  }
-
-  Future<void> _confirmDeposit() async {
-    if (_depositId == null) return;
-
-    setState(() {
-      _isConfirming = true;
-    });
-
-    try {
-      final response = await _depositService.confirmDeposit({
-        "id": _depositId,
-        "status": "success",
-      });
-
-      appLog("Confirm response: ${response}");
-
-      if (response['status'] == 'success') {
-        if (mounted) {
-          SnackBarHelper.showSuccess(context, "Số dư ví của bạn sẽ sớm được cập nhật!");
-          setState(() {
-            _isActionCompleted = true;
-          });
-          await SharedPrefs.saveValue(PrefType.int, "balance", response['data']['new_balance'] ?? 0);
-          if (mounted) {
-            Navigator.pop(context, true);
-          }
-        }
-      } else {
-        if (mounted) {
-          SnackBarHelper.showError(context, response['message'] ?? 'Xác nhận thất bại');
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarHelper.showError(context, "Có lỗi xảy ra: $e");
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isConfirming = false;
-        });
-      }
-    }
   }
 
   Future<void> _cancelDeposit() async {
@@ -176,6 +227,8 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
     if (shouldCancel != true) return;
 
+    _stopPolling(); // dừng polling trước khi cancel
+
     setState(() {
       _isCancelling = true;
     });
@@ -195,12 +248,15 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
         }
       } else {
         if (mounted) {
-          SnackBarHelper.showSuccess(context, response['message'] ?? 'Hủy đơn thất bại');
+          // resume polling nếu cancel thất bại
+          _startPolling();
+          SnackBarHelper.showError(context, response['message'] ?? 'Hủy đơn thất bại');
         }
       }
     } catch (e) {
       if (mounted) {
-        SnackBarHelper.showSuccess(context, "Có lỗi xảy ra khi hủy: $e");
+        _startPolling();
+        SnackBarHelper.showError(context, "Có lỗi xảy ra khi hủy: $e");
       }
     } finally {
       if (mounted) {
@@ -218,7 +274,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
     final shouldPop = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
         title: const Text(
@@ -226,8 +282,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
           style: TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.w600),
         ),
         content: const Text(
-          'Bạn chưa xác nhận thanh toán hoặc hủy đơn. Nếu thoát, đơn nạp sẽ không được xử lý. Bạn có muốn tiếp tục?',
-          style: TextStyle(color: Color(0xFF666666)),
+          'Bạn đang trong quá trình nạp tiền. Nếu thoát khỏi màn hình này, giao dịch sẽ không được xác nhận tại thời điểm hiện tại. Bạn có muốn tiếp tục thoát?',
         ),
         actions: [
           TextButton(
@@ -260,6 +315,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
         if (didPop) return;
         final shouldPop = await _onWillPop();
         if (shouldPop && mounted) {
+          _stopPolling();
           Navigator.pop(context);
         }
       },
@@ -358,7 +414,6 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
               const SizedBox(height: 10),
 
-              // Step 1: QR Code
               _buildStep(
                 number: 1,
                 title: "Quét mã QR và hoàn tất thanh toán qua ngân hàng của bạn",
@@ -367,7 +422,6 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
               const SizedBox(height: 10),
 
-              // Step 2: Transfer content
               _buildStep(
                 number: 2,
                 title: "Nội dung chuyển khoản",
@@ -376,10 +430,9 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
               const SizedBox(height: 18),
 
-              // Step 3: Actions
               _buildStep(
                 number: 3,
-                title: "Xác nhận sau khi thanh toán",
+                title: "Hệ thống sẽ tự động xác nhận sau khi nhận được thanh toán",
                 content: _buildActionButtons(),
               ),
 
@@ -428,7 +481,6 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
             ),
           ],
         ),
-        // const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.only(left: 40),
           child: content,
@@ -500,11 +552,9 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
       ),
       child: Column(
         children: [
-          // Larger QR Code
           Container(
             width: 280,
             height: 280,
-            padding: const EdgeInsets.all(0),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
@@ -532,7 +582,6 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                 : const Icon(Icons.qr_code, size: 120, color: Color(0xFF999999)),
           ),
           const SizedBox(height: 5),
-          // Save button
           OutlinedButton.icon(
             onPressed: _saveQRCodeToDevice,
             icon: const Icon(Icons.download_outlined, size: 18, color: Color(0xFF1A1A1A)),
@@ -563,15 +612,6 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // const Text(
-          //   "Nội dung chuyển khoản",
-          //   style: TextStyle(
-          //     fontWeight: FontWeight.w600,
-          //     fontSize: 14,
-          //     color: Color(0xFF1A1A1A),
-          //   ),
-          // ),
-          // const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 0),
             decoration: BoxDecoration(
@@ -582,7 +622,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    _qrCode ?? "Đang tải...",
+                    "SEVQR ${_qrCode ?? "Đang tải..."}",
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -600,11 +640,11 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             "Vui lòng nhập chính xác nội dung trên khi chuyển khoản",
             style: TextStyle(
               fontSize: 12,
-              color: const Color(0xFF666666),
+              color: Color(0xFF666666),
             ),
           ),
         ],
@@ -615,67 +655,58 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
   Widget _buildActionButtons() {
     return Column(
       children: [
+        const SizedBox(height: 8),
+
+        // Trạng thái đang chờ xác nhận
+        if (!_isActionCompleted)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF8E1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.orange.shade700,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    "Đang chờ xác nhận giao dịch...",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.orange.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         const SizedBox(height: 12),
 
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton(
-            onPressed: (_isConfirming || _isCancelling || _qrCode == null)
-                ? null
-                : _confirmDeposit,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorConfig.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(40),
-              ),
-              elevation: 0,
-            ),
-            child: _isConfirming
-                ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-                : const Text(
-              "Xác nhận đã thanh toán",
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
           child: OutlinedButton(
-            onPressed: (_isConfirming || _isCancelling || _qrCode == null)
-                ? null
-                : _cancelDeposit,
+            onPressed: () {
+              context.go(CustomerRouterConfig.historyDeposit);
+            },
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFE74C3C),
-              side: const BorderSide(color: Color(0xFFE74C3C)),
+              foregroundColor: ColorConfig.textWhite,
+              backgroundColor: ColorConfig.primary,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(40),
               ),
             ),
-            child: _isCancelling
-                ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Color(0xFFE74C3C),
-              ),
-            )
-                : const Text(
-              "Hủy đơn nạp",
+            child: const Text(
+              "Xem lịch sử giao dịch",
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -686,5 +717,4 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
       ],
     );
   }
-
 }
