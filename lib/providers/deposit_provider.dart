@@ -1,32 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/services/customer_service.dart';
+import 'package:spa_app/services/deposit_service.dart';
 import 'package:spa_app/services/service_service.dart';
 
-class ServiceProvider extends ChangeNotifier {
-  final ServiceService _serviceService = ServiceService();
+class DepositProvider extends ChangeNotifier {
+  final DepositService _depositService = DepositService();
 
   bool isLoading = false;
-
   String? errorMessage;
-  List serviceBase = [];
-  List selectedServices = [];
+  Map<String, dynamic>? resVerifyDeposit;
+  bool? resVerified;
+  String? resName;
+  double? resBalance;
 
-  Future<bool> loadListService() async {
+  Future<bool> verifyDeposit(String query) async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
-      final res = await _serviceService.listBaseService();
-
-      // appLog("response: $res");
-
-      // Lấy balance từ response
-      serviceBase = res['data'] ?? [];
-      // appLog("List data service: $serviceBase");
-
-      return true;
+      final res = await _depositService.verifyDeposit(query);
+      resVerifyDeposit = res;
+      if (res['success'] == true) {
+        resVerified = res['data']['verified'];
+        resName = res['data']['name'];
+        resBalance = res['data']['balance'];
+        return true;
+      } else {
+        errorMessage = res['message'];
+        return false;
+      }
     } catch (e) {
       errorMessage = 'Đã xảy ra lỗi: $e';
       return false;
@@ -35,25 +39,4 @@ class ServiceProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  Future<bool> loadSelectedServices() async {
-    isLoading = true;
-    errorMessage = null;
-    notifyListeners();
-
-    try {
-      final res = await _serviceService.getSelectedServices();
-      // appLog("response: $res");
-      selectedServices = res['data'] ?? [];
-      // appLog("List data service: $serviceBase");
-      return true;
-    } catch (e) {
-      errorMessage = 'Đã xảy ra lỗi: $e';
-      return false;
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-  }
-
 }

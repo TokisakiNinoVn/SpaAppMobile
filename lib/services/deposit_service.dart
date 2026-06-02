@@ -16,6 +16,12 @@ class DepositService {
     return await ApiMethodsPrivate.getRequest(DepositApi.history);
   }
 
+  Future<Map<String, dynamic>> verifyDeposit(String query) async {
+    final String fullUrl = "${DepositApi.verify}?$query";
+    // appLog("fullUrl: $fullUrl");
+    return await ApiMethodsPrivate.getRequest(fullUrl);
+  }
+
   Future<Map<String, dynamic>> deleteDeposit(String id) async {
     return await ApiMethodsPrivate.deleteRequest("${DepositApi.delete}/$id");
   }

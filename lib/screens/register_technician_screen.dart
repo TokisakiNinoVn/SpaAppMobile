@@ -11,6 +11,7 @@ import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
+import 'package:spa_app/screens/components/required_label.dart';
 import 'package:spa_app/screens/widgets/date_of_birth_picker_bottom_sheet.dart';
 import 'package:spa_app/screens/widgets/district_picker_bottom_sheet.dart';
 import 'package:spa_app/services/upload_service.dart';
@@ -848,7 +849,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
         //   'Giới tính',
         //   style: TextStyle(fontSize: 14, color: ColorConfig.textBlack),
         // ),
-        _buildRequiredTextField(label: 'Giới tính'),
+        // _buildRequiredTextField(label: 'Giới tính'),
+        RequiredLabel(text: 'Giới tính'),
 
         const SizedBox(height: 10),
         Row(
@@ -1024,24 +1026,25 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
             size: 18,
             color: Color(0xFF1A1A1A),
           ),
-          label: RichText(
-            text: const TextSpan(
-              style: TextStyle(
-                color: Color(0xFF1A1A1A),
-                fontSize: 13,
-              ),
-              children: [
-                TextSpan(text: 'Chọn ảnh đại diện'),
-                TextSpan(
-                  text: ' *',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // label: RichText(
+          //   text: const TextSpan(
+          //     style: TextStyle(
+          //       color: Color(0xFF1A1A1A),
+          //       fontSize: 13,
+          //     ),
+          //     children: [
+          //       TextSpan(text: 'Chọn ảnh đại diện'),
+          //       TextSpan(
+          //         text: ' *',
+          //         style: TextStyle(
+          //           color: Colors.red,
+          //           fontWeight: FontWeight.bold,
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
+          label: RequiredLabel(text: 'Chọn ảnh đại diện'),
           style: TextButton.styleFrom(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(40),
@@ -1170,26 +1173,27 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          RichText(
-                            text: TextSpan(
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A1A1A),
-                                letterSpacing: -0.3,
-                              ),
-                              children: [
-                                TextSpan(text: "Tỉnh/Thành phố"),
-                                  const TextSpan(
-                                    text: '*',
-                                    style: TextStyle(
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.bold
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
+                          // RichText(
+                          //   text: TextSpan(
+                          //     style: const TextStyle(
+                          //       fontSize: 14,
+                          //       fontWeight: FontWeight.w600,
+                          //       color: Color(0xFF1A1A1A),
+                          //       letterSpacing: -0.3,
+                          //     ),
+                          //     children: [
+                          //       TextSpan(text: "Tỉnh/Thành phố"),
+                          //         const TextSpan(
+                          //           text: '*',
+                          //           style: TextStyle(
+                          //             color: Colors.red,
+                          //             fontWeight: FontWeight.bold
+                          //           ),
+                          //         ),
+                          //     ],
+                          //   ),
+                          // ),
+                          RequiredLabel(text: 'Tỉnh/Thành phố'),
                           const SizedBox(height: 6),
                           _buildLocationField(
                             label: 'Chọn',
@@ -1205,7 +1209,7 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildRequiredTextField(label: 'Quận/Huyện'),
+                          RequiredLabel(text: 'Quận/Huyện'),
                           const SizedBox(height: 6),
                           _buildLocationField(
                             label: 'Chọn',
@@ -1241,7 +1245,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                           Row(
                             children: [
                               // Text('Năm sinh', style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
-                              _buildRequiredTextField(label: 'Năm sinh'),
+                              // _buildRequiredTextField(label: 'Năm sinh'),
+                              RequiredLabel(text: 'Năm sinh'),
 
                               const SizedBox(width: 4),
                               Tooltip(
@@ -1288,7 +1293,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                         children: [
                           // Text('Kinh nghiệm',
                           //     style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
-                          _buildRequiredTextField(label: 'Kinh nghiệm'),
+                          // _buildRequiredTextField(label: 'Kinh nghiệm'),
+                          RequiredLabel(text: 'Kinh nghiệm'),
 
                           const SizedBox(height: 1),
                           _buildLocationField(
@@ -1310,7 +1316,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                   children: [
                     // Text('Dịch vụ cung cấp',
                     //   style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
-                    _buildRequiredTextField(label: 'Dịch vụ cung cấp'),
+                    // _buildRequiredTextField(label: 'Dịch vụ cung cấp'),
+                    RequiredLabel(text: 'Dịch vụ cung cấp'),
 
                     const SizedBox(height: 6),
                     _buildLocationField(
@@ -1333,7 +1340,8 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
                     //   'Hình ảnh',
                     //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
                     // ),
-                    _buildRequiredTextField(label: 'Hình ảnh', isBold: true, fontSize: 16),
+                    // _buildRequiredTextField(label: 'Hình ảnh (3-5 ảnh)', isBold: true, fontSize: 16),
+                    RequiredLabel(text: 'Hình ảnh (3-5 ảnh)', fontWeight: FontWeight.bold),
 
                     Text(
                       '${images.length}/5',
@@ -1408,27 +1416,28 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Text(label, style: TextStyle(fontSize: 14, color: ColorConfig.textBlack)),
-        RichText(
-          text: TextSpan(
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
-              letterSpacing: -0.3,
-            ),
-            children: [
-              TextSpan(text: label),
-              if (isRequired)
-              const TextSpan(
-                text: '*',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
+        // RichText(
+        //   text: TextSpan(
+        //     style: const TextStyle(
+        //       fontSize: 14,
+        //       fontWeight: FontWeight.w600,
+        //       color: Color(0xFF1A1A1A),
+        //       letterSpacing: -0.3,
+        //     ),
+        //     children: [
+        //       TextSpan(text: label),
+        //       if (isRequired)
+        //       const TextSpan(
+        //         text: '*',
+        //         style: TextStyle(
+        //           color: Colors.red,
+        //           fontWeight: FontWeight.bold,
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+        RequiredLabel(text: label),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -1449,40 +1458,6 @@ class _CreateTechnicianScreen extends State<CreateTechnicianScreen> {
             contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           ),
           style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRequiredTextField({
-    required String label,
-    bool isRequired = true,
-    bool isBold = true,
-    double fontSize = 14,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: TextSpan(
-            style: TextStyle(
-              fontSize: fontSize == 14 ? 16 : 14,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1A1A1A),
-              letterSpacing: -0.3,
-            ),
-            children: [
-              TextSpan(text: label),
-              if (isRequired)
-              const TextSpan(
-                text: '*',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
         ),
       ],
     );

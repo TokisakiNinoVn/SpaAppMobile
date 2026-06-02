@@ -295,17 +295,20 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
     showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Chuyển đổi vai trò'),
-        content: const Text('Bạn muốn chuyển sang vai trò cộng tác viên?'),
+        title: const Text('Chuyển vai trò'),
+        content: const Text(
+          'Bạn có muốn chuyển sang chế độ Kỹ thuật viên không?\n\n'
+              'Sau khi chuyển, giao diện và các chức năng liên quan đến kỹ thuật viên sẽ được hiển thị.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: const Text('Để sau'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: ColorConfig.primary),
-            child: Text('Chuyển đổi', style: TextStyle(color: ColorConfig.textWhite),),
+            child: Text('Tiếp tục', style: TextStyle(color: ColorConfig.textWhite),),
           ),
         ],
       ),
