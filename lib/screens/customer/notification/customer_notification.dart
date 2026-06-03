@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
+import 'package:spa_app/helper/check_login_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/routes/config/global_router_config.dart';
 
 import 'package:spa_app/services/like_service.dart';
 import 'package:spa_app/services/technician_service.dart';
@@ -32,6 +34,7 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
   List<dynamic> _notificationList = [];
   bool _isLoading = true;
   String _errorMessage = '';
+  bool _isLogin = false;
 
   final Color _primaryColor = const Color(0xFF8B7355);
   final Color _secondaryColor = const Color(0xFFD4B996);
@@ -42,7 +45,21 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
   @override
   void initState() {
     super.initState();
-    _loadListNotification();
+    // _loadListNotification();
+    checkLogin();
+  }
+
+  Future<void> checkLogin() async {
+    final loggedIn = await CheckLoginHelper.isLoggedIn();
+    if (loggedIn) {
+      _isLogin = true;
+      // _loadOrders();
+      _loadListNotification();
+
+    } else
+      context.go(GlobalRouterConfig.loginOTP);
+      
+      _isLogin = false;
   }
 
   Future<void> _loadListNotification() async {
@@ -111,6 +128,42 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
             child: const Text('Xóa'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGuestView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "Đăng nhập Zen Home Spa",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: ColorConfig.textBlack,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+
+            ElevatedButton(
+              onPressed: () {
+                context.go(GlobalRouterConfig.loginOTP);
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: const Text("Đăng nhập"),
+            ),
+          ],
+        ),
       ),
     );
   }

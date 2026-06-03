@@ -23,9 +23,9 @@ import '../widgets/address_picker_widget.dart';
 
 // Định nghĩa phương thức thanh toán
 enum PaymentMethod {
-  zenhome('Ví Zen Home', 'zenhome'),
-  cast('Tiền mặt', 'cast'),
-  bank('Chuyển khoản', 'bank');
+  zenhome('Ví Zen Home', 'zenhome');
+  // cast('Tiền mặt', 'cast'),
+  // bank('Chuyển khoản', 'bank');
 
   final String label;
   final String name;
@@ -483,12 +483,12 @@ class _CreateBookOrderScreenState
                 case PaymentMethod.zenhome:
                   icon = Icons.account_balance_wallet;
                   break;
-                case PaymentMethod.cast:
-                  icon = Icons.money;
-                  break;
-                case PaymentMethod.bank:
-                  icon = Icons.account_balance;
-                  break;
+                // case PaymentMethod.cast:
+                //   icon = Icons.money;
+                //   break;
+                // case PaymentMethod.bank:
+                //   icon = Icons.account_balance;
+                //   break;
               }
 
               return GestureDetector(
@@ -509,7 +509,7 @@ class _CreateBookOrderScreenState
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
-                          ? Colors.green
+                          ? ColorConfig.primary
                           : Colors.transparent,
                     ),
                   ),
