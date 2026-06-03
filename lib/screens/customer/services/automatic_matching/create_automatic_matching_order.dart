@@ -23,9 +23,9 @@ import '../../../../storage/index.dart';
 
 // Định nghĩa phương thức thanh toán
 enum PaymentMethod {
-  zenhome('Ví Zen Home', 'zenhome'),
-  cast('Tiền mặt', 'cast'),
-  bank('Chuyển khoản', 'bank');
+  zenhome('Ví Zen Home', 'zenhome');
+  // cast('Tiền mặt', 'cast'),
+  // bank('Chuyển khoản', 'bank');
 
   final String label;
   final String name;
@@ -957,12 +957,12 @@ class _CreateAutoMatchingOrderScreenState
                 case PaymentMethod.zenhome:
                   icon = Icons.account_balance_wallet;
                   break;
-                case PaymentMethod.cast:
-                  icon = Icons.money;
-                  break;
-                case PaymentMethod.bank:
-                  icon = Icons.account_balance;
-                  break;
+                // case PaymentMethod.cast:
+                //   icon = Icons.money;
+                //   break;
+                // case PaymentMethod.bank:
+                //   icon = Icons.account_balance;
+                //   break;
               }
 
               return GestureDetector(

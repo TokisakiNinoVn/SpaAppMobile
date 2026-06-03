@@ -5,15 +5,16 @@ import 'package:spa_app/screens/customer/tabs/home_customer_tab.dart';
 class AppConfig {
   static const String appName = "Zen Home";
   static const String appNameUpperCase = "ZEN HOME";
-  static const String emailAppSupport = "zenhome.spa.support@gmail.com";
+  static const String emailAppSupport = "app.zenhome.spa@gmail.com";
   static const String logoAppUrl = "lib/assets/images/zen-hone-circle-logo.png";
   static const String adminZalo = "0777378727";
 
   static const List<int> time = [60, 90, 120];
   static final bool isProduction = true;
-  static final String urlPrivacy = "https://serene-spa-green.vercel.app/privacy";
-  static final String urlSupport = "https://serene-spa-green.vercel.app/support";
-  static final String urlTerm = "https://serene-spa-green.vercel.app/terms";
+  static final String domainWeb = "https://zen-home-spa.vercel.app";
+  static final String urlPrivacy = "${domainWeb}/privacy";
+  static final String urlSupport = "${domainWeb}/support";
+  static final String urlTerm = "${domainWeb}/terms";
 
   // dev
   static const String ip = "10.16.23.104";
