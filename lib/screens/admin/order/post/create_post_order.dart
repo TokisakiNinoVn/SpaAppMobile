@@ -45,7 +45,7 @@ class _CreatePostOrderState extends State<CreatePostOrder> {
   final _phoneFocusNode = FocusNode();
   final _moneyFocusNode = FocusNode();
 
-  GenderRequirement _genderRequirement = GenderRequirement.male;
+  GenderRequirement _genderRequirement = GenderRequirement.female;
   GenderCustomer _genderCustomer = GenderCustomer.male;
 
   @override
