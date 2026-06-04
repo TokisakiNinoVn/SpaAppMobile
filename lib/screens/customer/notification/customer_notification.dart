@@ -58,7 +58,7 @@ class _ListNotificationScreenState extends State<ListNotificationScreen> {
 
     } else
       context.go(GlobalRouterConfig.loginOTP);
-      
+
       _isLogin = false;
   }
 

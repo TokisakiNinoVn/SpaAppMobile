@@ -29,7 +29,7 @@ class _ActivityCustomerTabState extends State<ActivityCustomerTab> {
 
   Timer? _autoRefreshTimer;
 
-  String _selectedFilter = 'Đang làm';
+  String _selectedFilter = 'Tất cả';
   final List<String> _filters = ['Tất cả', 'Đang chờ', 'Đang làm', 'Đã hoàn thành', 'Đã hủy', 'Hết thời gian chờ', ];
 
   List<dynamic> _orders = [];

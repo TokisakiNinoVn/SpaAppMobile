@@ -80,7 +80,7 @@ class SpaDialog extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pop(true);
+                      // Navigator.of(context).pop(true);
                       onConfirm();
                     },
                     style: ElevatedButton.styleFrom(

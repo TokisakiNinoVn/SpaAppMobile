@@ -474,10 +474,10 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
       context: context,
       builder: (dialogContext) => SpaDialog(
         iconColor: ColorConfig.primary,
-        title: 'Xác nhận',
-        body: 'Xác nhận ứng tuyển đơn việc?',
-        cancelLabel: 'Đóng',
-        confirmLabel: 'Xác nhận',
+        title: 'Xác nhận ứng tuyển đơn việc',
+        body: 'Bạn có chắc chắn muốn ứng tuyển đơn dịch vụ này không?',
+        cancelLabel: 'Hủy',
+        confirmLabel: 'Ứng tuyển',
         confirmColor: ColorConfig.primary,
         onConfirm: () {
           Navigator.pop(dialogContext, true);
@@ -487,7 +487,6 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
 
     if (result != true || !mounted) return;
 
-    // Loading
     showDialog(
       context: context,
       barrierDismissible: false,
