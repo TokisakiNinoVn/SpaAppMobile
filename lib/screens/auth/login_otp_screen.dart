@@ -163,109 +163,105 @@ class _LoginOTPScreen extends State<LoginOTPScreen> with SingleTickerProviderSta
       }
     }
 
+    await Future.delayed(const Duration(milliseconds: 1000));
+
     setState(() {
       _isRequestingOTP = true;
       _isButtonDisabled = true;
     });
 
     try {
-      final auth = FirebaseAuth.instance;
       final phoneInternational = FormatHelper.formatPhoneInternational(phone);
         setState(() {
           _isAuthSessionActive = true;
         });
-        await FirebaseAuth.instance.verifyPhoneNumber(
-        phoneNumber: phoneInternational,
-        timeout: const Duration(seconds: 60),
+        try {
+          await FirebaseAuth.instance.verifyPhoneNumber(
+            phoneNumber: phoneInternational,
+            timeout: const Duration(seconds: 60),
 
-        // verificationCompleted: (credential) async {
-        //   await FirebaseAuth.instance.signInWithCredential(credential);
-        // },
-        verificationCompleted: (credential) async {
-          try {
-            await FirebaseAuth.instance.signInWithCredential(credential);
+            verificationCompleted: (credential) async {
+              if (!mounted) return;
+              setState(() {
+                _isAuthSessionActive = false;
+                _isRequestingOTP = false; // ← bản gốc thiếu reset cái này
+                _isButtonDisabled = false;
+              });
+              try {
+                await FirebaseAuth.instance.signInWithCredential(credential);
+                if (!mounted) return;
+                context.go(CustomerRouterConfig.homeCustomer);
+              } catch (e) {
+                if (!mounted) return;
+                SnackBarHelper.showError(context, "Auto sign-in lỗi: $e");
+              } finally {
+                if (mounted) {
+                  setState(() {
+                    _isRequestingOTP = false;
+                    _isButtonDisabled = false;
+                  });
+                }
+              }
+            },
+
+          verificationFailed: (FirebaseAuthException e) {
+            appLog('verifyPhoneNumber error: ${e.code} - ${e.message}');
 
             if (!mounted) return;
 
-            // optional: navigate an toàn
-            context.go(CustomerRouterConfig.homeCustomer);
-          } catch (e) {
-            SnackBarHelper.showError(context, "auto sign-in failed: $e");
             setState(() {
-              _isRequestingOTP = false;
+              _isAuthSessionActive = false;
               _isButtonDisabled = false;
             });
-          }
-        },
 
-        verificationFailed: (FirebaseAuthException e) {
-          appLog('verifyPhoneNumber error: ${e.code} - ${e.message}');
+            String message;
+            switch (e.code) {
+              case 'too-many-requests':
+                message = 'Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau.';
+                break;
+              case 'invalid-phone-number':
+                message = 'Số điện thoại không hợp lệ.';
+                break;
+              case 'quota-exceeded':
+                message = 'Hệ thống OTP đang quá tải. Vui lòng thử lại sau.';
+                break;
+              default:
+                message = e.message ?? 'Không thể gửi OTP.';
+            }
 
-          if (!mounted) return;
+            SnackBarHelper.showError(context, message);
+          },
 
+            codeSent: (verificationId, resendToken) {
+              if (!mounted) return;
+              setState(() => _isRequestingOTP = false);
+              startCountdown();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                context.push(
+                  '${GlobalRouterConfig.confirmLoginOTP}/$phone',
+                  extra: {
+                    'verificationId': verificationId,
+                    'resendToken': resendToken,
+                  },
+                );
+              });
+            },
+
+            codeAutoRetrievalTimeout: (_) {
+              if (mounted) setState(() => _isAuthSessionActive = false);
+            },
+        );
+      } catch (e) {
+        SnackBarHelper.showError(context, 'verifyPhoneNumber crash: $e');
+        if (mounted) {
           setState(() {
-            _isAuthSessionActive = false;
+            _isRequestingOTP = false;
             _isButtonDisabled = false;
           });
-
-          String message;
-          switch (e.code) {
-            case 'too-many-requests':
-              message = 'Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau.';
-              break;
-            case 'invalid-phone-number':
-              message = 'Số điện thoại không hợp lệ.';
-              break;
-            case 'quota-exceeded':
-              message = 'Hệ thống OTP đang quá tải. Vui lòng thử lại sau.';
-              break;
-            default:
-              message = e.message ?? 'Không thể gửi OTP.';
-          }
-
-          SnackBarHelper.showError(context, message);
-        },
-
-        // codeSent: (verificationId, resendToken) async {
-        //   startCountdown();
-        //
-        //   await Future.delayed(const Duration(milliseconds: 800));
-        //
-        //   if (!mounted) return;
-        //
-        //   context.push(
-        //     '${GlobalRouterConfig.confirmLoginOTP}/$phone',
-        //     extra: {
-        //       'verificationId': verificationId,
-        //       'resendToken': resendToken,
-        //     },
-        //   );
-        //
-        //   setState(() => _isRequestingOTP = false);
-        // },
-        codeSent: (verificationId, resendToken) {
-          startCountdown();
-
-          _isRequestingOTP = false;
-
-          if (!mounted) return;
-
-          WidgetsBinding.instance.addPostFrameCallback((_) async {
-            if (!mounted) return;
-            await Future.delayed(const Duration(milliseconds: 800));
-            SnackBarHelper.showSuccess(context, "Chuyển màn hình confirm OTP");
-            if (mounted) setState(() => _isRequestingOTP = false);            // context.push(
-            //   '${GlobalRouterConfig.confirmLoginOTP}/$phone',
-            //   extra: {
-            //     'verificationId': verificationId,
-            //     'resendToken': resendToken,
-            //   },
-            // );
-          });
-        },
-
-        codeAutoRetrievalTimeout: (_) {},
-      );
+          SnackBarHelper.showError(context, 'Lỗi xác thực OTP: $e');
+        }
+      }
     } on FirebaseAuthException catch (e) {
       appLog('FirebaseAuthException: ${e.code}');
       if (mounted) {

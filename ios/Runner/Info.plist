@@ -30,6 +30,17 @@
 	<key>FirebaseAppDelegateProxyEnabled</key>
     <string>YES</string>
 
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+			<!-- Lấy từ GoogleService-Info.plist, key REVERSED_CLIENT_ID -->
+			<string>com.googleusercontent.apps.479516932795-j2te6shbuu9b6rpoqj56cup3lqjs58rq</string>
+			</array>
+		</dict>
+	</array>
+
 	<!-- Permissions -->
 	<key>NSCameraUsageDescription</key>
 	<string>Allow access to camera to take photos</string>
