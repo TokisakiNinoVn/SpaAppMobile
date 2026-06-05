@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,43 +15,105 @@ import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import '../../../helper/snackbar_helper.dart';
 
-class LoginOTPScreen extends StatefulWidget {
-  @override
-  _LoginOTPScreen createState() => _LoginOTPScreen();
+// ─────────────────────────────────────────────
+//  Trạng thái của quá trình yêu cầu OTP
+// ─────────────────────────────────────────────
+enum _OtpRequestState {
+  idle,         // Chưa làm gì
+  preparingFcm, // Đang lấy FCM / APNs token
+  requesting,   // Đang gọi verifyPhoneNumber
+  codeSent,     // OTP đã gửi thành công
+  countdown,    // Đang đếm ngược cooldown
+  error,        // Có lỗi xảy ra
 }
 
-class _LoginOTPScreen extends State<LoginOTPScreen> with SingleTickerProviderStateMixin {
-  final TextEditingController _phoneController = TextEditingController();
-  bool _isButtonDisabled = false;
-  int _countdown = 0;
-  Timer? _timer;
-  String? _fcmToken;
-  late AnimationController _animController;
-  late Animation<double> _fadeAnim;
-  bool _isRequestingOTP = false;
-  bool _isAuthSessionActive = false;
+class LoginOTPScreen extends StatefulWidget {
+  const LoginOTPScreen({super.key});
 
+  @override
+  State<LoginOTPScreen> createState() => _LoginOTPScreenState();
+}
+
+class _LoginOTPScreenState extends State<LoginOTPScreen>
+    with SingleTickerProviderStateMixin {
+  // ── Controllers ──────────────────────────────
+  final TextEditingController _phoneController = TextEditingController();
+  late final AnimationController _animController;
+  late final Animation<double> _fadeAnim;
+  Timer? _countdownTimer;
+
+  // ── State ─────────────────────────────────────
+  _OtpRequestState _state = _OtpRequestState.idle;
+  int _countdown = 0;
+  String? _fcmToken;
+  String? _errorMessage; // Lỗi hiển thị inline (nếu cần)
+
+  // ── Computed ──────────────────────────────────
+  bool get _isLoading =>
+      _state == _OtpRequestState.preparingFcm ||
+      _state == _OtpRequestState.requesting;
+
+  bool get _isButtonDisabled =>
+      _isLoading || _state == _OtpRequestState.countdown;
+
+  // ── Lifecycle ────────────────────────────────
   @override
   void initState() {
     super.initState();
-    _getFCMToken();
 
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-
-    _fadeAnim = CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOut,
-    );
-
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
-  }
-  bool get _canUseContext => mounted && context.mounted;
 
-  Future<void> _getFCMToken() async {
+    // Lấy token nền, không block UI
+    _initFcmToken();
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _countdownTimer?.cancel();
+    _animController.dispose();
+    super.dispose();
+  }
+
+  // ── Helpers ──────────────────────────────────
+
+  /// Guard: chỉ gọi setState khi widget còn mounted
+  void _safeSetState(VoidCallback fn) {
+    if (mounted) setState(fn);
+  }
+
+  /// Hiển thị snackbar lỗi (safe)
+  void _showError(String msg) {
+    if (!mounted) return;
+    SnackBarHelper.showError(context, msg);
+  }
+
+  /// Hiển thị snackbar cảnh báo (safe)
+  void _showWarning(String msg) {
+    if (!mounted) return;
+    SnackBarHelper.showWarning(context, msg);
+  }
+
+  /// Reset về trạng thái có thể bấm lại
+  void _resetToIdle() {
+    _safeSetState(() {
+      _state = _OtpRequestState.idle;
+      _errorMessage = null;
+    });
+  }
+
+  // ── FCM Token ────────────────────────────────
+
+  /// Khởi tạo FCM token ở nền khi màn hình load.
+  /// Không show lỗi blocking — chỉ log và lưu token nếu thành công.
+  Future<void> _initFcmToken() async {
     try {
+      // 1. Xin permission (iOS sẽ show dialog, Android 13+ cũng vậy)
       final settings = await FirebaseMessaging.instance.requestPermission(
         alert: true,
         badge: true,
@@ -58,245 +121,288 @@ class _LoginOTPScreen extends State<LoginOTPScreen> with SingleTickerProviderSta
       );
 
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        appLog('User từ chối permission notification');
-        if (mounted) {
-          SnackBarHelper.showError(
-            context,
-            'Bạn cần cho phép thông báo để nhận mã OTP. Vui lòng bật quyền thông báo trong cài đặt.',
-          );
-        }
+        appLog('[FCM] User từ chối permission notification');
+        // Không block màn hình, chỉ log — OTP vẫn có thể gửi qua SMS
         return;
       }
 
+      // 2. iOS: đợi APNs token trước khi lấy FCM token
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-        if (apnsToken == null) {
-          appLog('APNs token null — chạy trên simulator hoặc chưa config APNs');
-          if (mounted) {
-            SnackBarHelper.showError(
-              context,
-              'Không thể lấy APNs token. Vui lòng chạy trên thiết bị thật và đảm bảo đã cấu hình APNs đúng cách.',
-            );
-          }
-          return;
-        }
-        appLog('APNs token: $apnsToken');
+        await _waitForApnsToken();
       }
 
+      // 3. Lấy FCM token
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
-        setState(() => _fcmToken = token);
+        _fcmToken = token;
+        appLog('[FCM] Token OK: ${token.substring(0, 20)}...');
       } else {
-        if (mounted) {
-          SnackBarHelper.showError(
-            context,
-            'Không thể lấy FCM token. Vui lòng thử lại hoặc kiểm tra cấu hình Firebase.',
-          );
-        }
-        appLog('FCM token null sau khi đã có APNs token');
+        appLog('[FCM] Token null sau khi có permission');
       }
 
-      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-        _fcmToken = newToken;
-        _updateFCMTokenIfLoggedIn(newToken);
-      });
-    } catch (e) {
-      appLog('Lỗi lấy FCM token: $e');
+      // 4. Lắng nghe refresh token
+      FirebaseMessaging.instance.onTokenRefresh.listen(_onTokenRefresh);
+    } catch (e, st) {
+      appLog('[FCM] _initFcmToken lỗi: $e\n$st');
+      // Không crash app — FCM token là optional khi dùng OTP qua SMS
     }
   }
 
-  Future<void> _updateFCMTokenIfLoggedIn(String newToken) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-    if (token != null) {
+  /// Chờ APNs token tối đa 10 giây (simulator sẽ không bao giờ có token).
+  Future<void> _waitForApnsToken() async {
+    const maxRetries = 5;
+    const delay = Duration(seconds: 2);
+
+    for (var i = 0; i < maxRetries; i++) {
       try {
-        // await authService.updateFCMToken(newToken);
+        final apns = await FirebaseMessaging.instance.getAPNSToken();
+        if (apns != null) {
+          appLog('[FCM] APNs token OK');
+          return;
+        }
       } catch (e) {
-        debugPrint('Lỗi cập nhật FCM token khi refresh: $e');
+        appLog('[FCM] getAPNSToken lỗi lần $i: $e');
       }
+      await Future.delayed(delay);
+    }
+    appLog('[FCM] APNs token vẫn null sau $maxRetries lần thử');
+  }
+
+  Future<void> _onTokenRefresh(String newToken) async {
+    _fcmToken = newToken;
+    appLog('[FCM] Token refresh');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getString('token') != null) {
+        // await authService.updateFCMToken(newToken);
+      }
+    } catch (e) {
+      appLog('[FCM] _onTokenRefresh lỗi: $e');
     }
   }
 
-  void startCountdown() {
-    setState(() {
+  // ── Validation ───────────────────────────────
+
+  /// Trả về thông báo lỗi nếu số điện thoại không hợp lệ, null nếu OK.
+  String? _validatePhone(String phone) {
+    if (phone.isEmpty) return 'Vui lòng nhập số điện thoại';
+    if (!RegExp(r'^0\d{9}$').hasMatch(phone)) {
+      return 'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0';
+    }
+    return null;
+  }
+
+  // ── Countdown ────────────────────────────────
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _safeSetState(() {
       _countdown = 60;
-      _isButtonDisabled = true;
+      _state = _OtpRequestState.countdown;
     });
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (_countdown <= 1) {
         timer.cancel();
-        setState(() => _isButtonDisabled = false);
+        _safeSetState(() {
+          _countdown = 0;
+          _state = _OtpRequestState.idle;
+        });
+        return;
       }
-      setState(() => _countdown--);
+      _safeSetState(() => _countdown--);
     });
   }
 
-  Future<void> requestOTP() async {
-    if (_isRequestingOTP || _isButtonDisabled) return;
+  // ── OTP Request ──────────────────────────────
+
+  Future<void> _requestOtp() async {
+    // Guard: tránh double-tap
+    if (_isButtonDisabled) return;
 
     final phone = _phoneController.text.trim();
 
-    if (phone.isEmpty) {
-      SnackBarHelper.showWarning(context, "Vui lòng nhập số điện thoại");
+    // Validate trước khi làm bất cứ điều gì
+    final validationError = _validatePhone(phone);
+    if (validationError != null) {
+      _showWarning(validationError);
       return;
     }
 
-    final phoneRegex = RegExp(r'^0\d{9}$');
+    // ── Bước 1: Kiểm tra APNs token trên iOS ───
+    _safeSetState(() => _state = _OtpRequestState.preparingFcm);
 
-    if (!phoneRegex.hasMatch(phone)) {
-      SnackBarHelper.showWarning(
-        context,
-        "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0",
-      );
-      return;
-    }
-
-    // if (_fcmToken == null) {
-    //   await _getFCMToken();
-    // }
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-      if (apnsToken == null) {
-        SnackBarHelper.showError(context, 'Cần chạy trên thiết bị thật có APNs.');
-        setState(() => _isButtonDisabled = false);
-        return; // Dừng hẳn, không gọi verifyPhoneNumber
+      final apnsOk = await _ensureApnsTokenForOtp();
+      if (!apnsOk) {
+        // Lỗi đã được show bên trong _ensureApnsTokenForOtp
+        _resetToIdle();
+        return;
       }
     }
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+    // ── Bước 2: Gọi Firebase verifyPhoneNumber ──
+    _safeSetState(() => _state = _OtpRequestState.requesting);
 
-    setState(() {
-      _isRequestingOTP = true;
-      _isButtonDisabled = true;
-    });
+    await _callVerifyPhoneNumber(phone);
+  }
+
+  /// Kiểm tra APNs token có sẵn trước khi gửi OTP (iOS only).
+  /// Trả về true nếu sẵn sàng, false nếu không thể tiếp tục.
+  Future<bool> _ensureApnsTokenForOtp() async {
+    try {
+      final apns = await FirebaseMessaging.instance
+          .getAPNSToken()
+          .timeout(const Duration(seconds: 5));
+
+      if (apns != null) return true;
+
+      appLog('[OTP] APNs token null — có thể đang chạy trên simulator');
+      _showError(
+        'Không thể xác thực thiết bị iOS.\n'
+        'Vui lòng chạy trên thiết bị thật hoặc kiểm tra cấu hình APNs.',
+      );
+      return false;
+    } on TimeoutException {
+      appLog('[OTP] APNs token timeout');
+      _showError('Hết thời gian chờ xác thực thiết bị. Vui lòng thử lại.');
+      return false;
+    } catch (e, st) {
+      appLog('[OTP] _ensureApnsTokenForOtp lỗi: $e\n$st');
+      _showError('Lỗi xác thực thiết bị: $e');
+      return false;
+    }
+  }
+
+  /// Gọi Firebase verifyPhoneNumber và xử lý toàn bộ callback.
+  Future<void> _callVerifyPhoneNumber(String phone) async {
+    String phoneInternational;
+    try {
+      phoneInternational = FormatHelper.formatPhoneInternational(phone);
+    } catch (e) {
+      appLog('[OTP] formatPhoneInternational lỗi: $e');
+      _showError('Định dạng số điện thoại không hợp lệ.');
+      _resetToIdle();
+      return;
+    }
 
     try {
-      final phoneInternational = FormatHelper.formatPhoneInternational(phone);
-        setState(() {
-          _isAuthSessionActive = true;
-        });
-        try {
-          await FirebaseAuth.instance.verifyPhoneNumber(
-            phoneNumber: phoneInternational,
-            timeout: const Duration(seconds: 60),
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: phoneInternational,
+        timeout: const Duration(seconds: 60),
 
-            verificationCompleted: (credential) async {
-              if (!mounted) return;
-              setState(() {
-                _isAuthSessionActive = false;
-                _isRequestingOTP = false; // ← bản gốc thiếu reset cái này
-                _isButtonDisabled = false;
-              });
-              try {
-                await FirebaseAuth.instance.signInWithCredential(credential);
-                if (!mounted) return;
-                context.go(CustomerRouterConfig.homeCustomer);
-              } catch (e) {
-                if (!mounted) return;
-                SnackBarHelper.showError(context, "Auto sign-in lỗi: $e");
-              } finally {
-                if (mounted) {
-                  setState(() {
-                    _isRequestingOTP = false;
-                    _isButtonDisabled = false;
-                  });
-                }
-              }
-            },
-
-          verificationFailed: (FirebaseAuthException e) {
-            appLog('verifyPhoneNumber error: ${e.code} - ${e.message}');
-
+        // ── Auto-verify (Android / một số iOS) ──
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          appLog('[OTP] verificationCompleted — auto sign-in');
+          try {
+            await FirebaseAuth.instance.signInWithCredential(credential);
             if (!mounted) return;
+            context.go(CustomerRouterConfig.homeCustomer);
+          } on FirebaseAuthException catch (e) {
+            appLog('[OTP] signInWithCredential lỗi: ${e.code}');
+            _showError(_mapFirebaseError(e));
+          } catch (e, st) {
+            appLog('[OTP] signInWithCredential unknown error: $e\n$st');
+            _showError('Đăng nhập tự động thất bại. Vui lòng nhập mã OTP thủ công.');
+          } finally {
+            _resetToIdle();
+          }
+        },
 
-            setState(() {
-              _isAuthSessionActive = false;
-              _isButtonDisabled = false;
-            });
+        // ── Gửi thất bại ─────────────────────────
+        verificationFailed: (FirebaseAuthException e) {
+          appLog('[OTP] verificationFailed: ${e.code} — ${e.message}');
+          _resetToIdle();
+          _showError(_mapFirebaseError(e));
+        },
 
-            String message;
-            switch (e.code) {
-              case 'too-many-requests':
-                message = 'Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau.';
-                break;
-              case 'invalid-phone-number':
-                message = 'Số điện thoại không hợp lệ.';
-                break;
-              case 'quota-exceeded':
-                message = 'Hệ thống OTP đang quá tải. Vui lòng thử lại sau.';
-                break;
-              default:
-                message = e.message ?? 'Không thể gửi OTP.';
+        // ── Gửi thành công ───────────────────────
+        codeSent: (String verificationId, int? resendToken) {
+          appLog('[OTP] codeSent — verificationId OK');
+          if (!mounted) return;
+
+          _startCountdown(); // bắt đầu cooldown trước khi navigate
+
+          // addPostFrameCallback để tránh navigate trong build cycle
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            try {
+              context.push(
+                '${GlobalRouterConfig.confirmLoginOTP}/$phone',
+                extra: {
+                  'verificationId': verificationId,
+                  'resendToken': resendToken,
+                },
+              );
+            } catch (e) {
+              appLog('[OTP] context.push lỗi: $e');
+              _showError('Không thể mở màn hình xác nhận OTP. Vui lòng thử lại.');
+              _resetToIdle();
             }
-
-            SnackBarHelper.showError(context, message);
-          },
-
-            codeSent: (verificationId, resendToken) {
-              if (!mounted) return;
-              setState(() => _isRequestingOTP = false);
-              startCountdown();
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted) return;
-                context.push(
-                  '${GlobalRouterConfig.confirmLoginOTP}/$phone',
-                  extra: {
-                    'verificationId': verificationId,
-                    'resendToken': resendToken,
-                  },
-                );
-              });
-            },
-
-            codeAutoRetrievalTimeout: (_) {
-              if (mounted) setState(() => _isAuthSessionActive = false);
-            },
-        );
-      } catch (e) {
-        SnackBarHelper.showError(context, 'verifyPhoneNumber crash: $e');
-        if (mounted) {
-          setState(() {
-            _isRequestingOTP = false;
-            _isButtonDisabled = false;
           });
-          SnackBarHelper.showError(context, 'Lỗi xác thực OTP: $e');
-        }
-      }
+        },
+
+        codeAutoRetrievalTimeout: (String verificationId) {
+          appLog('[OTP] codeAutoRetrievalTimeout');
+          // Không reset state ở đây vì countdown vẫn đang chạy
+        },
+      );
     } on FirebaseAuthException catch (e) {
-      appLog('FirebaseAuthException: ${e.code}');
-      if (mounted) {
-        setState(() => _isButtonDisabled = false); // Re-enable khi lỗi
-        SnackBarHelper.showError(context, 'Lỗi xác thực: ${e.message}');
-      }
-    } catch (e) {
-      appLog('FirebaseAuth chưa sẵn sàng: $e');
-      SnackBarHelper.showError(context, 'Lỗi cấu hình xác thực. Vui lòng thử lại sau.');
-      appLog('requestOTP error: $e');
-      if (mounted) {
-        setState(() => _isButtonDisabled = false); // Re-enable khi lỗi
-        SnackBarHelper.showError(context, 'Không thể gửi OTP. Vui lòng thử lại.');
-      }
-      return;
+      // verifyPhoneNumber() bản thân throw sync FirebaseAuthException (hiếm)
+      appLog('[OTP] FirebaseAuthException sync: ${e.code}');
+      _resetToIdle();
+      _showError(_mapFirebaseError(e));
+    } on PlatformException catch (e) {
+      // iOS có thể throw PlatformException khi SafariVC bị lỗi
+      appLog('[OTP] PlatformException: ${e.code} — ${e.message}');
+      _resetToIdle();
+      _showError(_mapPlatformError(e));
+    } catch (e, st) {
+      appLog('[OTP] _callVerifyPhoneNumber unknown: $e\n$st');
+      _resetToIdle();
+      _showError('Không thể gửi OTP. Vui lòng kiểm tra kết nối và thử lại.');
     }
-    // finally {
-    //   if (mounted) {
-    //     setState(() => _isRequestingOTP = false);
-    //   }
-    // }
   }
 
-  @override
-  void dispose() {
-    _phoneController.dispose();
-    _timer?.cancel();
-    _animController.dispose();
-    super.dispose();
+  // ── Error Mapping ─────────────────────────────
+
+  String _mapFirebaseError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'too-many-requests':
+        return 'Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau.';
+      case 'invalid-phone-number':
+        return 'Số điện thoại không hợp lệ. Vui lòng kiểm tra lại.';
+      case 'quota-exceeded':
+        return 'Hệ thống OTP đang quá tải. Vui lòng thử lại sau ít phút.';
+      case 'network-request-failed':
+        return 'Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.';
+      case 'app-not-authorized':
+        return 'Ứng dụng chưa được cấp quyền sử dụng Firebase Auth.';
+      case 'missing-client-identifier':
+        // iOS: reCAPTCHA hoặc APNs chưa cấu hình đúng
+        return 'Lỗi xác thực thiết bị iOS. Vui lòng đảm bảo APNs đã được cấu hình.';
+      case 'captcha-check-failed':
+        return 'Xác thực reCAPTCHA thất bại. Vui lòng thử lại.';
+      default:
+        return e.message ?? 'Lỗi không xác định (${e.code}). Vui lòng thử lại.';
+    }
   }
+
+  String _mapPlatformError(PlatformException e) {
+    // iOS SafariViewController bị dismiss / bị lỗi
+    if (e.code == 'Error' || e.message?.contains('cancelled') == true) {
+      return 'Xác thực bị huỷ. Vui lòng thử lại và không đóng cửa sổ xác thực.';
+    }
+    return 'Lỗi hệ thống iOS (${e.code}). Vui lòng thử lại.';
+  }
+
+  // ── Build ─────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final bool isDisabled = _isButtonDisabled || _isRequestingOTP;
-
     return Scaffold(
       backgroundColor: ColorConfig.primaryBackground,
       body: FadeTransition(
@@ -307,238 +413,237 @@ class _LoginOTPScreen extends State<LoginOTPScreen> with SingleTickerProviderSta
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back / Home button
-                GestureDetector(
-                  onTap: () => context.go(CustomerRouterConfig.homeCustomer),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.home,
-                      size: 18,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                ),
-
+                _buildBackButton(),
                 const SizedBox(height: 20),
-
-                // Brand header
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppConfig.appName,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w600,
-                        color: ColorConfig.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Đăng nhập bằng số điện thoại',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF666666),
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-
+                _buildHeader(),
                 const SizedBox(height: 30),
-
-                // Phone input
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Số điện thoại',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF333333),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Nhập số điện thoại của bạn',
-                        hintStyle: const TextStyle(
-                          color: Color(0xFF999999),
-                          fontSize: 15,
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF8F8F8),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(
-                            color: ColorConfig.primary,
-                            width: 1,
-                          ),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                          horizontal: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
+                _buildPhoneInput(),
                 const SizedBox(height: 32),
-
-                // CTA button
-                GestureDetector(
-                  onTap: isDisabled ? null : requestOTP,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: isDisabled
-                          ? const Color(0xFFCCCCCC)
-                          : ColorConfig.primary,
-                      borderRadius: BorderRadius.circular(40),
-                    ),
-                    child: Center(
-                      child: _isRequestingOTP
-                          ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
-                      )
-                          : _isButtonDisabled
-                          ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.timer_outlined,
-                            color: Colors.white70,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Gửi lại sau $_countdown giây',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      )
-                      : const Text(
-                        'Tiếp tục',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
+                _buildCtaButton(),
                 const SizedBox(height: 20),
+                _buildFooterLinks(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-                // Nút kiểm tra token
-                TextButton(
-                  onPressed: () async {
-                    if (defaultTargetPlatform == TargetPlatform.iOS) {
-                      final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-                      SnackBarHelper.showSuccess(context, 'APNs Token: ${apnsToken ?? 'NULL'}');
-                    } else {
-                      final fcmToken = await FirebaseMessaging.instance.getToken();
-                      SnackBarHelper.showSuccess(context, 'FCM Token: ${fcmToken ?? 'NULL'}');
-                    }
-                  },
-                  child: Text('Current ${defaultTargetPlatform == TargetPlatform.iOS ? 'APNs' : 'FCM'} Token'),
+  // ── Build Helpers ─────────────────────────────
+
+  Widget _buildBackButton() {
+    return GestureDetector(
+      onTap: () {
+        try {
+          context.go(CustomerRouterConfig.homeCustomer);
+        } catch (e) {
+          appLog('[NAV] back button lỗi: $e');
+        }
+      },
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.home, size: 18, color: Color(0xFF333333)),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppConfig.appName,
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w600,
+            color: ColorConfig.textPrimary,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Đăng nhập bằng số điện thoại',
+          style: TextStyle(
+            fontSize: 16,
+            color: Color(0xFF666666),
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhoneInput() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Số điện thoại',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF333333),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          style: const TextStyle(fontSize: 16, color: Color(0xFF1A1A1A)),
+          decoration: InputDecoration(
+            hintText: 'Nhập số điện thoại của bạn',
+            hintStyle: const TextStyle(color: Color(0xFF999999), fontSize: 15),
+            filled: true,
+            fillColor: const Color(0xFFF8F8F8),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: ColorConfig.primary, width: 1),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: 20,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCtaButton() {
+    return GestureDetector(
+      onTap: _isButtonDisabled ? null : _requestOtp,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 46,
+        decoration: BoxDecoration(
+          color: _isButtonDisabled
+              ? const Color(0xFFCCCCCC)
+              : ColorConfig.primary,
+          borderRadius: BorderRadius.circular(40),
+        ),
+        child: Center(child: _buildCtaContent()),
+      ),
+    );
+  }
+
+  Widget _buildCtaContent() {
+    if (_isLoading) {
+      return const SizedBox(
+        width: 22,
+        height: 22,
+        child: CircularProgressIndicator(
+          strokeWidth: 2.5,
+          color: Colors.white,
+        ),
+      );
+    }
+
+    if (_state == _OtpRequestState.countdown) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.timer_outlined, color: Colors.white70, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            'Gửi lại sau $_countdown giây',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return const Text(
+      'Tiếp tục',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  Widget _buildFooterLinks() {
+    return Center(
+      child: Column(
+        children: [
+          TextButton(
+            onPressed: () {
+              try {
+                context.push(GlobalRouterConfig.login);
+              } catch (e) {
+                appLog('[NAV] push login lỗi: $e');
+              }
+            },
+            child: const Text(
+              'Đăng nhập bằng mật khẩu',
+              style: TextStyle(
+                color: Color(0xFF666666),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () {
+              try {
+                context.push('/get-otp');
+              } catch (e) {
+                appLog('[NAV] push get-otp lỗi: $e');
+              }
+            },
+            child: const Text(
+              'Quên mật khẩu?',
+              style: TextStyle(color: Color(0xFF999999), fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () {
+              try {
+                context.push(GlobalRouterConfig.register);
+              } catch (e) {
+                appLog('[NAV] push register lỗi: $e');
+              }
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Chưa có tài khoản?',
+                  style: TextStyle(color: Color(0xFF666666), fontSize: 14),
                 ),
-              
-
-                const SizedBox(height: 20),
-
-                Center(
-                  child: Column(
-                    children: [
-                      TextButton(
-                        onPressed: () => context.push(GlobalRouterConfig.login),
-                        child: const Text(
-                          'Đăng nhập bằng mật khẩu',
-                          style: TextStyle(
-                            color: Color(0xFF666666),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () => context.push('/get-otp'),
-                        child: const Text(
-                          'Quên mật khẩu?',
-                          style: TextStyle(
-                            color: Color(0xFF999999),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      GestureDetector(
-                        onTap: () => context.push(GlobalRouterConfig.register),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'Chưa có tài khoản?',
-                              style: TextStyle(
-                                color: Color(0xFF666666),
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Đăng ký ngay',
-                              style: TextStyle(
-                                color: ColorConfig.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                const SizedBox(width: 4),
+                Text(
+                  'Đăng ký ngay',
+                  style: TextStyle(
+                    color: ColorConfig.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
