@@ -242,13 +242,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  runZonedGuarded(() {
-    runApp(MyApp());
-  }, (error, stack) {
-    print('Uncaught error: $error\n$stack');
-    // Gửi lên server log
-  });
-  WidgetsFlutterBinding.ensureInitialized();
+  runApp(MyApp());
   // appLog("🚀 App starting...");
 
   // await Firebase.initializeApp();

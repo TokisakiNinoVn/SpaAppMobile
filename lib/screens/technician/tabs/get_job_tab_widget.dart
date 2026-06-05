@@ -480,7 +480,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
         confirmLabel: 'Ứng tuyển',
         confirmColor: ColorConfig.primary,
         onConfirm: () {
-          Navigator.pop(dialogContext, true);
+          // Navigator.pop(dialogContext, true);
         },
       ),
     );

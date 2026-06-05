@@ -249,7 +249,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
           confirmLabel: 'Xác nhận',
           confirmColor: ColorConfig.primary,
           onConfirm: () {
-            Navigator.pop(dialogContext, true);
+            // Navigator.pop(dialogContext, true);
           },
         );
       },
@@ -532,7 +532,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
     // Điều kiện hiển thị bottom bar hành động
     final bool showActionBar = widget.isNewOrder && status == 'pending' && !_isExpired;
     // appLog("${status}");
-    appLog("$showActionBar | ${widget.isNewOrder} : ${status == 'pending'} : ${!_isExpired}");
+    // appLog("$showActionBar | ${widget.isNewOrder} : ${status == 'pending'} : ${!_isExpired}");
 
     return Scaffold(
       backgroundColor: ColorConfig.primaryBackground,

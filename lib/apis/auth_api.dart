@@ -16,4 +16,5 @@ class AuthApiRoutes {
 
   static const String checkTokenUser = '${AppConfig.apiUrlPrivate}/auth-private/me';
   static const String verifyFirebase = '${AppConfig.apiUrlPublic}/auth/verify-firebase';
+  static const String existsPhone = '${AppConfig.apiUrlPublic}/auth/exists-phone';
 }

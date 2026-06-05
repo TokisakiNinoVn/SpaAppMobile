@@ -15,6 +15,10 @@ class AuthService {
     return await ApiMethodsPublic.postRequest(AuthApiRoutes.verifyFirebase, body: data);
   }
 
+  Future<Map<String, dynamic>> existsPhoneService(String phone) async {
+    return await ApiMethodsPublic.getRequest('${AuthApiRoutes.existsPhone}?phone=$phone');
+  }
+
   Future<Map<String, dynamic>> logoutAuthService() async {
     return await ApiMethodsPrivate.postRequest(AuthApiRoutes.logout, {});
   }

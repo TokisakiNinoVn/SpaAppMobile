@@ -767,7 +767,7 @@ class _StatisticalTechnicianScreenState extends State<StatisticalTechnicianScree
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Loại đơn hàng",
+                    "Loại đơn việc",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

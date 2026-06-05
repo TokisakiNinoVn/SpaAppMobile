@@ -35,12 +35,12 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
   void initState() {
     super.initState();
 
+    _loadRoleType();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SelectedTabProvider>()
           .setIndex(widget.initialIndex);
     });
-
-    _loadRoleType();
   }
 
   Future<void> _loadRoleType() async {
@@ -49,9 +49,16 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
     setState(() {
       role = prefs.getString('role') ?? 'Không rõ';
       isLoading = false;
-      isTechnicianActive =
-          prefs.getBool('isTechnicianActive') == true;
+      isTechnicianActive = prefs.getBool('isTechnicianActive') == true;
     });
+
+    // Sau khi có isTechnicianActive, đảm bảo selectedIndex hợp lệ
+    final provider = context.read<SelectedTabProvider>();
+    int currentIdx = provider.selectedIndex;
+    int maxIndex = isTechnicianActive ? 3 : 2; // vì số lượng item tương ứng là 4 và 3
+    if (currentIdx > maxIndex) {
+      provider.setIndex(0); // đưa về tab đầu tiên an toàn
+    }
   }
 
   void _onItemTapped(int index) {
@@ -100,8 +107,23 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedIndex =
-        context.watch<SelectedTabProvider>().selectedIndex;
+    // final selectedIndex = context.watch<SelectedTabProvider>().selectedIndex;
+    final items = isTechnicianActive
+        ? const [
+      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+      BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Đơn việc'),
+      BottomNavigationBarItem(icon: Icon(Icons.bookmark_added), label: 'Nhận việc'),
+      BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Tài khoản'),
+    ]
+        : const [
+      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+      BottomNavigationBarItem(icon: Icon(Icons.phone), label: 'Hỗ trợ'),
+      BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Tài khoản'),
+    ];
+
+    final selectedIndex = context.watch<SelectedTabProvider>().selectedIndex;
+
+    final safeIndex = selectedIndex.clamp(0, items.length - 1);
 
     return Scaffold(
       backgroundColor: ColorConfig.primaryBackground,
@@ -109,7 +131,7 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
         child: _buildBody(selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedIndex,
+        currentIndex: safeIndex,
         onTap: _onItemTapped,
         iconSize: 24.0,
         selectedFontSize: 12.0,
@@ -142,10 +164,6 @@ class _HomeTechnicianScreenState extends State<HomeTechnicianScreen> {
             icon: Icon(Icons.home),
             label: 'Home',
           ),
-          // BottomNavigationBarItem(
-          //   icon: Icon(Icons.book),
-          //   label: 'Chính sách',
-          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.phone),
             label: 'Hỗ trợ',
