@@ -19,8 +19,7 @@ class LoginOTPScreen extends StatefulWidget {
   _LoginOTPScreen createState() => _LoginOTPScreen();
 }
 
-class _LoginOTPScreen extends State<LoginOTPScreen>
-    with SingleTickerProviderStateMixin {
+class _LoginOTPScreen extends State<LoginOTPScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _phoneController = TextEditingController();
   bool _isButtonDisabled = false;
   int _countdown = 0;
@@ -48,6 +47,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
 
     _animController.forward();
   }
+  bool get _canUseContext => mounted && context.mounted;
 
   Future<void> _getFCMToken() async {
     try {
@@ -178,8 +178,24 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
         phoneNumber: phoneInternational,
         timeout: const Duration(seconds: 60),
 
+        // verificationCompleted: (credential) async {
+        //   await FirebaseAuth.instance.signInWithCredential(credential);
+        // },
         verificationCompleted: (credential) async {
-          await FirebaseAuth.instance.signInWithCredential(credential);
+          try {
+            await FirebaseAuth.instance.signInWithCredential(credential);
+
+            if (!mounted) return;
+
+            // optional: navigate an toàn
+            context.go(CustomerRouterConfig.homeCustomer);
+          } catch (e) {
+            SnackBarHelper.showError(context, "auto sign-in failed: $e");
+            setState(() {
+              _isRequestingOTP = false;
+              _isButtonDisabled = false;
+            });
+          }
         },
 
         verificationFailed: (FirebaseAuthException e) {
@@ -210,22 +226,42 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
           SnackBarHelper.showError(context, message);
         },
 
-        codeSent: (verificationId, resendToken) async {
+        // codeSent: (verificationId, resendToken) async {
+        //   startCountdown();
+        //
+        //   await Future.delayed(const Duration(milliseconds: 800));
+        //
+        //   if (!mounted) return;
+        //
+        //   context.push(
+        //     '${GlobalRouterConfig.confirmLoginOTP}/$phone',
+        //     extra: {
+        //       'verificationId': verificationId,
+        //       'resendToken': resendToken,
+        //     },
+        //   );
+        //
+        //   setState(() => _isRequestingOTP = false);
+        // },
+        codeSent: (verificationId, resendToken) {
           startCountdown();
 
-          await Future.delayed(const Duration(milliseconds: 800));
+          _isRequestingOTP = false;
 
           if (!mounted) return;
 
-          context.push(
-            '${GlobalRouterConfig.confirmLoginOTP}/$phone',
-            extra: {
-              'verificationId': verificationId,
-              'resendToken': resendToken,
-            },
-          );
-
-          setState(() => _isRequestingOTP = false);
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!mounted) return;
+            await Future.delayed(const Duration(milliseconds: 800));
+            SnackBarHelper.showSuccess(context, "Chuyển màn hình confirm OTP");
+            if (mounted) setState(() => _isRequestingOTP = false);            // context.push(
+            //   '${GlobalRouterConfig.confirmLoginOTP}/$phone',
+            //   extra: {
+            //     'verificationId': verificationId,
+            //     'resendToken': resendToken,
+            //   },
+            // );
+          });
         },
 
         codeAutoRetrievalTimeout: (_) {},
