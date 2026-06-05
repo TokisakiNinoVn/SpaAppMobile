@@ -1,4 +1,6 @@
 
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -238,9 +240,18 @@ void _showOrderDialog(String orderId) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+
+  runZonedGuarded(() {
+    runApp(MyApp());
+  }, (error, stack) {
+    print('Uncaught error: $error\n$stack');
+    // Gửi lên server log
+  });
+  WidgetsFlutterBinding.ensureInitialized();
   // appLog("🚀 App starting...");
 
-  await Firebase.initializeApp();
+  // await Firebase.initializeApp();
   // appLog("✅ Firebase initialized");
 
   // Đăng ký background handler
