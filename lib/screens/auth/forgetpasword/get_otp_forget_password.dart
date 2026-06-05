@@ -1,16 +1,14 @@
-import 'package:firebase_app_installations/firebase_app_installations.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
-import 'package:spa_app/config/theme_config.dart';
+import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
-import 'package:spa_app/services/auth_service.dart';
 
 import '../../../helper/snackbar_helper.dart';
 
@@ -21,33 +19,19 @@ class OTPForgotPasswordScreen extends StatefulWidget {
 
 class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
   final TextEditingController _phoneController = TextEditingController();
+  bool _isRequestingOTP = false;
   bool _isButtonDisabled = false;
   int _countdown = 0;
   Timer? _timer;
   String? _fcmToken;
 
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
-
   @override
   void initState() {
     super.initState();
-    _initializeNotifications();
     _getFCMToken();
   }
 
-  Future<void> _initializeNotifications() async {
-    const AndroidInitializationSettings androidSettings =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const InitializationSettings settings =
-    InitializationSettings(android: androidSettings);
-
-    await _localNotifications.initialize(settings);
-  }
-
   Future<void> _getFCMToken() async {
-    final isSupport = FirebaseMessaging.instance.isSupported();
-    final idHii = await FirebaseInstallations.instance.getId();
     try {
       await FirebaseMessaging.instance.requestPermission(
         alert: true,
@@ -58,9 +42,7 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
       final token = await FirebaseMessaging.instance.getToken();
 
       if (token != null) {
-        setState(() {
-          _fcmToken = token;
-        });
+        setState(() => _fcmToken = token);
       }
 
       FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
@@ -85,25 +67,6 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
     }
   }
 
-  Future<void> _showNotification(String message) async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'otp_channel',
-      'OTP Notifications',
-      channelDescription: 'Thông báo OTP',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-
-    const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
-
-    await _localNotifications.show(
-      0,
-      'Mã OTP',
-      message,
-      platformDetails,
-    );
-  }
-
   void startCountdown() {
     setState(() {
       _countdown = 60;
@@ -113,56 +76,108 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_countdown <= 1) {
         timer.cancel();
-        setState(() {
-          _isButtonDisabled = false;
-        });
+        setState(() => _isButtonDisabled = false);
       }
-      setState(() {
-        _countdown--;
-      });
+      setState(() => _countdown--);
     });
   }
 
   Future<void> requestOTP() async {
-    final phone = _phoneController.text;
+    if (_isRequestingOTP || _isButtonDisabled) return;
+
+    final phone = _phoneController.text.trim();
 
     if (phone.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Vui lòng nhập số điện thoại'),
-            backgroundColor: const Color(0xFFE74C3C),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(40),
-            ),
-          ),
-        );
-      }
+      if (mounted) SnackBarHelper.showWarning(context, "Vui lòng nhập số điện thoại");
       return;
     }
 
-    try {
-      final authService = AuthService();
-      final response = await authService.getOTPService({'phone': phone, "type": "otp_forgot_password", 'fcm_token': _fcmToken});
-      print(response);
-      if (response['success'] == true || response['status'] == 'success') {
-        final message = response['message'] ?? 'Mã OTP đã được gửi';
-        await _showNotification(message);
-        startCountdown();
+    final phoneRegex = RegExp(r'^0\d{9}$');
+    if (!phoneRegex.hasMatch(phone)) {
+      SnackBarHelper.showWarning(
+        context,
+        "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0",
+      );
+      return;
+    }
 
-        if (mounted) {
-            SnackBarHelper.showSuccess(context, 'Đã gửi mã OTP đến số điện thoại của bạn');
-          context.push('/get-otp/confirm-otp/$phone');
-        }
-      } else {
-        if (mounted) {
-          SnackBarHelper.showError(context, response['message'] ?? 'Yêu cầu OTP thất bại');
-        }
-      }
-    } catch (error) {
+    // Disable ngay lập tức để tránh spam
+    setState(() {
+      _isRequestingOTP = true;
+      _isButtonDisabled = true;
+    });
+
+    try {
+      final phoneInternational = FormatHelper.formatPhoneInternational(phone);
+
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: phoneInternational,
+        timeout: const Duration(seconds: 60),
+
+        verificationCompleted: (credential) async {
+          await FirebaseAuth.instance.signInWithCredential(credential);
+        },
+
+        verificationFailed: (FirebaseAuthException e) {
+          appLog('verifyPhoneNumber error: ${e.code} - ${e.message}');
+
+          if (!mounted) return;
+
+          // Re-enable nút nếu request thất bại
+          setState(() => _isButtonDisabled = false);
+
+          String message;
+          switch (e.code) {
+            case 'too-many-requests':
+              message = 'Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau.';
+              break;
+            case 'invalid-phone-number':
+              message = 'Số điện thoại không hợp lệ.';
+              break;
+            case 'quota-exceeded':
+              message = 'Hệ thống OTP đang quá tải. Vui lòng thử lại sau.';
+              break;
+            default:
+              message = e.message ?? 'Không thể gửi OTP.';
+          }
+
+          SnackBarHelper.showError(context, message);
+        },
+
+        codeSent: (verificationId, resendToken) {
+          startCountdown();
+
+          if (!mounted) return;
+          SnackBarHelper.showSuccess(context, 'Đã gửi mã OTP đến số điện thoại của bạn');
+
+          context.push(
+            '/get-otp/confirm-otp/$phone',
+            extra: {
+              'verificationId': verificationId,
+              'resendToken': resendToken,
+            },
+          ).then((_) {
+            if (mounted) setState(() => _isRequestingOTP = false);
+          });
+        },
+
+        codeAutoRetrievalTimeout: (_) {},
+      );
+    } on FirebaseAuthException catch (e) {
+      appLog('FirebaseAuthException: ${e.code}');
       if (mounted) {
-        SnackBarHelper.showError(context, 'Đã xảy ra lỗi: $error');
+        setState(() => _isButtonDisabled = false); // Re-enable khi lỗi
+        SnackBarHelper.showError(context, 'Lỗi xác thực: ${e.message}');
+      }
+    } catch (e) {
+      appLog('requestOTP error: $e');
+      if (mounted) {
+        setState(() => _isButtonDisabled = false); // Re-enable khi lỗi
+        SnackBarHelper.showError(context, 'Không thể gửi OTP. Vui lòng thử lại.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRequestingOTP = false);
       }
     }
   }
@@ -207,17 +222,6 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
                 ),
               ),
             ),
-            // const SizedBox(width: 16),
-            // const Expanded(
-            //   child: Text(
-            //     "Đăng nhập bằng OTP",
-            //     style: TextStyle(
-            //       color: Color(0xFF1A1A1A),
-            //       fontWeight: FontWeight.w600,
-            //       fontSize: 16,
-            //     ),
-            //   ),
-            // ),
           ],
         ),
       ),
@@ -226,48 +230,6 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             children: [
-              // const SizedBox(height: 20),
-              //
-              // // Back button
-              // Align(
-              //   alignment: Alignment.centerLeft,
-              //   child: GestureDetector(
-              //     onTap: () => context.pop(),
-              //     child: Container(
-              //       width: 40,
-              //       height: 40,
-              //       decoration: BoxDecoration(
-              //         color: const Color(0xFFF5F5F5),
-              //         borderRadius: BorderRadius.circular(40),
-              //       ),
-              //       child: const Icon(
-              //         Icons.arrow_back_ios_new_rounded,
-              //         size: 18,
-              //         color: Color(0xFF333333),
-              //       ),
-              //     ),
-              //   ),
-              // ),
-              //
-              // const SizedBox(height: 40),
-
-              // Icon header
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: ColorConfig.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.lock_reset_rounded,
-                  size: 40,
-                  color: Colors.white,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
               Text(
                 'Quên mật khẩu?',
                 style: TextStyle(
@@ -280,7 +242,6 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
 
               const SizedBox(height: 8),
 
-              // Subtitle
               const Text(
                 'Nhập số điện thoại để nhận mã OTP',
                 style: TextStyle(
@@ -334,17 +295,27 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isButtonDisabled ? null : requestOTP,
+                  onPressed: (_isButtonDisabled || _isRequestingOTP) ? null : requestOTP,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     backgroundColor: ColorConfig.primary,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFFCCCCCC),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(40),
                     ),
                     elevation: 0,
                   ),
-                  child: _isButtonDisabled
+                  child: _isRequestingOTP
+                      ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
+                      : _isButtonDisabled
                       ? Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -381,22 +352,20 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
               const SizedBox(height: 20),
 
               TextButton(
-                onPressed: () {
-                  context.go('/login');
-                },
+                onPressed: () => context.go('/login'),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.arrow_back_ios_new_rounded,
                       size: 12,
                       color: Color(0xFF666666),
                     ),
-                    const SizedBox(width: 4),
-                    const Text(
+                    SizedBox(width: 4),
+                    Text(
                       'Quay lại đăng nhập',
                       style: TextStyle(
                         color: Color(0xFF666666),
@@ -410,67 +379,33 @@ class _OTPForgotPasswordScreenState extends State<OTPForgotPasswordScreen> {
 
               const SizedBox(height: 48),
 
-              // Decorative line with text
+              // Decorative divider
               Row(
                 children: [
-                  Expanded(
-                    child: Divider(
-                      color: Colors.grey.shade200,
-                      thickness: 0.5,
-                    ),
-                  ),
+                  Expanded(child: Divider(color: Colors.grey.shade200, thickness: 0.5)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       'Cần hỗ trợ?',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade400,
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
                     ),
                   ),
-                  Expanded(
-                    child: Divider(
-                      color: Colors.grey.shade200,
-                      thickness: 0.5,
-                    ),
-                  ),
+                  Expanded(child: Divider(color: Colors.grey.shade200, thickness: 0.5)),
                 ],
               ),
 
               const SizedBox(height: 16),
 
-              // Support contact
+              // Support email
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.email_outlined,
-                    size: 14,
-                    color: Colors.grey.shade400,
-                  ),
+                  Icon(Icons.email_outlined, size: 14, color: Colors.grey.shade400),
                   const SizedBox(width: 6),
                   Text(
                     '${AppConfig.emailAppSupport}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade400,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
                   ),
-                  // const SizedBox(width: 16),
-                  // Icon(
-                  //   Icons.phone_outlined,
-                  //   size: 14,
-                  //   color: Colors.grey.shade400,
-                  // ),
-                  // const SizedBox(width: 6),
-                  // Text(
-                  //   '1900 1234',
-                  //   style: TextStyle(
-                  //     fontSize: 12,
-                  //     color: Colors.grey.shade400,
-                  //   ),
-                  // ),
                 ],
               ),
 

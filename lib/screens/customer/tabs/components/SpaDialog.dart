@@ -8,7 +8,9 @@ class SpaDialog extends StatelessWidget {
   final String cancelLabel;
   final String confirmLabel;
   final Color confirmColor;
-  final VoidCallback onConfirm;
+
+  final VoidCallback? onConfirm;
+  final VoidCallback? onCancel;
 
   const SpaDialog({
     // required this.icon,
@@ -18,7 +20,9 @@ class SpaDialog extends StatelessWidget {
     required this.cancelLabel,
     required this.confirmLabel,
     required this.confirmColor,
-    required this.onConfirm,
+
+    this.onConfirm,
+    this.onCancel,
   });
 
   @override
@@ -80,8 +84,8 @@ class SpaDialog extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Navigator.of(context).pop(true);
-                      onConfirm();
+                      onConfirm!();
+                      if (context.mounted) Navigator.of(context).pop(true);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: confirmColor,

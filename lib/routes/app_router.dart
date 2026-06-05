@@ -55,7 +55,9 @@ final GoRouter appRouter = GoRouter(
           path: 'confirm-login-otp/:phone',
           builder: (context, state) {
             final phone = state.pathParameters['phone'];
-            return ConfirmOTPLoginScreen(phone: phone ?? '');
+            final data = state.extra as Map<String, dynamic>;
+
+            return ConfirmOTPLoginScreen(phone: phone ?? '', data: data);
           },
         ),
       ]
@@ -68,7 +70,9 @@ final GoRouter appRouter = GoRouter(
           path: 'confirm-otp/:phone',
           builder: (context, state) {
             final phone = state.pathParameters['phone'];
-            return ConfirmOTPScreen(phone: phone ?? '');
+            final data = state.extra as Map<String, dynamic>;
+
+            return ConfirmOTPScreen(phone: phone ?? '', data: data);
           },
         ),
       ]
