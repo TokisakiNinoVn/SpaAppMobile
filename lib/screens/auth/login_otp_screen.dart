@@ -154,6 +154,14 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
     // if (_fcmToken == null) {
     //   await _getFCMToken();
     // }
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+      if (apnsToken == null) {
+        SnackBarHelper.showError(context, 'Cần chạy trên thiết bị thật có APNs.');
+        setState(() => _isButtonDisabled = false);
+        return; // Dừng hẳn, không gọi verifyPhoneNumber
+      }
+    }
 
     setState(() {
       _isRequestingOTP = true;
@@ -161,6 +169,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
     });
 
     try {
+      final auth = FirebaseAuth.instance;
       final phoneInternational = FormatHelper.formatPhoneInternational(phone);
         setState(() {
           _isAuthSessionActive = true;
@@ -228,16 +237,20 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
         SnackBarHelper.showError(context, 'Lỗi xác thực: ${e.message}');
       }
     } catch (e) {
+      appLog('FirebaseAuth chưa sẵn sàng: $e');
+      SnackBarHelper.showError(context, 'Lỗi cấu hình xác thực. Vui lòng thử lại sau.');
       appLog('requestOTP error: $e');
       if (mounted) {
         setState(() => _isButtonDisabled = false); // Re-enable khi lỗi
         SnackBarHelper.showError(context, 'Không thể gửi OTP. Vui lòng thử lại.');
       }
-    } finally {
-      if (mounted) {
-        setState(() => _isRequestingOTP = false);
-      }
+      return;
     }
+    // finally {
+    //   if (mounted) {
+    //     setState(() => _isRequestingOTP = false);
+    //   }
+    // }
   }
 
   @override
@@ -416,6 +429,23 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
                     ),
                   ),
                 ),
+
+                const SizedBox(height: 20),
+
+                // Nút kiểm tra token
+                TextButton(
+                  onPressed: () async {
+                    if (defaultTargetPlatform == TargetPlatform.iOS) {
+                      final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+                      SnackBarHelper.showSuccess(context, 'APNs Token: ${apnsToken ?? 'NULL'}');
+                    } else {
+                      final fcmToken = await FirebaseMessaging.instance.getToken();
+                      SnackBarHelper.showSuccess(context, 'FCM Token: ${fcmToken ?? 'NULL'}');
+                    }
+                  },
+                  child: Text('Current ${defaultTargetPlatform == TargetPlatform.iOS ? 'APNs' : 'FCM'} Token'),
+                ),
+              
 
                 const SizedBox(height: 20),
 
