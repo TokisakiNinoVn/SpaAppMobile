@@ -365,7 +365,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
     final customer = order['customerInfor'] ?? {};
     final customerName = customer['fullname'] ?? 'Chưa xác định';
     final customerPhone = customer['phone'] ?? '';
-    final customerGender = customer['gender'] ?? '';
+    final customerGender = (customer['gender'] ?? '') == "male" ? "nam" : "nữ";
 
     final workingHours = order['workingHours'] ?? '';
     final address = order['address'] ?? '';
@@ -404,6 +404,10 @@ class _HistoryOrderState extends State<HistoryOrder> {
       case "expired":
         statusColor = Colors.grey;
         statusText = "Hết hạn";
+        break;
+      case "rejected":
+        statusColor = Colors.orange;
+        statusText = "Từ chối";
         break;
       default:
         statusColor = Colors.orange;
@@ -786,25 +790,25 @@ class _HistoryOrderState extends State<HistoryOrder> {
                       color: Colors.red,
                     ),
                   ],
-                  if (status == 'done') ...[
-                    if (rate != null && rate.isNotEmpty) ...[
-                      buildActionButton(
-                        onPressed: () {
-                          final orderId = order["_id"];
-                          final technicianId = order["technicianInfor"]["_id"];
-                          final Map<String, dynamic> data = {
-                            "orderId": orderId,
-                            "technicianId": technicianId,
-                            ...rate,
-                          };
-                          context.push(CustomerRouterConfig.viewOrUpdateRate, extra: data);
-                        },
-                        icon: Icons.arrow_right,
-                        label: "Xem đánh giá",
-                        color: Colors.amber.shade700,
-                      ),
-                    ],
-                  ],
+                  // if (status == 'done') ...[
+                  //   if (rate != null && rate.isNotEmpty) ...[
+                  //     buildActionButton(
+                  //       onPressed: () {
+                  //         final orderId = order["_id"];
+                  //         final technicianId = order["technicianInfor"]["_id"];
+                  //         final Map<String, dynamic> data = {
+                  //           "orderId": orderId,
+                  //           "technicianId": technicianId,
+                  //           ...rate,
+                  //         };
+                  //         context.push(CustomerRouterConfig.viewOrUpdateRate, extra: data);
+                  //       },
+                  //       icon: Icons.arrow_right,
+                  //       label: "Xem đánh giá",
+                  //       color: Colors.amber.shade700,
+                  //     ),
+                  //   ],
+                  // ],
                 ],
               ),
             ],

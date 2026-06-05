@@ -29,6 +29,7 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   bool _isRequestingOTP = false;
+  bool _isAuthSessionActive = false;
 
   @override
   void initState() {
@@ -150,19 +151,21 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
       return;
     }
 
-    if (_fcmToken == null) {
-      await _getFCMToken();
-    }
+    // if (_fcmToken == null) {
+    //   await _getFCMToken();
+    // }
 
     setState(() {
       _isRequestingOTP = true;
-      _isButtonDisabled = true; // Disable ngay lập tức để tránh spam
+      _isButtonDisabled = true;
     });
 
     try {
       final phoneInternational = FormatHelper.formatPhoneInternational(phone);
-
-      await FirebaseAuth.instance.verifyPhoneNumber(
+        setState(() {
+          _isAuthSessionActive = true;
+        });
+        await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: phoneInternational,
         timeout: const Duration(seconds: 60),
 
@@ -175,8 +178,10 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
 
           if (!mounted) return;
 
-          // Re-enable nút nếu request thất bại
-          setState(() => _isButtonDisabled = false);
+          setState(() {
+            _isAuthSessionActive = false;
+            _isButtonDisabled = false;
+          });
 
           String message;
           switch (e.code) {
@@ -196,8 +201,10 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
           SnackBarHelper.showError(context, message);
         },
 
-        codeSent: (verificationId, resendToken) {
+        codeSent: (verificationId, resendToken) async {
           startCountdown();
+
+          await Future.delayed(const Duration(milliseconds: 800));
 
           if (!mounted) return;
 
@@ -207,9 +214,9 @@ class _LoginOTPScreen extends State<LoginOTPScreen>
               'verificationId': verificationId,
               'resendToken': resendToken,
             },
-          ).then((_) {
-            if (mounted) setState(() => _isRequestingOTP = false);
-          });
+          );
+
+          setState(() => _isRequestingOTP = false);
         },
 
         codeAutoRetrievalTimeout: (_) {},
