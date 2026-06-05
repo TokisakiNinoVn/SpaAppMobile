@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/handlers/auth_response_handler.dart';
+import 'package:spa_app/helper/fcm_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -14,7 +16,9 @@ import '../../../services/auth_service.dart';
 
 class ConfirmOTPLoginScreen extends StatefulWidget {
   final String phone;
-  const ConfirmOTPLoginScreen({Key? key, required this.phone}) : super(key: key);
+  final Map<String, dynamic> data;
+
+  const ConfirmOTPLoginScreen({Key? key, required this.phone, required this.data}) : super(key: key);
 
   @override
   _ConfirmOTPScreenState createState() => _ConfirmOTPScreenState();
@@ -41,6 +45,8 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPLoginScreen>
   Timer? _timer;
   bool isLoading = false;
   bool _isIOS = false;
+  String verificationId = "";
+  String fcmToken = "";
 
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -51,6 +57,10 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPLoginScreen>
     super.initState();
     _detectPlatform();
     startCountdown();
+    _initFCM();
+
+    appLog("Data widget: ${widget.data}");
+    verificationId = widget.data["verificationId"];
 
     _animController = AnimationController(
       vsync: this,
@@ -62,6 +72,15 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPLoginScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
+  }
+
+  Future<void> _initFCM() async {
+    final token = await FcmHelper.getFCMToken();
+
+    if (token != null) {
+      // appLog('FCM TOKEN: $token');
+      fcmToken = token;
+    }
   }
 
   Future<void> _detectPlatform() async {
@@ -227,23 +246,47 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPLoginScreen>
 
     setState(() => isLoading = true);
     try {
-      final response = await AuthService().verifyOTPLoginService({
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: otp,
+      );
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+
+      final firebaseToken = await userCredential.user?.getIdToken(true);
+
+      if (firebaseToken == null) {
+        SnackBarHelper.showError(context, "Không lấy được Firebase ID Token");
+        throw Exception("Không lấy được Firebase ID Token");
+      }
+
+      final response = await AuthService().verifyFirebaseService({
+        'typeVerify': 'login',
         'phone': widget.phone,
-        'otp': otp,
+        'fcm_token': fcmToken,
+        'firebaseToken': firebaseToken
       });
 
       await AuthResponseHandler.handleLoginResponse(
         context: context,
         response: response,
       );
-    } catch (e) {
-      appLog('Lỗi đăng nhập: $e');
-      SnackBarHelper.showError(
-        context,
-        'Lỗi kết nối hoặc hệ thống. Vui lòng thử lại!',
-      );
-      _clearAllFields();
-    } finally {
+
+    } on FirebaseAuthException catch (e) {
+      final msg = e.code == 'invalid-verification-code'
+          ? 'Mã OTP không chính xác'
+          : e.code == 'session-expired'
+          ? 'Mã OTP đã hết hạn, vui lòng yêu cầu mã mới'
+          : (e.message ?? 'Xác thực OTP thất bại');
+      SnackBarHelper.showError(context, msg);
+    }
+    catch (e, stack) {
+      appLog('Error: $e');
+      appLog('$stack');
+    }
+    finally {
       if (mounted) setState(() => isLoading = false);
     }
   }

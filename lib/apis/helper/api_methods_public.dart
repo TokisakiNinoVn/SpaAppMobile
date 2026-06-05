@@ -94,6 +94,7 @@ class ApiMethodsPublic {
         headers: {...defaultHeaders, ...?headers},
         body: body != null ? jsonEncode(body) : null,
       );
+      // appLog("Response: ${response.body}");
       return _handleResponse(response);
     } catch (e) {
       return _handleError(e);

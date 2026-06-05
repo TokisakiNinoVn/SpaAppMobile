@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -13,7 +14,8 @@ import '../../../services/auth_service.dart';
 
 class ConfirmOTPScreen extends StatefulWidget {
   final String phone;
-  const ConfirmOTPScreen({Key? key, required this.phone}) : super(key: key);
+  final Map<String, dynamic> data;
+  const ConfirmOTPScreen({Key? key, required this.phone, required this.data}) : super(key: key);
 
   @override
   _ConfirmOTPScreenState createState() => _ConfirmOTPScreenState();
@@ -38,6 +40,7 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
   Timer? _timer;
   bool isLoading = false;
   bool _isIOS = false;
+  String verificationId = "";
 
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -48,6 +51,7 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
     super.initState();
     _detectPlatform();
     startCountdown();
+    verificationId = widget.data["verificationId"];
 
     _animController = AnimationController(
       vsync: this,
@@ -206,10 +210,40 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
 
     setState(() => isLoading = true);
     try {
-      final response = await AuthService().verifyOTPService({
+
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: otp,
+      );
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+
+      final firebaseToken = await userCredential.user?.getIdToken(true);
+
+      if (firebaseToken == null) {
+        SnackBarHelper.showError(context, "Không lấy được Firebase ID Token");
+        throw Exception("Không lấy được Firebase ID Token");
+      }
+
+      final response = await AuthService().verifyFirebaseService({
+        'typeVerify': 'forgot-password',
         'phone': widget.phone,
-        'otp': otp,
+        'firebaseToken': firebaseToken
       });
+
+      // final credential = PhoneAuthProvider.credential(
+      //   verificationId: verificationId,
+      //   smsCode: otp,
+      // );
+      //
+      // final response = await AuthService().verifyOTPService({
+      //   'phone': widget.phone,
+      //   'otp': otp,
+      //   'typeVerify': 'login',
+      //
+      // });
 
       if (response['success'] == true || response['status'] == 'success') {
         if (mounted) {
@@ -222,6 +256,13 @@ class _ConfirmOTPScreenState extends State<ConfirmOTPScreen>
         );
         _clearAllFields();
       }
+    } on FirebaseAuthException catch (e) {
+      final msg = e.code == 'invalid-verification-code'
+          ? 'Mã OTP không chính xác'
+          : e.code == 'session-expired'
+          ? 'Mã OTP đã hết hạn, vui lòng yêu cầu mã mới'
+          : (e.message ?? 'Xác thực OTP thất bại');
+      SnackBarHelper.showError(context, msg);
     } catch (e) {
       appLog('Lỗi xác thực OTP: $e');
       SnackBarHelper.showError(

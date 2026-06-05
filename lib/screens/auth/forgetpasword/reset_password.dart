@@ -51,8 +51,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       if (response['success'] == true || response['status'] == 'success') {
         if (mounted) {
           SnackBarHelper.showSuccess(context, 'Đặt lại mật khẩu thành công');
-          context.go('/login');
+          context.go(GlobalRouterConfig.login);
         }
+        await Future.delayed(const Duration(microseconds: 800));
       } else {
         SnackBarHelper.showError(context, response['error'] ?? 'Đặt lại mật khẩu thất bại');
       }
@@ -164,23 +165,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             children: [
-              // Icon header
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: ColorConfig.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.lock_reset_rounded,
-                  size: 40,
-                  color: Colors.white,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
               Text(
                 'Đặt lại mật khẩu',
                 style: TextStyle(

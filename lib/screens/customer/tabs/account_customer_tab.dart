@@ -329,7 +329,12 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
         cancelLabel: 'Hủy',
         confirmLabel: 'Đăng xuất',
         confirmColor: _kRed,
-        onConfirm: () {},
+        onConfirm: () {
+          // appLog("Confirm Logout");
+        },
+        onCancel: () {
+          // appLog("Cancel Logout");
+        }
       ),
     );
 

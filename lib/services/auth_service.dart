@@ -9,6 +9,11 @@ class AuthService {
   Future<Map<String, dynamic>> loginService(data) async {
     return await ApiMethodsPublic.postRequest(AuthApiRoutes.login, body: data);
   }
+  
+  Future<Map<String, dynamic>> verifyFirebaseService(data) async {
+    // appLog("Data: $data");
+    return await ApiMethodsPublic.postRequest(AuthApiRoutes.verifyFirebase, body: data);
+  }
 
   Future<Map<String, dynamic>> logoutAuthService() async {
     return await ApiMethodsPrivate.postRequest(AuthApiRoutes.logout, {});

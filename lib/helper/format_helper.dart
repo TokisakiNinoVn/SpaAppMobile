@@ -54,4 +54,23 @@ class FormatHelper {
   static String formatDateTimeTypeDateTime(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
+
+  static String formatPhoneInternational(String phone) {
+    // Xóa khoảng trắng, dấu -, dấu .
+    String cleaned = phone.replaceAll(RegExp(r'[\s\-.]'), '');
+
+    if (cleaned.startsWith('+84')) {
+      return cleaned;
+    }
+
+    if (cleaned.startsWith('84')) {
+      return '+$cleaned';
+    }
+
+    if (cleaned.startsWith('0')) {
+      return '+84${cleaned.substring(1)}';
+    }
+
+    return cleaned;
+  }
 }
