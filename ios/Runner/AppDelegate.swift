@@ -2,6 +2,7 @@ import Flutter
 import UIKit
 import UserNotifications
 import FirebaseCore
+import FirebaseAuth
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -24,4 +25,9 @@ import FirebaseCore
   ) {
     completionHandler([.alert, .badge, .sound])
   }
+    override func application(_ app: UIApplication,
+                               open url: URL,
+                               options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+      return Auth.auth().canHandle(url)
+    }
 }

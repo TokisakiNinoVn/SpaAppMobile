@@ -28,7 +28,7 @@
 	<true/>
 
 	<key>FirebaseAppDelegateProxyEnabled</key>
-    <string>NO</string>
+    <string>YES</string>
 
 	<!-- Permissions -->
 	<key>NSCameraUsageDescription</key>

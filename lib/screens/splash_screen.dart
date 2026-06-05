@@ -26,8 +26,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   final authService = AuthService();
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
-  FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -43,7 +42,8 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _setupAnimations();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initPermissionsAndContinue();
+      // _initPermissionsAndContinue();
+      _checkAndNavigate();
     });
   }
 
@@ -74,20 +74,6 @@ class _SplashScreenState extends State<SplashScreen>
     _animationController.forward();
   }
 
-  Future<void> _initPermissionsAndContinue() async {
-    await _updateLoadingProgress(0.2, "Kiểm tra quyền truy cập...");
-    // await _requestPermissions();
-
-    await _updateLoadingProgress(0.5, "...");
-    await _initializeNotification();
-
-    await _updateLoadingProgress(0.8, "Đang tải...");
-    await _checkToken();
-
-    await _updateLoadingProgress(1.0, "Hoàn tất!");
-    await Future.delayed(const Duration(milliseconds: 500));
-  }
-
   Future<void> _updateLoadingProgress(double progress, String message) async {
     if (mounted) {
       setState(() {
@@ -98,22 +84,6 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
-  Future<void> _requestPermissions() async {
-    final permissions = [
-      Permission.notification,
-      Permission.storage,
-      Permission.photos,
-      // Permission.photosAddOnly, // For iOS Permission only
-    ];
-
-    for (final permission in permissions) {
-      final status = await permission.status;
-      if (!status.isGranted) {
-        await permission.request();
-      }
-    }
-  }
-
   Future<void> _initializeNotification() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings();
@@ -121,38 +91,39 @@ class _SplashScreenState extends State<SplashScreen>
     await _flutterLocalNotificationsPlugin.initialize(settings);
   }
 
-  Future<void> _checkToken() async {
+  // Hàm chính: kiểm tra đăng nhập trước, không làm gì liên quan đến notification
+  Future<void> _checkAndNavigate() async {
+    await _updateLoadingProgress(0.2, "Đang kiểm tra trạng thái...");
+
     final prefs = await SharedPreferences.getInstance();
-
     final token = prefs.getString('token');
-    final role = prefs.getString('role')?.replaceAll('"', '').trim() ?? '';
-
     final bool isLogin = token != null && token.isNotEmpty;
 
     if (!isLogin) {
-      // appLog("Loading: $isLogin - $role - $token");
-      context.go('/home-customer');
+      // Chưa đăng nhập: về màn hình khách ngay, không cần bất kỳ quyền nào
+      await _updateLoadingProgress(0.8, "Hoàn tất!");
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (mounted) context.go('/home-customer');
       return;
-    } else {
-      // PermissionHelper.requestNotificationPermission();
     }
 
-    // if(!isLogin) {
-    //   await _requestPermissions();
-    //   appLog("Đã đăng nhập - $isLogin");
-    // } else {
-    //   appLog("Chưa đăng nhập - $isLogin");
-    // }
+    // Đã đăng nhập: mới thực hiện các bước khởi tạo notification, lấy token, v.v.
+    await _updateLoadingProgress(0.4, "Đang khởi tạo thông báo...");
+    await _initializeNotification();  // chỉ khởi tạo, không request quyền
 
-    final fcmToken = await FcmHelper.getFCMToken();
-    // appLog("FCM new token: $fcmToken");
-    final response = await authService.checkTokenService({
-      'fcmToken': fcmToken
-      }
-    );
+    await _updateLoadingProgress(0.6, "Đang lấy thông tin thiết bị...");
+    final fcmToken = await FcmHelper.getFCMToken();  // giả sử bên trong có request quyền
+
+    await _updateLoadingProgress(0.8, "Đang xác thực...");
+    final role = prefs.getString('role')?.replaceAll('"', '').trim() ?? '';
+    final response = await authService.checkTokenService({'fcmToken': fcmToken});
+
+    await _updateLoadingProgress(1.0, "Hoàn tất!");
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (!mounted) return;
 
     if (response['success'] == true || response['status'] == 'success') {
-      // appLog("Đã check token: $response");
       switch (role) {
         case 'customer':
           context.go('/home-customer');
