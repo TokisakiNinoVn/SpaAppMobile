@@ -85,7 +85,10 @@ class _CreateBookOrderScreenState
   void initState() {
     super.initState();
     _paymentMethod = PaymentMethod.zenhome;
-    _loadCustomerProfile();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCustomerProfile();
+
+    });
     // _loadSavedDiscounts();
     _loadDiscounts();
     _noteFocusNode.addListener(_onFocusChange);

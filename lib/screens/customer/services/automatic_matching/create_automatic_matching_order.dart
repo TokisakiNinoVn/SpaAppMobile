@@ -87,7 +87,10 @@ class _CreateAutoMatchingOrderScreenState
     super.initState();
     // appLog("Data widget: ${widget.data}");
     _paymentMethod = PaymentMethod.zenhome;
-    _loadCustomerProfile();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+
+      _loadCustomerProfile();
+    });
     _loadDiscounts();
     _noteFocusNode.addListener(_onFocusChange);
   }

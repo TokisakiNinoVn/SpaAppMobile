@@ -13,6 +13,7 @@ import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/routes/config/global_router_config.dart';
+import 'package:spa_app/services/auth_service.dart';
 import '../../../helper/snackbar_helper.dart';
 
 // ─────────────────────────────────────────────
@@ -34,8 +35,7 @@ class LoginOTPScreen extends StatefulWidget {
   State<LoginOTPScreen> createState() => _LoginOTPScreenState();
 }
 
-class _LoginOTPScreenState extends State<LoginOTPScreen>
-    with SingleTickerProviderStateMixin {
+class _LoginOTPScreenState extends State<LoginOTPScreen> with SingleTickerProviderStateMixin {
   // ── Controllers ──────────────────────────────
   final TextEditingController _phoneController = TextEditingController();
   late final AnimationController _animController;
@@ -47,6 +47,8 @@ class _LoginOTPScreenState extends State<LoginOTPScreen>
   int _countdown = 0;
   String? _fcmToken;
   String? _errorMessage; // Lỗi hiển thị inline (nếu cần)
+  bool _isExistsPhone = false;
+  bool _isDeleteAccount = false;
 
   // ── Computed ──────────────────────────────────
   bool get _isLoading =>
@@ -217,9 +219,55 @@ class _LoginOTPScreenState extends State<LoginOTPScreen>
     });
   }
 
-  // ── OTP Request ──────────────────────────────
+  Future<Map<String, dynamic>?> _checkExistsPhone() async {
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty) return null;
 
+    final response = await AuthService().existsPhoneService(phone);
+
+    appLog("Response: $response");
+
+    final status = response['status'];
+    final data = response['data'] ?? {};
+
+    final exists = data['exists'] == true;
+    final isDeleted = data['isDelete'] == true;
+
+    _safeSetState(() {
+      _isExistsPhone = exists;
+    });
+
+    return {
+      'status': status,
+      'exists': exists,
+      'isDeleted': isDeleted,
+    };
+  }
+
+  // ── OTP Request ──────────────────────────────
   Future<void> _requestOtp() async {
+    final result = await _checkExistsPhone();
+    if (result == null) return;
+
+    final status = result['status'];
+    final exists = result['exists'] == true;
+    final isDeleted = result['isDeleted'] == true;
+
+    if (!exists) {
+      _showWarning('Số điện thoại chưa được đăng ký');
+      return;
+    }
+
+    if (isDeleted) {
+      _showWarning('Tài khoản đã bị xóa trước đó');
+      return;
+    }
+
+    if (status != 'success') {
+      _showWarning('Không thể xác thực tài khoản');
+      return;
+    }
+
     // Guard: tránh double-tap
     if (_isButtonDisabled) return;
 

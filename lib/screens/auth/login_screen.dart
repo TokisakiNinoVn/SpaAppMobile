@@ -124,6 +124,10 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       appLog("response $response");
+      if(response["status"] == "error") {
+        SnackBarHelper.showError(context, "${response["message"]}");
+        return;
+      }
 
       await AuthResponseHandler.handleLoginResponse(
         context: context,
