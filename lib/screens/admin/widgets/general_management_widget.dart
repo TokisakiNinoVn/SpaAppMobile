@@ -113,7 +113,7 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
         ),
       ],
     ),
-     _MenuGroup(
+    _MenuGroup(
       label: 'Thông báo & Thống kê',
       items: [
         _MenuItem(
@@ -128,6 +128,18 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
           title: 'Thống kê',
           route: AdminRouterConfig.statistical,
           color: Color(0xFF2E7D32),
+        ),
+      ],
+    ),
+
+    _MenuGroup(
+      label: 'Cấu hình hệ thống',
+      items: [
+        _MenuItem(
+          icon: Icons.settings,
+          title: 'Quản lý hệ thống',
+          route: AdminRouterConfig.manageInformationSystem,
+          color: Color(0xFF7C4DFF),
         ),
       ],
     ),

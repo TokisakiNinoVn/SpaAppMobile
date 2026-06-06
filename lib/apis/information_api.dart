@@ -17,4 +17,8 @@ class InformationApiRoutes {
   static const String listPlatformFees = '${AppConfig.apiAdminUrlPrivate}/information/platform-fees';
   static const String updatePlatformFees = '${AppConfig.apiAdminUrlPrivate}/information/platform-fees';
   static const String searchPlatformFees = '${AppConfig.apiAdminUrlPrivate}/information/platform-fees/search';
+
+  // Information System
+  static const String getInformationSystem = '${AppConfig.apiAdminUrlPrivate}/information/system';
+  static const String updateInformationSystem = '${AppConfig.apiAdminUrlPrivate}/information/system';
 }
