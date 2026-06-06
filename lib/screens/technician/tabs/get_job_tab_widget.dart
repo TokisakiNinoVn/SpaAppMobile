@@ -671,19 +671,26 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
     );
   }
 
-  String _formatRemainingTime(Duration duration) {
-    if (duration.isNegative) return 'Đã hết hạn';
-    final days = duration.inDays;
-    final hours = duration.inHours.remainder(24);
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
-    if (days > 0) {
-      return '$days ngày ${hours.toString().padLeft(2, '0')}h';
-    } else if (hours > 0) {
-      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}h';
-    } else {
-      return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-    }
+  // String _formatRemainingTime(Duration duration) {
+  //   if (duration.isNegative) return 'Đã hết hạn';
+  //   final days = duration.inDays;
+  //   final hours = duration.inHours.remainder(24);
+  //   final minutes = duration.inMinutes.remainder(60);
+  //   final seconds = duration.inSeconds.remainder(60);
+  //   if (days > 0) {
+  //     return '$days ngày ${hours.toString().padLeft(2, '0')}h';
+  //   } else if (hours > 0) {
+  //     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}h';
+  //   } else {
+  //     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  //   }
+  // }
+
+  String _formatRemainingTime(Duration d) {
+    if (d.isNegative) return '00:00';
+    final minutes = d.inMinutes.toString().padLeft(2, '0');
+    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   Color _getTimerColor(Duration duration) {

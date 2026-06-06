@@ -82,21 +82,54 @@ class _CreateOrderNowScreenState
   int balance = 0;
 
   // Helper lấy số tiền hỗ trợ thực (loại bỏ định dạng)
+  // int get _extraFee {
+  //   final text = _moneyPrioritizeController.text;
+  //   if (text.isEmpty) return 0;
+  //   final numericOnly = text.replaceAll(RegExp(r'[^0-9]'), '');
+  //   return int.tryParse(numericOnly) ?? 0;
+  // }
+  //
+  // int get _totalBeforeDiscount => (FormatHelper.safeInt(widget.data['serviceTimePrice']['price'])) + _extraFee;
+  //
+  // int get _discountAmount {
+  //   if (_discountData == null) return 0;
+  //   return FormatHelper.safeInt(_discountData!['amountDiscount']);
+  // }
+  //
+  // int get _finalTotal {
+  //   try {
+  //     return (_totalBeforeDiscount - _discountAmount)
+  //         .clamp(0, 999999999);
+  //   } catch (e) {
+  //     appLog("Error: $e");
+  //     return _totalBeforeDiscount;
+  //   }
+  // }
+
+  int get _servicePrice => FormatHelper.safeInt(widget.data['serviceTimePrice']['price']);
+
   int get _extraFee {
     final text = _moneyPrioritizeController.text;
     if (text.isEmpty) return 0;
+
     final numericOnly = text.replaceAll(RegExp(r'[^0-9]'), '');
     return int.tryParse(numericOnly) ?? 0;
   }
 
-  int get _totalBeforeDiscount => (widget.data['serviceTimePrice']['price'] as int) + _extraFee;
+  int get _discountAmount {
+    if (_discountData == null) return 0;
+
+    return FormatHelper.safeInt(
+      _discountData!['amountDiscount'],
+    );
+  }
+
+  int get _totalBeforeDiscount =>
+      _servicePrice + _extraFee;
 
   int get _finalTotal {
-    if (_discountData != null) {
-      final amountDiscount = _discountData!['amountDiscount'] as int;
-      return _totalBeforeDiscount - amountDiscount;
-    }
-    return _totalBeforeDiscount;
+    return (_servicePrice - _discountAmount + _extraFee)
+        .clamp(0, 999999999);
   }
 
   bool get _isInsufficientBalance {
@@ -327,16 +360,16 @@ class _CreateOrderNowScreenState
       if (response['success'] == true) {
         context.go('/home-customer');
         SnackBarHelper.showSuccess(context, "Tạo yêu cầu đơn thành công! Vui lòng chờ kỹ thuật viên phản hồi!");
-        if (_paymentMethod == PaymentMethod.zenhome) {
-          int finalPrice = _discountData != null
-              ? (_discountData!['orderValueAfterDiscount'] as int)
-              : price;
-          int newBalance = balance - finalPrice;
-          await SharedPrefs.saveValue(PrefType.int, "balance", newBalance);
-          setState(() {
-            balance = newBalance;
-          });
-        }
+        // if (_paymentMethod == PaymentMethod.zenhome) {
+        //   int finalPrice = _discountData != null
+        //       ? (_discountData!['orderValueAfterDiscount'] as int)
+        //       : price;
+        //   int newBalance = balance - finalPrice;
+        //   await SharedPrefs.saveValue(PrefType.int, "balance", newBalance);
+        //   setState(() {
+        //     balance = newBalance;
+        //   });
+        // }
       } else {
         SnackBarHelper.showError(context, response['message'] ?? 'Không thể tạo đơn hàng');
       }
@@ -972,7 +1005,7 @@ class _CreateOrderNowScreenState
                             const SizedBox(width: 6),
                             Tooltip(
                               message: 'Khoản tiền hỗ trợ thêm cho kỹ thuật viên (không bắt buộc)',
-                              child: Icon(Icons.info_outline, size: 16, color: Colors.grey.shade600),
+                              child: Icon(Icons.info_outline, size: 20, color: Colors.grey.shade600),
                             ),
                           ],
                         ),
@@ -1014,8 +1047,13 @@ class _CreateOrderNowScreenState
                   if (_discountData != null)
                     InfoRow(
                       "Giảm giá",
-                      "- ${_discountData!['typeDiscount'] == 'percentage' ? '${_discountData!['value']}%' : FormatHelper.formatPrice(_discountData!['value'] as int) + ' đ'}",
-                      valueStyle: const TextStyle(color: Colors.red),
+                      _discountData!['typeDiscount'] == 'percentage'
+                          ? "- ${_discountData!['value']}% "
+                          "(${FormatHelper.formatPrice(_discountAmount)} đ)"
+                          : "- ${FormatHelper.formatPrice(_discountAmount)} đ",
+                      valueStyle: const TextStyle(
+                        color: Colors.red,
+                      ),
                     ),
                   const Divider(height: 20),
                   InfoRow("Tổng cộng", "${FormatHelper.formatPrice(_finalTotal)} đ", valueStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -1122,10 +1160,16 @@ class _CreateOrderNowScreenState
   Widget _buildDiscountRow() {
     final isApplied = _discountData != null;
 
+    // final discountText = isApplied
+    //     ? (_discountData!['typeDiscount'] == 'percentage'
+    //     ? '${_discountData!['value']}%'
+    //     : '${FormatHelper.formatPrice(_discountData!['value'] as int)} đ')
+    //     : '';
+
     final discountText = isApplied
         ? (_discountData!['typeDiscount'] == 'percentage'
         ? '${_discountData!['value']}%'
-        : '${FormatHelper.formatPrice(_discountData!['value'] as int)} đ')
+        : '${FormatHelper.formatPrice((_discountData!['value'] as num).round())} đ')
         : '';
 
     return Padding(
@@ -1134,13 +1178,27 @@ class _CreateOrderNowScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ===== DÒNG 1: TITLE =====
-          const Text(
-            'Mã giảm giá',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+          Row(
+            children: [
+              const Text(
+                'Mã giảm giá',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Tooltip(
+                message:
+                'Giảm giá được tính trên giá dịch vụ. Khoản hỗ trợ thêm cho kỹ thuật viên sẽ không được áp dụng mã giảm giá.',
+                child: const Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(height: 6),
