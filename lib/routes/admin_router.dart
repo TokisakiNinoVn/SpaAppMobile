@@ -6,6 +6,7 @@ import 'package:spa_app/screens/admin/bank/edit.dart';
 import 'package:spa_app/screens/admin/bank/management.dart';
 import 'package:spa_app/screens/admin/feature_service/edit.dart';
 import 'package:spa_app/screens/admin/feature_service/list.dart';
+import 'package:spa_app/screens/admin/infomation/system_information.dart';
 import 'package:spa_app/screens/admin/notification/create_notification_screen.dart';
 import 'package:spa_app/screens/admin/order/post/create_post_order.dart';
 import 'package:spa_app/screens/admin/order/post/management_post_order.dart';
@@ -53,6 +54,10 @@ final List<GoRoute> adminRoutes = [
       GoRoute(
         path: 'manage-account-customer',
         builder: (context, state) => const ManagementAccountCustomer(),
+      ),
+      GoRoute(
+        path: 'manage-system',
+        builder: (context, state) => const ManagementSystemInformation(),
       ),
       GoRoute(
         path: 'create-manage-account',
