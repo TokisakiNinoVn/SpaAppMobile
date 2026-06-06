@@ -622,10 +622,10 @@ class _OrderTabState extends State<OrderTab> {
       //   );
       // }
 
-      if (filteredRequestOrders.isEmpty) {
+      if (filteredBookOrders.isEmpty) {
         return EmptyRefreshWidget(
           onRefresh: _loadData,
-          title: 'Không có đơn đặt trước',
+          title: 'Hiện tại bạn không có đơn đặt trước nào :(',
           icon: Icons.inbox_outlined,
           buttonText: 'Tải lại',
         );

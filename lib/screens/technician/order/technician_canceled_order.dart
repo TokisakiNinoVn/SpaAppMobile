@@ -112,12 +112,15 @@ class _TechnicianCanceledOrderState extends State<TechnicianCanceledOrder> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Xác nhận hủy đơn'),
-        content: const Text('Bạn có chắc chắn muốn hủy đơn việc này không?'),
+        title: const Text('Hủy đơn việc'),
+        content: const Text(
+          'Bạn có chắc chắn muốn hủy đơn việc này không?\n\n'
+              'Sau khi hủy, đơn việc sẽ không còn được xử lý và thao tác này không thể hoàn tác.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Quay lại'),
+            child: const Text('Tiếp tục xem'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -128,7 +131,7 @@ class _TechnicianCanceledOrderState extends State<TechnicianCanceledOrder> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Xác nhận hủy'),
+            child: const Text('Hủy đơn việc'),
           ),
         ],
       ),

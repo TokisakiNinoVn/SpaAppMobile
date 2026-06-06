@@ -108,16 +108,41 @@ class _CreateAutoMatchingOrderScreenState
     if (mounted) setState(() {});
   }
 
-  int get _extraFee => int.tryParse(_moneyPrioritizeController.text.trim()) ?? 0;
+  // int get _extraFee => int.tryParse(_moneyPrioritizeController.text.trim()) ?? 0;
+  //
+  // int get _totalBeforeDiscount => (widget.data['timePrice']['price'] as int) + _extraFee;
+  //
+  // int get _finalTotal {
+  //   if (_discountData != null) {
+  //     final amountDiscount = _discountData!['amountDiscount'] as int;
+  //     return _totalBeforeDiscount - amountDiscount;
+  //   }
+  //   return _totalBeforeDiscount;
+  // }
+  int get _servicePrice => FormatHelper.safeInt(widget.data['timePrice']['price']);
 
-  int get _totalBeforeDiscount => (widget.data['timePrice']['price'] as int) + _extraFee;
+  int get _extraFee {
+    final text = _moneyPrioritizeController.text;
+    if (text.isEmpty) return 0;
+
+    final numericOnly = text.replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(numericOnly) ?? 0;
+  }
+
+  int get _discountAmount {
+    if (_discountData == null) return 0;
+
+    return FormatHelper.safeInt(
+      _discountData!['amountDiscount'],
+    );
+  }
+
+  int get _totalBeforeDiscount =>
+      _servicePrice + _extraFee;
 
   int get _finalTotal {
-    if (_discountData != null) {
-      final amountDiscount = _discountData!['amountDiscount'] as int;
-      return _totalBeforeDiscount - amountDiscount;
-    }
-    return _totalBeforeDiscount;
+    return (_servicePrice - _discountAmount + _extraFee)
+        .clamp(0, 999999999);
   }
 
   Future<void> _loadDiscounts() async {
@@ -252,66 +277,6 @@ class _CreateAutoMatchingOrderScreenState
       if (mounted) setState(() => _isRefreshingDiscount = false);
     }
   }
-
-  // Future<void> _createOrder() async {
-  //   final moneyPrioritizeRaw = _moneyPrioritizeController.text.trim();
-  //   final moneyPrioritize = moneyPrioritizeRaw.isEmpty ? 0 : int.tryParse(moneyPrioritizeRaw) ?? 0;
-  //   final price = widget.data['timePrice']['price'] as int;
-  //   final data = {
-  //     'typeOrder': 'automatic-matching',
-  //     "serviceTimePriceId": widget.data['timePrice']['_id'],
-  //     "nameService": widget.data['service']['name'],
-  //     "address": _addressController.text.trim(),
-  //     "paymentMethod": _paymentMethod!.name,
-  //     "noteCustomer": _noteController.text.trim(),
-  //     "moneyPrioritize": moneyPrioritize,
-  //     'workingHours': _formatWorkingHours(_selectedDateTime),
-  //     "typeTime": _timeType,
-  //     'subTypeOrder': _timeType,
-  //
-  //     if (_discountData != null)
-  //       'discountInput': {
-  //         "discountId": _discountData!['discountId'],
-  //         "code": _discountData!['code'],
-  //         "typeDiscount": _discountData!['typeDiscount'],
-  //         "value": _discountData!['value'],
-  //         "amountDiscount": _discountData!['amountDiscount'],
-  //       },
-  //   };
-  //
-  //   try {
-  //     final response = await _orderService.createOrder(data);
-  //     appLog("response: $response");
-  //     if (response['success'] == true) {
-  //       context.go('/home-customer');
-  //       SnackBarHelper.showSuccess(context, "Tạo yêu cầu đơn thành công! Vui lòng chờ kỹ thuật viên phản hồi!");
-  //       // Cập nhật số dư ví nếu thanh toán bằng Ví Zen Home
-  //       if (_paymentMethod == PaymentMethod.zenhome) {
-  //         int finalPrice = _discountData != null
-  //             ? (_discountData!['orderValueAfterDiscount'] as int)
-  //             : price;
-  //         int newBalance = balance - finalPrice;
-  //         await SharedPrefs.saveValue(PrefType.int, "balance", newBalance);
-  //         setState(() {
-  //           balance = newBalance;
-  //         });
-  //       }
-  //     } else {
-  //       SnackBarHelper.showError(context, response['message'] ?? 'Không thể tạo đơn hàng');
-  //     }
-  //   } catch (e) {
-  //     appLog("Lỗi tạo đơn: ", data: e);
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text(e.toString()),
-  //           backgroundColor: Colors.red,
-  //           behavior: SnackBarBehavior.floating,
-  //         ),
-  //       );
-  //     }
-  //   }
-  // }
 
 
   Future<void> _createOrder() async {
@@ -1561,7 +1526,7 @@ class _CreateAutoMatchingOrderScreenState
                               message:
                               'Khoản tiền hỗ trợ thêm cho kỹ thuật viên (không bắt buộc)',
                               child: Icon(Icons.info_outline,
-                                  size: 16, color: Colors.grey),
+                                  size: 20, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -1615,8 +1580,13 @@ class _CreateAutoMatchingOrderScreenState
                   if (_discountData != null)
                     InfoRow(
                       "Giảm giá",
-                      "- ${_discountData!['typeDiscount'] == 'percentage' ? '${_discountData!['value']}%' : FormatHelper.formatPrice(_discountData!['value'] as int) + ' đ'}",
-                      valueStyle: const TextStyle(color: Colors.red),
+                      _discountData!['typeDiscount'] == 'percentage'
+                          ? "- ${_discountData!['value']}% "
+                          "(${FormatHelper.formatPrice(_discountAmount)} đ)"
+                          : "- ${FormatHelper.formatPrice(_discountAmount)} đ",
+                      valueStyle: const TextStyle(
+                        color: Colors.red,
+                      ),
                     ),
                   const Divider(height: 20),
                   InfoRow(
@@ -1674,13 +1644,27 @@ class _CreateAutoMatchingOrderScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ===== DÒNG 1: TITLE =====
-          const Text(
-            'Mã giảm giá',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+          Row(
+            children: [
+              const Text(
+                'Mã giảm giá',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Tooltip(
+                message:
+                'Giảm giá được tính trên giá dịch vụ. Khoản hỗ trợ thêm cho kỹ thuật viên sẽ không được áp dụng mã giảm giá.',
+                child: const Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(height: 6),
@@ -1717,7 +1701,7 @@ class _CreateAutoMatchingOrderScreenState
                     ),
                   ],
                 )
-                    : const Text(
+                : const Text(
                   'Chưa áp dụng mã',
                   style: TextStyle(
                     color: Colors.grey,

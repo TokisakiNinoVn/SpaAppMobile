@@ -73,4 +73,16 @@ class FormatHelper {
 
     return cleaned;
   }
+
+  static int safeInt(dynamic value) {
+    if (value == null) return 0;
+
+    if (value is int) return value;
+
+    if (value is double) return value.round();
+
+    if (value is num) return value.round();
+
+    return int.tryParse(value.toString()) ?? 0;
+  }
 }

@@ -118,17 +118,63 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
 
   // ─── Countdown ───────────────────────────────────────────────────────────────
 
+  // void _startCountdown() {
+  //   if (!widget.isNewOrder) return;
+  //
+  //   final createdAtStr = _orderDetails!['createdAt'] as String?;
+  //   if (createdAtStr == null) {
+  //     setState(() => _isExpired = true);
+  //     return;
+  //   }
+  //
+  //   final createdAt = DateTime.parse(createdAtStr).toLocal();
+  //   final deadline = createdAt.add(const Duration(minutes: 30));
+  //   final now = DateTime.now();
+  //
+  //   if (now.isAfter(deadline)) {
+  //     setState(() => _isExpired = true);
+  //     return;
+  //   }
+  //
+  //   _remainingTime = deadline.difference(now);
+  //
+  //   _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  //     if (!mounted) {
+  //       timer.cancel();
+  //       return;
+  //     }
+  //     if (_remainingTime.inSeconds <= 0) {
+  //       timer.cancel();
+  //       setState(() => _isExpired = true);
+  //       _onOrderExpired();
+  //     } else {
+  //       setState(() {
+  //         _remainingTime = _remainingTime - const Duration(seconds: 1);
+  //       });
+  //     }
+  //   });
+  // }
   void _startCountdown() {
     if (!widget.isNewOrder) return;
 
-    final createdAtStr = _orderDetails!['createdAt'] as String?;
-    if (createdAtStr == null) {
-      setState(() => _isExpired = true);
-      return;
+    // Lấy expiresAt từ order details (ưu tiên dùng expiresAt)
+    final expiresAtStr = _orderDetails!['expiresAt'] as String?;
+
+    DateTime deadline;
+
+    if (expiresAtStr != null && expiresAtStr.isNotEmpty) {
+      deadline = DateTime.parse(expiresAtStr).toLocal();
+    } else {
+      // Fallback: nếu không có expiresAt, dùng createdAt + 30 phút (giữ logic cũ)
+      final createdAtStr = _orderDetails!['createdAt'] as String?;
+      if (createdAtStr == null) {
+        setState(() => _isExpired = true);
+        return;
+      }
+      final createdAt = DateTime.parse(createdAtStr).toLocal();
+      deadline = createdAt.add(const Duration(minutes: 30));
     }
 
-    final createdAt = DateTime.parse(createdAtStr).toLocal();
-    final deadline = createdAt.add(const Duration(minutes: 30));
     final now = DateTime.now();
 
     if (now.isAfter(deadline)) {
@@ -687,8 +733,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                                                 TextOverflow.ellipsis,
                                               ),
                                             ),
-                                            if (_serviceTimePrice !=
-                                                null) ...[
+                                            if (_serviceTimePrice != null) ...[
                                               const SizedBox(width: 10),
                                               Container(
                                                 padding:
