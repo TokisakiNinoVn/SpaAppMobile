@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/providers/user_provider.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../storage/index.dart';
 
@@ -459,6 +461,46 @@ class _CreateRequestWithdrawState extends State<CreateRequestWithdraw> {
                         ),
                       ),
                     ),
+                  ),
+
+                  const SizedBox(height: 32),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: () => launchUrl(Uri.parse(AppConfig.urlSupport)),
+                        child: Text(
+                          'Hỗ trợ',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: ColorConfig.primary,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        ' | ',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: ColorConfig.primary,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => launchUrl(Uri.parse(AppConfig.urlTerm)),
+                        child: Text(
+                          'Chính sách và điều khoản',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: ColorConfig.primary,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

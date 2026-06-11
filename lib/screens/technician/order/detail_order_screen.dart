@@ -574,6 +574,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
     final status = order['status'] ?? '';
     final isPrioritize = order['isPrioritize'] ?? false;
     const double allBorderRadius = 20;
+    bool isViewCustomer = (status == 'done' || (status == 'approved' && (order["typeOrder"] == 'book' || (order["typeOrder"] == 'automatic-matching' && order["subTypeOrder"] == 'book'))));
 
     // Điều kiện hiển thị bottom bar hành động
     final bool showActionBar = widget.isNewOrder && status == 'pending' && !_isExpired;
@@ -790,19 +791,43 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                                       crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          status != 'done'
-                                              ? (_customer?["gender"] ==
-                                              "male"
-                                              ? "Khách hàng nam"
-                                              : "Khách hàng nữ")
-                                              : (_customer?["fullname"] ??
-                                              "Chưa có tên"),
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
+                                        if(status != 'done') ...[
+                                          Text(
+                                            status != 'done'
+                                                ? (_customer?["gender"] ==
+                                                "male"
+                                                ? "Khách hàng nam"
+                                                : "Khách hàng nữ")
+                                                : (_customer?["fullname"] ??
+                                                "Chưa có tên"),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                           ),
-                                        ),
+                                        ],
+                                        if(isViewCustomer) ...[
+                                          Text(
+                                            (_customer?["fullname"] ?? "Chưa có tên"),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                        // Text(
+                                        //   status != 'done'
+                                        //       ? (_customer?["gender"] ==
+                                        //       "male"
+                                        //       ? "Khách hàng nam"
+                                        //       : "Khách hàng nữ")
+                                        //       : (_customer?["fullname"] ??
+                                        //       "Chưa có tên"),
+                                        //   style: const TextStyle(
+                                        //     fontSize: 16,
+                                        //     fontWeight: FontWeight.w700,
+                                        //   ),
+                                        // ),
                                         const SizedBox(height: 8),
                                         if (status == 'done') ...[
                                           Row(
@@ -833,10 +858,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                                                 color: Colors.grey.shade600),
                                             const SizedBox(width: 6),
                                             Text(
-                                              status != 'done'
-                                                  ? "Chưa hiển thị"
-                                                  : (_customer?["phone"] ??
-                                                  "Chưa có SĐT"),
+                                              !isViewCustomer ? "Chưa hiển thị" : (_customer?["phone"] ?? "Chưa có SĐT"),
                                               style: TextStyle(
                                                   fontSize: 13,
                                                   color:
