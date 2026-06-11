@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/config/app_config.dart';
 import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/providers/user_provider.dart';
 import 'package:spa_app/routes/config/customer_router_config.dart';
 import 'package:spa_app/routes/config/technician_router_config.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../storage/index.dart';
 
@@ -177,11 +179,11 @@ class _CreateRequestWithdrawTechnicianState extends State<CreateRequestWithdrawT
     final amount = int.parse(cleanText);
 
     if (amount < minWithdrawAmount) {
-      return 'Số tiền rút tối thiểu là ${FormatHelper.formatPrice(minWithdrawAmount)}';
+      return 'Số tiền thanh toán tối thiểu là ${FormatHelper.formatPrice(minWithdrawAmount)}';
     }
 
     if (amount > maxWithdrawAmount) {
-      return 'Số tiền rút không được vượt quá số dư hiện tại (${FormatHelper.formatPrice(maxWithdrawAmount)})';
+      return 'Số tiền thanh toán không được vượt quá số dư hiện tại (${FormatHelper.formatPrice(maxWithdrawAmount)})';
     }
 
     return null;
@@ -238,7 +240,7 @@ class _CreateRequestWithdrawTechnicianState extends State<CreateRequestWithdrawT
             const SizedBox(width: 16),
             const Expanded(
               child: Text(
-                "Rút tiền",
+                "Tạo yêu cầu thanh toán",
                 style: TextStyle(
                   color: Color(0xFF1A1A1A),
                   fontWeight: FontWeight.w600,
@@ -248,7 +250,7 @@ class _CreateRequestWithdrawTechnicianState extends State<CreateRequestWithdrawT
             ),
             IconButton(
               icon: const Icon(Icons.history_outlined, color: Color(0xFF1A1A1A), size: 22),
-              tooltip: 'Lịch sử rút',
+              tooltip: 'Lịch sử thanh toán',
               onPressed: () {
                 context.push(TechnicianRouterConfig.historyWithdraw);
               },
@@ -311,7 +313,7 @@ class _CreateRequestWithdrawTechnicianState extends State<CreateRequestWithdrawT
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Số dư hiện tại',
+                            'Tổng thu nhập hiện tại',
                             style: TextStyle(
                               fontSize: 12,
                               color: Color(0xFF777777),
@@ -492,6 +494,47 @@ class _CreateRequestWithdrawTechnicianState extends State<CreateRequestWithdrawT
                   ),
                 ),
               ),
+
+              // row url "Hỗ trợ" và  " Chính sách và điều khoản"
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: () => launchUrl(Uri.parse(AppConfig.urlSupport)),
+                    child: Text(
+                      'Hỗ trợ',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: ColorConfig.primary,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    ' | ',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: ColorConfig.primary,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => launchUrl(Uri.parse(AppConfig.urlTerm)),
+                    child: Text(
+                      'Chính sách và điều khoản',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: ColorConfig.primary,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -504,7 +547,7 @@ class _CreateRequestWithdrawTechnicianState extends State<CreateRequestWithdrawT
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Số tiền rút',
+          'Số tiền yêu cầu thanh toán',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,

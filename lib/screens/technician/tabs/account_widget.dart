@@ -874,6 +874,7 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
                     if(isTechnicianActive) ...[
                       Container(
                         child: WalletBalanceSection(
+                          role: 'ktv',
                           balance: nowBalance,
                           // onTapDeposit: () {
                           //   context.go(CustomerRouterConfig.choosePackage);

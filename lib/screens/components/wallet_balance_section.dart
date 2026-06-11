@@ -4,11 +4,13 @@ import 'package:spa_app/helper/format_helper.dart';
 
 class WalletBalanceSection extends StatelessWidget {
   final int balance;
+  final String? role;
   final VoidCallback? onTapDeposit;
   final VoidCallback? onTapWithdraw;
 
   const WalletBalanceSection({
     super.key,
+    this.role,
     required this.balance,
     this.onTapDeposit,
     this.onTapWithdraw,
@@ -49,54 +51,31 @@ class WalletBalanceSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Số dư ví: ${FormatHelper.formatPrice(balance)} VNĐ',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: ColorConfig.black,
+              Row(
+                children: [
+                  Text(
+                    role == 'ktv'
+                        ? 'Thu nhập: '
+                        : 'Số dư ví: ',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: ColorConfig.black,
+                    ),
                   ),
-                ),
-              ),
+                  Text(
+                    '${FormatHelper.formatPrice(balance)} VNĐ',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: ColorConfig.textPrimary,
+                    ),
+                  ),
+                ],
+              )
             ],
           ),
 
           const SizedBox(height: 12),
-
-          // 👉 Actions
-          // Row(
-          //   children: [
-          //     if (depositCallback != null) ...[
-          //       Expanded(
-          //         child: _WalletActionButton(
-          //           label: 'Nạp tiền',
-          //           icon: Icons.add_card_rounded,
-          //           filled: true,
-          //           width: withdrawCallback != null ? 10 : 50,
-          //           onTap: depositCallback,
-          //           paddingVertical: 12,
-          //         ),
-          //       ),
-          //     ],
-          //
-          //     if (depositCallback != null && withdrawCallback != null)
-          //       const SizedBox(width: 12),
-          //
-          //     if (withdrawCallback != null) ...[
-          //       Expanded(
-          //         child: _WalletActionButton(
-          //           label: 'Rút tiền',
-          //           icon: Icons.arrow_forward_outlined,
-          //           filled: false,
-          //           width: depositCallback != null ? 10 : 50,
-          //           onTap: withdrawCallback,
-          //           paddingVertical: 12,
-          //         ),
-          //       ),
-          //     ],
-          //   ],
-          // ),
           Row(
             mainAxisAlignment: hasBoth
                 ? MainAxisAlignment.start
@@ -133,10 +112,10 @@ class WalletBalanceSection extends StatelessWidget {
                   ),
                 )
                     : _WalletActionButton(
-                  label: 'Rút tiền',
+                  label: role == 'ktv' ? 'Tạo yêu cầu thanh toán' : 'Rút tiền',
                   icon: Icons.arrow_forward_outlined,
                   filled: false,
-                  width: 120,
+                  width: 230,
                   onTap: withdrawCallback,
                 ),
             ],

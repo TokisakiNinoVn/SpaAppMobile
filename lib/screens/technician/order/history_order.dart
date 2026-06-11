@@ -482,7 +482,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
             ),
             SizedBox(height: 2),
             Text(
-              'Thông tin sẽ hiển thị sau khi hoàn thành',
+              'Chưa thể hiển thị',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
@@ -768,13 +768,13 @@ class _HistoryOrderState extends State<HistoryOrder> {
               //       ),
               //   ],
               // ),
-              if (status == 'pending') ...[
-                // const SizedBox(height: 10),
-                _OrderCountdownWidget(
-                  order: order,
-                  onExpired: () => _onOrderExpired(order['_id']),
-                ),
-              ],
+              // if (status == 'pending') ...[
+              //   // const SizedBox(height: 10),
+              //   _OrderCountdownWidget(
+              //     order: order,
+              //     onExpired: () => _onOrderExpired(order['_id']),
+              //   ),
+              // ],
               Divider(color: Colors.grey.withOpacity(0.2)),
               /// ACTIONS
               Row(
@@ -783,7 +783,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
                   if (status == 'pending' || status == 'approved') ...[
                     buildActionButton(
                       onPressed: () {
-                        context.push("${CustomerRouterConfig.canceledOrder}/${order['_id']}");
+                        context.push("${TechnicianRouterConfig.canceledOrder}/${order['_id']}");
                       },
                       icon: Icons.close,
                       label: "Huỷ đơn",

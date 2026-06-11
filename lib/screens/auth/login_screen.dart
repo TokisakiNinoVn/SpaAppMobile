@@ -123,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
         "device_type": "android",
       });
 
-      appLog("response $response");
+      // appLog("response $response");
       if(response["status"] == "error") {
         SnackBarHelper.showError(context, "${response["message"]}");
         return;
