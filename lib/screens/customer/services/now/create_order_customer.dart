@@ -1061,7 +1061,7 @@ class _CreateOrderNowScreenState
                       ),
                     ),
                   const Divider(height: 20),
-                  InfoRow("Tổng cộng", "${FormatHelper.formatPrice(_finalTotal)} đ", valueStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  InfoRow("Tổng tiền cần thanh toán", "${FormatHelper.formatPrice(_finalTotal)} đ", valueStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ],
               ),
             ),

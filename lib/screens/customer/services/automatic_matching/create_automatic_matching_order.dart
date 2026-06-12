@@ -1593,7 +1593,7 @@ class _CreateAutoMatchingOrderScreenState
                     ),
                   const Divider(height: 20),
                   InfoRow(
-                    "Tổng cộng",
+                    "Tổng tiền cần thanh toán",
                     "${FormatHelper.formatPrice(_finalTotal)} đ",
                     valueStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
