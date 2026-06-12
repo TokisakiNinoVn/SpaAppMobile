@@ -13,6 +13,7 @@ import 'package:spa_app/screens/customer/services/widgets/section.dart';
 import 'package:spa_app/services/user_discount_service.dart';
 import 'package:spa_app/services/user_service.dart';
 
+import '../../../../enums/payment_method.dart';
 import '../../../../helper/format_helper.dart';
 import '../../../../helper/logger_utils.dart';
 import 'package:spa_app/services/order_service.dart';
@@ -20,15 +21,15 @@ import 'package:spa_app/services/discount_service.dart';
 import '../../../../storage/index.dart';
 import '../widgets/address_picker_widget.dart';
 
-enum PaymentMethod {
-  zenhome('Ví Zen Home', 'zenhome');
-  // cast('Tiền mặt', 'cast'),
-  // bank('Chuyển khoản', 'bank');
-
-  final String label;
-  final String name;
-  const PaymentMethod(this.label, this.name);
-}
+// enum PaymentMethod {
+//   zenhome('Ví Zen Home', 'zenhome');
+//   // cast('Tiền mặt', 'cast'),
+//   // bank('Chuyển khoản', 'bank');
+//
+//   final String label;
+//   final String name;
+//   const PaymentMethod(this.label, this.name);
+// }
 
 class CreateOrderNowScreen extends StatefulWidget {
   final dynamic data;
@@ -132,15 +133,15 @@ class _CreateOrderNowScreenState
         .clamp(0, 999999999);
   }
 
-  bool get _isInsufficientBalance {
-    if (_paymentMethod != PaymentMethod.zenhome) return false;
-    return _finalTotal > balance;
-  }
+  // bool get _isInsufficientBalance {
+  //   if (_paymentMethod != PaymentMethod.zenhome) return false;
+  //   return _finalTotal > balance;
+  // }
 
   @override
   void initState() {
     super.initState();
-    _paymentMethod = PaymentMethod.zenhome;
+    _paymentMethod = PaymentMethod.cash;
       _loadDiscounts();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCustomerProfile();
@@ -356,7 +357,7 @@ class _CreateOrderNowScreenState
 
     try {
       final response = await _orderService.createOrder(data);
-      // appLog("response: $response");
+      appLog("response: $response");
       if (response['success'] == true) {
         context.go('/home-customer');
         SnackBarHelper.showSuccess(context, "Tạo yêu cầu đơn thành công! Vui lòng chờ kỹ thuật viên phản hồi!");
@@ -702,15 +703,15 @@ class _CreateOrderNowScreenState
               final isSelected = _paymentMethod == method;
               IconData icon;
               switch (method) {
-                case PaymentMethod.zenhome:
-                  icon = Icons.account_balance_wallet;
+                // case PaymentMethod.zenhome:
+                //   icon = Icons.account_balance_wallet;
+                //   break;
+                case PaymentMethod.cash:
+                  icon = Icons.money;
                   break;
-                // case PaymentMethod.cast:
-                //   icon = Icons.money;
-                //   break;
-                // case PaymentMethod.bank:
-                //   icon = Icons.account_balance;
-                //   break;
+                case PaymentMethod.bank:
+                  icon = Icons.account_balance;
+                  break;
               }
               return GestureDetector(
                 onTap: () {
@@ -731,9 +732,10 @@ class _CreateOrderNowScreenState
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          method == PaymentMethod.zenhome
-                              ? "${method.label} (Số dư: ${FormatHelper.formatPrice(balance)})"
-                              : method.label,
+                          // method == PaymentMethod.zenhome
+                          //     ? "${method.label} (Số dư: ${FormatHelper.formatPrice(balance)})"
+                          //     : method.label,
+                          method.label,
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             color: isSelected ? ColorConfig.primary : Colors.black87,
@@ -755,10 +757,13 @@ class _CreateOrderNowScreenState
   bool get _canSubmit {
     final hasCoupon = _appliedDiscountCode != null && _appliedDiscountCode!.isNotEmpty;
     final couponValid = _discountData != null;
+    // return _addressController.text.trim().isNotEmpty &&
+    //     _paymentMethod != null &&
+    //     (!hasCoupon || couponValid) &&
+    //     !_isInsufficientBalance;
     return _addressController.text.trim().isNotEmpty &&
         _paymentMethod != null &&
-        (!hasCoupon || couponValid) &&
-        !_isInsufficientBalance;
+        (!hasCoupon || couponValid);
   }
 
   @override
@@ -803,20 +808,20 @@ class _CreateOrderNowScreenState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_isInsufficientBalance)
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Số dư ví không đủ để thanh toán',
-                    style: TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500),
-                  ),
-                ),
+              // if (_isInsufficientBalance)
+              //   Container(
+              //     width: double.infinity,
+              //     margin: const EdgeInsets.only(bottom: 10),
+              //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              //     decoration: BoxDecoration(
+              //       color: Colors.red.withOpacity(0.08),
+              //       borderRadius: BorderRadius.circular(8),
+              //     ),
+              //     child: const Text(
+              //       'Số dư ví không đủ để thanh toán',
+              //       style: TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500),
+              //     ),
+              //   ),
               Row(
                 children: [
                   Expanded(
@@ -838,20 +843,20 @@ class _CreateOrderNowScreenState
                       ],
                     ),
                   ),
-                  if (_isInsufficientBalance && _paymentMethod == PaymentMethod.zenhome)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          context.push(CustomerRouterConfig.choosePackage);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ColorConfig.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text("Nạp tiền"),
-                      ),
-                    ),
+                  // if (_isInsufficientBalance && _paymentMethod == PaymentMethod.zenhome)
+                  //   Padding(
+                  //     padding: const EdgeInsets.only(right: 8),
+                  //     child: ElevatedButton(
+                  //       onPressed: () {
+                  //         context.push(CustomerRouterConfig.choosePackage);
+                  //       },
+                  //       style: ElevatedButton.styleFrom(
+                  //         backgroundColor: ColorConfig.primary,
+                  //         foregroundColor: Colors.white,
+                  //       ),
+                  //       child: const Text("Nạp tiền"),
+                  //     ),
+                  //   ),
                   // ElevatedButton(
                   //   onPressed: _canSubmit ? _createOrder : null,
                   //   style: ElevatedButton.styleFrom(
@@ -1056,7 +1061,7 @@ class _CreateOrderNowScreenState
                       ),
                     ),
                   const Divider(height: 20),
-                  InfoRow("Tổng cộng", "${FormatHelper.formatPrice(_finalTotal)} đ", valueStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  InfoRow("Tổng tiền cần thanh toán", "${FormatHelper.formatPrice(_finalTotal)} đ", valueStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ],
               ),
             ),

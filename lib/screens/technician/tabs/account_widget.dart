@@ -466,33 +466,33 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
   }
 
   Future<void> _showDeleteAccountDialog() async {
-    const minWithdraw = 10000;
-
-    // Có tiền và đủ điều kiện rút
-    if (nowBalance >= minWithdraw) {
-      await showDialog(
-        context: context,
-        builder: (_) => SpaDialog(
-          title: 'Không thể xóa tài khoản',
-          iconColor: ColorConfig.red,
-          // body:
-          // 'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
-          //     'Vui lòng rút toàn bộ số dư trước khi thực hiện xóa tài khoản.',
-          body:
-          'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
-              'Vui lòng rút toàn bộ số dư trước khi thực hiện xóa tài khoản.\n'
-              'Sau khi số dư về 0, bạn có thể tiếp tục yêu cầu xóa tài khoản.',
-          cancelLabel: 'Đóng',
-          confirmLabel: 'Đi rút tiền',
-          onConfirm: () {
-            context.push(CustomerRouterConfig.createReqWithdraw);
-            appLog("Vô đây");
-          },
-          confirmColor: ColorConfig.primary,
-        ),
-      );
-      return;
-    }
+    // const minWithdraw = 10000;
+    //
+    // // Có tiền và đủ điều kiện rút
+    // if (nowBalance >= minWithdraw) {
+    //   await showDialog(
+    //     context: context,
+    //     builder: (_) => SpaDialog(
+    //       title: 'Không thể xóa tài khoản',
+    //       iconColor: ColorConfig.red,
+    //       // body:
+    //       // 'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
+    //       //     'Vui lòng rút toàn bộ số dư trước khi thực hiện xóa tài khoản.',
+    //       body:
+    //       'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
+    //           'Vui lòng rút toàn bộ số dư trước khi thực hiện xóa tài khoản.\n'
+    //           'Sau khi số dư về 0, bạn có thể tiếp tục yêu cầu xóa tài khoản.',
+    //       cancelLabel: 'Đóng',
+    //       confirmLabel: 'Đi rút tiền',
+    //       onConfirm: () {
+    //         context.push(CustomerRouterConfig.createReqWithdraw);
+    //         appLog("Vô đây");
+    //       },
+    //       confirmColor: ColorConfig.primary,
+    //     ),
+    //   );
+    //   return;
+    // }
 
     // String body =
     //     'Bạn có chắc chắn muốn xóa tài khoản?\n\n'
@@ -507,23 +507,23 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
         '• Dữ liệu sẽ được hệ thống xử lý và xóa hoàn toàn sau 30 ngày.';
 
     // Số dư nhỏ hơn mức rút tối thiểu
-    if (nowBalance > 0 && nowBalance < minWithdraw) {
-      // body =
-      // 'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
-      //     'Số dư này chưa đạt mức rút tối thiểu ${FormatHelper.formatPrice(minWithdraw)}đ.\n'
-      //     'Nếu tiếp tục xóa tài khoản, số dư còn lại sẽ bị hủy và không thể hoàn lại.\n\n'
-      //     'Bạn vẫn muốn tiếp tục?';
-      body =
-      'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
-          'Số dư này chưa đạt mức rút tối thiểu ${FormatHelper.formatPrice(minWithdraw)}đ.\n'
-          'Nếu tiếp tục xóa tài khoản, số dư còn lại sẽ bị hủy và không thể hoàn lại.\n\n'
-          'Sau khi xác nhận:\n'
-          '• Bạn sẽ không thể đăng nhập lại bằng số điện thoại này.\n'
-          '• Tài khoản không thể khôi phục.\n'
-          '• Dữ liệu sẽ được xóa hoàn toàn sau 30 ngày.\n\n'
-          'Bạn vẫn muốn tiếp tục?';
-
-    }
+    // if (nowBalance > 0 && nowBalance < minWithdraw) {
+    //   // body =
+    //   // 'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
+    //   //     'Số dư này chưa đạt mức rút tối thiểu ${FormatHelper.formatPrice(minWithdraw)}đ.\n'
+    //   //     'Nếu tiếp tục xóa tài khoản, số dư còn lại sẽ bị hủy và không thể hoàn lại.\n\n'
+    //   //     'Bạn vẫn muốn tiếp tục?';
+    //   body =
+    //   'Bạn hiện còn ${FormatHelper.formatPrice(nowBalance)}đ trong tài khoản.\n\n'
+    //       'Số dư này chưa đạt mức rút tối thiểu ${FormatHelper.formatPrice(minWithdraw)}đ.\n'
+    //       'Nếu tiếp tục xóa tài khoản, số dư còn lại sẽ bị hủy và không thể hoàn lại.\n\n'
+    //       'Sau khi xác nhận:\n'
+    //       '• Bạn sẽ không thể đăng nhập lại bằng số điện thoại này.\n'
+    //       '• Tài khoản không thể khôi phục.\n'
+    //       '• Dữ liệu sẽ được xóa hoàn toàn sau 30 ngày.\n\n'
+    //       'Bạn vẫn muốn tiếp tục?';
+    //
+    // }
 
     final result = await showDialog<bool>(
       context: context,
@@ -871,20 +871,20 @@ class _AccountTabState extends State<AccountTab> with SingleTickerProviderStateM
                 padding: const EdgeInsets.only(left: 20, top: 5, right: 20, bottom: 10 ),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    if(isTechnicianActive) ...[
-                      Container(
-                        child: WalletBalanceSection(
-                          role: 'ktv',
-                          balance: nowBalance,
-                          // onTapDeposit: () {
-                          //   context.go(CustomerRouterConfig.choosePackage);
-                          // },
-                          onTapWithdraw: () {
-                            context.push(TechnicianRouterConfig.createRequestWithdraw);
-                          },
-                        ),
-                      ),
-                    ],
+                    // if(isTechnicianActive) ...[
+                    //   Container(
+                    //     child: WalletBalanceSection(
+                    //       role: 'ktv',
+                    //       balance: nowBalance,
+                    //       // onTapDeposit: () {
+                    //       //   context.go(CustomerRouterConfig.choosePackage);
+                    //       // },
+                    //       onTapWithdraw: () {
+                    //         context.push(TechnicianRouterConfig.createRequestWithdraw);
+                    //       },
+                    //     ),
+                    //   ),
+                    // ],
 
                     const SizedBox(height: 10),
                       Column(

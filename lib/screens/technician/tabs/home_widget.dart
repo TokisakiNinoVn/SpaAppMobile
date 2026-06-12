@@ -687,6 +687,7 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
 
   /// Giá tiền
   int get _expectedIncome => (orderDetail?['pricing']['technicianReceiveAmount'] ?? 0) as int;
+  int get _totalBill => (orderDetail?['pricing']['finalAmount'] ?? 0) as int;
 
   // /// Tên khách hàng – field `customer` có thể null trong JSON
   // String get _orderCustomerName {
@@ -1327,6 +1328,30 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
                     ],
 
                     const Divider(height: 24),
+
+                    Row(
+                      mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Khách cần thanh toán',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          '${FormatHelper.formatPrice(_totalBill)} đ',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: ColorConfig.textError,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
 
                     Row(
                       mainAxisAlignment:

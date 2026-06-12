@@ -313,7 +313,7 @@ class _UserEditTechnicianScreenState extends State<UserEditTechnicianScreen> {
         data['images'] = images;
       }
 
-      appLog("Updating technician with data: $data");
+      // appLog("Updating technician with data: $data");
 
       final response = await technicianService.updateTechnicianService(technicianData!['_id'], data);
       appLog("Update response: $response");

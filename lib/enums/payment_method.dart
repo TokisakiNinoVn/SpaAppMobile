@@ -1,5 +1,5 @@
 enum PaymentMethod {
-  cast('Tiền mặt', 'cast'),
+  cash('Tiền mặt', 'cash'),
   bank('Chuyển khoản', 'bank');
 
   final String label;

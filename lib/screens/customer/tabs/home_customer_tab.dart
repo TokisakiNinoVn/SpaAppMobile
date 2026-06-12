@@ -945,63 +945,63 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                         onLocationTap: _onLocationButtonTap,
                         formatCooldown: _formatCooldown,
                       ),
-                      if (_isLogin) ...[
-                        SizedBox(height: 8),
-
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFFFFF),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // LEFT (gộp 1 dòng)
-                                Row(
-                                  children: [
-                                    Text('Ví Zen: ', style: TextStyle(fontSize: 14, color: Colors.black54)),
-                                    _isBalanceLoading
-                                        ? SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: ColorConfig.primary,),
-                                    )
-                                        : Text(
-                                      '${FormatHelper.formatPrice(balance)} đ',
-                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                                    ),
-                                  ],
-                                ),
-
-                                // RIGHT BUTTON
-                                GestureDetector(
-                                  onTap: () {
-                                    context.push(CustomerRouterConfig.choosePackage);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE8F1E8),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Text(
-                                      'Nạp tiền',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF4CAF50),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                      // if (_isLogin) ...[
+                      //   SizedBox(height: 8),
+                      //
+                      //   Container(
+                      //     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+                      //     child: Container(
+                      //       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      //       decoration: BoxDecoration(
+                      //         color: const Color(0xFFFFFFFF),
+                      //         borderRadius: BorderRadius.circular(10),
+                      //       ),
+                      //       child: Row(
+                      //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      //         children: [
+                      //           // LEFT (gộp 1 dòng)
+                      //           Row(
+                      //             children: [
+                      //               Text('Ví Zen: ', style: TextStyle(fontSize: 14, color: Colors.black54)),
+                      //               _isBalanceLoading
+                      //                   ? SizedBox(
+                      //                 width: 16,
+                      //                 height: 16,
+                      //                 child: CircularProgressIndicator(strokeWidth: 2, color: ColorConfig.primary,),
+                      //               )
+                      //                   : Text(
+                      //                 '${FormatHelper.formatPrice(balance)} đ',
+                      //                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      //               ),
+                      //             ],
+                      //           ),
+                      //
+                      //           // RIGHT BUTTON
+                      //           GestureDetector(
+                      //             onTap: () {
+                      //               context.push(CustomerRouterConfig.choosePackage);
+                      //             },
+                      //             child: Container(
+                      //               padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+                      //               decoration: BoxDecoration(
+                      //                 color: const Color(0xFFE8F1E8),
+                      //                 borderRadius: BorderRadius.circular(6),
+                      //               ),
+                      //               child: const Text(
+                      //                 'Nạp tiền',
+                      //                 style: TextStyle(
+                      //                   fontSize: 14,
+                      //                   fontWeight: FontWeight.w600,
+                      //                   color: Color(0xFF4CAF50),
+                      //                 ),
+                      //               ),
+                      //             ),
+                      //           ),
+                      //         ],
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ],
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 18),
                         child: AnimatedSwitcher(

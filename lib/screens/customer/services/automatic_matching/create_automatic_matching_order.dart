@@ -15,6 +15,7 @@ import 'package:spa_app/screens/customer/services/widgets/input_box.dart';
 import 'package:spa_app/screens/customer/services/widgets/section.dart';
 import 'package:spa_app/services/user_discount_service.dart';
 
+import '../../../../enums/payment_method.dart';
 import '../../../../helper/format_helper.dart';
 import '../../../../helper/logger_utils.dart';
 import 'package:spa_app/services/order_service.dart';
@@ -22,15 +23,15 @@ import 'package:spa_app/services/discount_service.dart';
 import '../../../../storage/index.dart';
 
 // Định nghĩa phương thức thanh toán
-enum PaymentMethod {
-  zenhome('Ví Zen Home', 'zenhome');
-  // cast('Tiền mặt', 'cast'),
-  // bank('Chuyển khoản', 'bank');
-
-  final String label;
-  final String name;
-  const PaymentMethod(this.label, this.name);
-}
+// enum PaymentMethod {
+//   zenhome('Ví Zen Home', 'zenhome'),
+//   cast('Tiền mặt', 'cast'),
+//   bank('Chuyển khoản', 'bank');
+//
+//   final String label;
+//   final String name;
+//   const PaymentMethod(this.label, this.name);
+// }
 
 class CreateAutoMatchingOrderScreen extends StatefulWidget {
   final dynamic data;
@@ -86,7 +87,7 @@ class _CreateAutoMatchingOrderScreenState
   void initState() {
     super.initState();
     // appLog("Data widget: ${widget.data}");
-    _paymentMethod = PaymentMethod.zenhome;
+    _paymentMethod = PaymentMethod.bank;
     WidgetsBinding.instance.addPostFrameCallback((_) {
 
       _loadCustomerProfile();
@@ -244,10 +245,10 @@ class _CreateAutoMatchingOrderScreenState
     );
   }
 
-  bool get _isInsufficientBalance {
-    if (_paymentMethod != PaymentMethod.zenhome) return false;
-    return _finalTotal > balance;
-  }
+  // bool get _isInsufficientBalance {
+  //   if (_paymentMethod != PaymentMethod.zenhome) return false;
+  //   return _finalTotal > balance;
+  // }
 
   bool _isPastTime(DateTime selectedTime) {
     return selectedTime.isBefore(DateTime.now());
@@ -317,16 +318,16 @@ class _CreateAutoMatchingOrderScreenState
         context.go('/home-customer');
         SnackBarHelper.showSuccess(context, "Tạo yêu cầu đơn thành công! Vui lòng chờ kỹ thuật viên phản hồi!");
         // Cập nhật số dư ví nếu thanh toán bằng Ví Zen Home
-        if (_paymentMethod == PaymentMethod.zenhome) {
-          int finalPrice = _discountData != null
-              ? (_discountData!['orderValueAfterDiscount'] as int)
-              : price;
-          int newBalance = balance - finalPrice;
-          await SharedPrefs.saveValue(PrefType.int, "balance", newBalance);
-          setState(() {
-            balance = newBalance;
-          });
-        }
+        // if (_paymentMethod == PaymentMethod.zenhome) {
+        //   int finalPrice = _discountData != null
+        //       ? (_discountData!['orderValueAfterDiscount'] as int)
+        //       : price;
+        //   int newBalance = balance - finalPrice;
+        //   await SharedPrefs.saveValue(PrefType.int, "balance", newBalance);
+        //   setState(() {
+        //     balance = newBalance;
+        //   });
+        // }
       } else {
         SnackBarHelper.showError(context, response['message'] ?? 'Không thể tạo đơn hàng');
       }
@@ -870,9 +871,10 @@ class _CreateAutoMatchingOrderScreenState
     final couponValid = _discountData != null;
     final addressValid = _addressController.text.trim().isNotEmpty;
     final paymentValid = _paymentMethod != null;
-    final balanceValid = !_isInsufficientBalance;
+    // final balanceValid = !_isInsufficientBalance;
     final timeValid = _isValidBookingTime;   // Thêm dòng này
-    return addressValid && paymentValid && timeValid && (!hasCoupon || couponValid) && balanceValid;
+    // return addressValid && paymentValid && timeValid && (!hasCoupon || couponValid) && balanceValid;
+    return addressValid && paymentValid && timeValid && (!hasCoupon || couponValid);
   }
 
   bool get _isValidBookingTime {
@@ -922,15 +924,15 @@ class _CreateAutoMatchingOrderScreenState
 
               IconData icon;
               switch (method) {
-                case PaymentMethod.zenhome:
-                  icon = Icons.account_balance_wallet;
+                // case PaymentMethod.zenhome:
+                //   icon = Icons.account_balance_wallet;
+                //   break;
+                case PaymentMethod.cash:
+                  icon = Icons.money;
                   break;
-                // case PaymentMethod.cast:
-                //   icon = Icons.money;
-                //   break;
-                // case PaymentMethod.bank:
-                //   icon = Icons.account_balance;
-                //   break;
+                case PaymentMethod.bank:
+                  icon = Icons.account_balance;
+                  break;
               }
 
               return GestureDetector(
@@ -965,9 +967,10 @@ class _CreateAutoMatchingOrderScreenState
 
                       Expanded(
                         child: Text(
-                          method == PaymentMethod.zenhome
-                              ? "${method.label} (Số dư: ${FormatHelper.formatPrice(balance)})"
-                              : method.label,
+                          // method == PaymentMethod.zenhome
+                          //     ? "${method.label} (Số dư: ${FormatHelper.formatPrice(balance)})"
+                          //     : method.label,
+                         method.label,
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             color: isSelected
@@ -1054,24 +1057,24 @@ class _CreateAutoMatchingOrderScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 🔴 Dòng thông báo tách riêng
-              if (_isInsufficientBalance)
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Số dư ví không đủ để thanh toán',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+              // if (_isInsufficientBalance)
+              //   Container(
+              //     width: double.infinity,
+              //     margin: const EdgeInsets.only(bottom: 10),
+              //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              //     decoration: BoxDecoration(
+              //       color: Colors.red.withOpacity(0.08),
+              //       borderRadius: BorderRadius.circular(8),
+              //     ),
+              //     child: const Text(
+              //       'Số dư ví không đủ để thanh toán',
+              //       style: TextStyle(
+              //         color: Colors.red,
+              //         fontSize: 13,
+              //         fontWeight: FontWeight.w500,
+              //       ),
+              //     ),
+              //   ),
 
               // if (_selectedDateTime.isBefore(DateTime.now().add(const Duration(minutes: 20))))
               // if (_selectedDateTime.isBefore(DateTime.now()))
@@ -1129,21 +1132,21 @@ class _CreateAutoMatchingOrderScreenState
                   ),
 
                   // 🔵 Nút nạp tiền
-                  if (_isInsufficientBalance &&
-                      _paymentMethod == PaymentMethod.zenhome)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          context.push(CustomerRouterConfig.choosePackage);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ColorConfig.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text("Nạp tiền"),
-                      ),
-                    ),
+                  // if (_isInsufficientBalance &&
+                  //     _paymentMethod == PaymentMethod.zenhome)
+                  //   Padding(
+                  //     padding: const EdgeInsets.only(right: 8),
+                  //     child: ElevatedButton(
+                  //       onPressed: () {
+                  //         context.push(CustomerRouterConfig.choosePackage);
+                  //       },
+                  //       style: ElevatedButton.styleFrom(
+                  //         backgroundColor: ColorConfig.primary,
+                  //         foregroundColor: Colors.white,
+                  //       ),
+                  //       child: const Text("Nạp tiền"),
+                  //     ),
+                  //   ),
 
                   // 🟡 Nút đặt
                   // ElevatedButton(
@@ -1590,7 +1593,7 @@ class _CreateAutoMatchingOrderScreenState
                     ),
                   const Divider(height: 20),
                   InfoRow(
-                    "Tổng cộng",
+                    "Tổng tiền cần thanh toán",
                     "${FormatHelper.formatPrice(_finalTotal)} đ",
                     valueStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),

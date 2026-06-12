@@ -364,26 +364,26 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
     const minWithdraw = 10000;
 
     // Có tiền và đủ điều kiện rút
-    if (balance >= minWithdraw) {
-      await showDialog(
-        context: context,
-        builder: (_) => SpaDialog(
-          title: 'Không thể xóa tài khoản',
-          iconColor: _kRed,
-          body:
-          'Bạn hiện còn ${FormatHelper.formatPrice(balance)}đ trong tài khoản.\n\n'
-              'Vui lòng rút toàn bộ số dư trước khi thực hiện xóa tài khoản.',
-          cancelLabel: 'Đóng',
-          confirmLabel: 'Đi rút tiền',
-          onConfirm: () {
-            context.push(CustomerRouterConfig.createReqWithdraw);
-            appLog("Vô đây");
-          },
-          confirmColor: ColorConfig.primary,
-        ),
-      );
-      return;
-    }
+    // if (balance >= minWithdraw) {
+    //   await showDialog(
+    //     context: context,
+    //     builder: (_) => SpaDialog(
+    //       title: 'Không thể xóa tài khoản',
+    //       iconColor: _kRed,
+    //       body:
+    //       'Bạn hiện còn ${FormatHelper.formatPrice(balance)}đ trong tài khoản.\n\n'
+    //           'Vui lòng rút toàn bộ số dư trước khi thực hiện xóa tài khoản.',
+    //       cancelLabel: 'Đóng',
+    //       confirmLabel: 'Đi rút tiền',
+    //       onConfirm: () {
+    //         context.push(CustomerRouterConfig.createReqWithdraw);
+    //         appLog("Vô đây");
+    //       },
+    //       confirmColor: ColorConfig.primary,
+    //     ),
+    //   );
+    //   return;
+    // }
 
     String body =
         'Bạn có chắc chắn muốn xóa tài khoản?\n\n'
@@ -391,13 +391,13 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
         'Dữ liệu sẽ được xóa hoàn toàn sau 30 ngày.';
 
     // Số dư nhỏ hơn mức rút tối thiểu
-    if (balance > 0 && balance < minWithdraw) {
-      body =
-      'Bạn hiện còn ${FormatHelper.formatPrice(balance)}đ trong tài khoản.\n\n'
-          'Số dư này chưa đạt mức rút tối thiểu ${FormatHelper.formatPrice(balance)}đ.\n'
-          'Nếu tiếp tục xóa tài khoản, số dư còn lại sẽ bị hủy và không thể hoàn lại.\n\n'
-          'Bạn vẫn muốn tiếp tục?';
-    }
+    // if (balance > 0 && balance < minWithdraw) {
+    //   body =
+    //   'Bạn hiện còn ${FormatHelper.formatPrice(balance)}đ trong tài khoản.\n\n'
+    //       'Số dư này chưa đạt mức rút tối thiểu ${FormatHelper.formatPrice(balance)}đ.\n'
+    //       'Nếu tiếp tục xóa tài khoản, số dư còn lại sẽ bị hủy và không thể hoàn lại.\n\n'
+    //       'Bạn vẫn muốn tiếp tục?';
+    // }
 
     final result = await showDialog<bool>(
       context: context,
@@ -505,7 +505,7 @@ class _AccountCustomerTabState extends State<AccountCustomerTab>
                             isSwitching: isLoading,
                           ),
                         // const SizedBox(height: 10),
-                        _buildBalanceSection(),
+                        // _buildBalanceSection(),
                         const SizedBox(height: 24),
                         _buildMenuSection(),
                         const SizedBox(height: 24),
