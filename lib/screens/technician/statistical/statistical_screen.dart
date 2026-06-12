@@ -5,6 +5,7 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/screens/widgets/date_of_birth_picker_bottom_sheet.dart';
+import 'package:spa_app/screens/widgets/statistical_pick_date_bottom_sheet.dart';
 import 'package:spa_app/services/user_service.dart';
 
 class StatisticalTechnicianScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _StatisticalTechnicianScreenState extends State<StatisticalTechnicianScree
   final UserService _userService = UserService();
   bool _isLoading = true;
   Map<String, dynamic>? _statisticalData;
+  String typeDateFilter = 'day';
 
   DateTime _selectedDate = DateTime.now();
 
@@ -35,7 +37,14 @@ class _StatisticalTechnicianScreenState extends State<StatisticalTechnicianScree
     });
 
     String formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate);
-    String query = "date=$formattedDate";
+    String formattedDateMonth = DateFormat('yyyy-MM').format(_selectedDate);
+    String query = "";
+
+    if (typeDateFilter == 'month') {
+      query = "month=$formattedDateMonth";
+    } else {
+      query = "date=$formattedDate";
+    }
 
     try {
       final response = await _userService.getStatisticalTechnicianService(query);
@@ -63,17 +72,42 @@ class _StatisticalTechnicianScreenState extends State<StatisticalTechnicianScree
   }
 
   Future<void> _pickDateWithBottomSheet() async {
-    final picked = await showDateOfBirthPickerBottomSheet(
+    final picked = await showStatisticalDatePickerBottomSheet(
       context: context,
+      isStatistical: true,
       initialDate: _selectedDate,
-      minimumDate: DateTime(2020),
+      minimumDate: DateTime(2025),
       maximumDate: DateTime.now(),
       title: "Chọn ngày thống kê",
     );
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
-      _loadStatisticalTechnician();
+
+    if (picked == null) return;
+
+    DateTime? finalDate;
+    String? filterType;
+
+    try {
+      if (picked is Map<String, dynamic>) {
+        finalDate = picked["finalDate"] as DateTime?;
+        filterType = picked["filterType"] as String?;
+      } else if (picked is DateTime) {
+        finalDate = picked;
+      }
+    } catch (e) {
+      appLog("Error: $e");
     }
+
+    if (filterType == 'month') {
+      typeDateFilter = 'month';
+    } else {
+      typeDateFilter = 'day';
+    }
+
+    setState(() {
+      _selectedDate = finalDate!;
+    });
+
+    _loadStatisticalTechnician();
   }
 
   bool _isSameDay(DateTime a, DateTime b) =>
@@ -81,9 +115,12 @@ class _StatisticalTechnicianScreenState extends State<StatisticalTechnicianScree
 
   Widget _buildDateChip() {
     final isToday = _isSameDay(_selectedDate, DateTime.now());
-    final label = isToday
-        ? 'Hôm nay'
-        : DateFormat('dd/MM/yyyy').format(_selectedDate);
+    String label;
+    if (typeDateFilter == 'month') {
+      label = DateFormat('MM/yyyy').format(_selectedDate);
+    } else {
+      label = DateFormat('dd/MM/yyyy').format(_selectedDate);
+    }
 
     return GestureDetector(
       onTap: _pickDateWithBottomSheet,
@@ -123,153 +160,6 @@ class _StatisticalTechnicianScreenState extends State<StatisticalTechnicianScree
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-    String? subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        color: Colors.white,
-        border: Border.all(
-          color: color.withOpacity(0.08),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      color.withOpacity(0.18),
-                      color.withOpacity(0.08),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 22,
-                ),
-              ),
-
-              const Spacer(),
-
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 18),
-
-          /// Title
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-              letterSpacing: 0.2,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          /// Value
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1A1A1A),
-              height: 1,
-            ),
-          ),
-
-          if (subtitle != null) ...[
-            const SizedBox(height: 10),
-
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOrderStatusRow(String label, int count, Color color) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            count.toString(),
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -801,55 +691,55 @@ class _StatisticalTechnicianScreenState extends State<StatisticalTechnicianScree
             ),
 
             // Thời gian làm việc
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.shade100,
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Thời gian",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoRow(
-                    "Thời gian làm việc TB",
-                    _statisticalData!['avgWorkingTime'] == 0
-                        ? "Chưa có dữ liệu"
-                        : "${(_statisticalData!['avgWorkingTime'] / 60).toStringAsFixed(0)} phút",
-                  ),
-                  if (_statisticalData!['firstOrderDate'] != null)
-                    _buildInfoRow(
-                      "Đơn đầu tiên",
-                      DateFormat('dd/MM/yyyy HH:mm').format(
-                        DateTime.parse(_statisticalData!['firstOrderDate']),
-                      ),
-                    ),
-                  if (_statisticalData!['lastOrderDate'] != null)
-                    _buildInfoRow(
-                      "Đơn gần nhất",
-                      DateFormat('dd/MM/yyyy HH:mm').format(
-                        DateTime.parse(_statisticalData!['lastOrderDate']),
-                      ),
-                    ),
-                ],
-              ),
-            ),
+            // Container(
+            //   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //   padding: const EdgeInsets.all(16),
+            //   decoration: BoxDecoration(
+            //     color: Colors.white,
+            //     borderRadius: BorderRadius.circular(16),
+            //     boxShadow: [
+            //       BoxShadow(
+            //         color: Colors.grey.shade100,
+            //         blurRadius: 10,
+            //         offset: const Offset(0, 2),
+            //       ),
+            //     ],
+            //   ),
+            //   child: Column(
+            //     crossAxisAlignment: CrossAxisAlignment.start,
+            //     children: [
+            //       const Text(
+            //         "Thời gian",
+            //         style: TextStyle(
+            //           fontSize: 16,
+            //           fontWeight: FontWeight.bold,
+            //           color: Color(0xFF1A1A1A),
+            //         ),
+            //       ),
+            //       const SizedBox(height: 16),
+            //       _buildInfoRow(
+            //         "Thời gian làm việc TB",
+            //         _statisticalData!['avgWorkingTime'] == 0
+            //             ? "Chưa có dữ liệu"
+            //             : "${(_statisticalData!['avgWorkingTime'] / 60).toStringAsFixed(0)} phút",
+            //       ),
+            //       if (_statisticalData!['firstOrderDate'] != null)
+            //         _buildInfoRow(
+            //           "Đơn đầu tiên",
+            //           DateFormat('dd/MM/yyyy HH:mm').format(
+            //             DateTime.parse(_statisticalData!['firstOrderDate']),
+            //           ),
+            //         ),
+            //       if (_statisticalData!['lastOrderDate'] != null)
+            //         _buildInfoRow(
+            //           "Đơn gần nhất",
+            //           DateFormat('dd/MM/yyyy HH:mm').format(
+            //             DateTime.parse(_statisticalData!['lastOrderDate']),
+            //           ),
+            //         ),
+            //     ],
+            //   ),
+            // ),
 
             const SizedBox(height: 24),
           ],

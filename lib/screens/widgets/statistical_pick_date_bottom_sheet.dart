@@ -5,8 +5,8 @@ import 'package:spa_app/helper/logger_utils.dart';
 import '../../../config/color_config.dart';
 
 /// Hiển thị bottom sheet chọn ngày sinh
-/// Trả về DateTime? nếu người dùng xác nhận, null nếu đóng.
-Future<DateTime?> showDateOfBirthPickerBottomSheet({
+/// Trả về dynamic? nếu người dùng xác nhận, null nếu đóng.
+Future<dynamic> showStatisticalDatePickerBottomSheet({
   required BuildContext context,
   bool? isStatistical,
   String? title,
@@ -41,7 +41,7 @@ Future<DateTime?> showDateOfBirthPickerBottomSheet({
   // Biến trạng thái cho chế độ lọc - khai báo ở đây để không bị reset
   String filterType = 'day'; // 'day' hoặc 'month'
 
-  return showModalBottomSheet<DateTime>(
+  return showModalBottomSheet<dynamic>(
     context: context,
     backgroundColor: Colors.white,
     isScrollControlled: true,
@@ -254,14 +254,14 @@ Future<DateTime?> showDateOfBirthPickerBottomSheet({
                       // Đảm bảo ngày luôn là 1
                       finalDate = DateTime(tempDate.year, tempDate.month, 1);
                     }
-                    if (minimumDate != null && finalDate.isBefore(minimumDate!)) {
-                      finalDate = minimumDate!;
+                    if (minimumDate != null && finalDate.isBefore(minimumDate)) {
+                      finalDate = minimumDate;
                       if (filterType == 'month') {
                         finalDate = DateTime(finalDate.year, finalDate.month, 1);
                       }
                     }
-                    if (maximumDate != null && finalDate.isAfter(maximumDate!)) {
-                      finalDate = maximumDate!;
+                    if (maximumDate != null && finalDate.isAfter(maximumDate)) {
+                      finalDate = maximumDate;
                       if (filterType == 'month') {
                         finalDate = DateTime(finalDate.year, finalDate.month, 1);
                       }
@@ -270,8 +270,6 @@ Future<DateTime?> showDateOfBirthPickerBottomSheet({
                       "finalDate": finalDate,
                       "filterType": filterType,
                     };
-
-                    appLog("$data");
 
                     Navigator.pop(
                       context,
