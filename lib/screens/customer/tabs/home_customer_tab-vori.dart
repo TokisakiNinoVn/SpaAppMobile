@@ -485,7 +485,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  checkPermissionLocation == true ? 'Cập nhật' : 'Cho phép',
+                  checkPermissionLocation == true ? 'Cập nhật' : 'Tiếp tục',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,

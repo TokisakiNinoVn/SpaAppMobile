@@ -204,6 +204,8 @@ class _ListTechnicianOrderNowState extends State<ListTechnicianOrderNow> {
     });
   }
 
+
+
   /// Lấy tên dịch vụ đã chọn để hiển thị trên chip
   String _getSelectedServiceLabel() {
     if (selectedServiceId == null) return "Loại dịch vụ";
@@ -224,31 +226,37 @@ class _ListTechnicianOrderNowState extends State<ListTechnicianOrderNow> {
   Future<void> _handleNearMe() async {
     // 1. Kiểm tra và yêu cầu bật GPS nếu chưa bật
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
     if (!serviceEnabled) {
       final bool? shouldOpen = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
-          title: const Text('Bật GPS'),
-          content: const Text('Vui lòng bật GPS để tìm kỹ thuật viên gần bạn.'),
+          title: const Text('Bật dịch vụ vị trí'),
+          content: const Text(
+            'Tính năng tìm kỹ thuật viên gần bạn cần sử dụng vị trí hiện tại. '
+                'Vui lòng bật dịch vụ vị trí trên thiết bị để tiếp tục.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hủy'),
+              child: const Text('Để sau'),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Mở cài đặt'),
+              child: const Text('Tiếp tục'),
             ),
           ],
         ),
       );
+
       if (shouldOpen == true) {
         await Geolocator.openLocationSettings();
-        // Sau khi mở cài đặt, không tự động reload, người dùng cần nhấn lại chip
       }
+
       return;
     }
+  
 
     // 2. Kiểm tra và xin quyền truy cập vị trí nếu chưa được cấp
     LocationPermission permission = await Geolocator.checkPermission();

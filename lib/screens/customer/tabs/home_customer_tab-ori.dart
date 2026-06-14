@@ -636,7 +636,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
         checkPermissionLocation && _locationCooldownSeconds == 0;
 
     final String buttonLabel = !checkPermissionLocation
-        ? 'Cho phép'
+        ? 'Cập nhật'
         : inCooldown
         ? _formatCooldown(_locationCooldownSeconds)
         : 'Cập nhật';
