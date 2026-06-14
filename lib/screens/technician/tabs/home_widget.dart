@@ -262,22 +262,30 @@ class _HomeTechnicianTabState extends State<HomeTechnicianTab> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Cần quyền vị trí'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text('Cho phép truy cập vị trí'),
         content: const Text(
-          'Bạn đã tắt quyền vị trí vĩnh viễn. Vui lòng vào Cài đặt → Quyền ứng dụng để cấp quyền "Vị trí".',
+          'Để sử dụng tính năng này, ứng dụng cần quyền truy cập vị trí của bạn. '
+              'Bạn đã tắt quyền này trước đó. Vui lòng mở Cài đặt để cấp quyền vị trí cho ứng dụng.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Đóng'),
+            child: const Text('Để sau'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context, true);
               Geolocator.openAppSettings();
             },
-            child: const Text('Mở Cài đặt'),
+
+            style: ButtonStyle(
+              // foregroundBuilder: Colors.green
+            ),
+
+            child: const Text('Tiếp tục'),
           ),
         ],
       ),

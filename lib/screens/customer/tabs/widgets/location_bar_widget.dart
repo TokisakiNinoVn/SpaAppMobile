@@ -30,7 +30,7 @@ class LocationBarWidget extends StatelessWidget {
         checkPermissionLocation && locationCooldownSeconds == 0;
 
     final String buttonLabel = !checkPermissionLocation
-        ? 'Cho phép'
+        ? 'Cập nhật'
         : inCooldown
         ? formatCooldown(locationCooldownSeconds)
         : 'Cập nhật';

@@ -573,11 +573,6 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
         ),
         title: Row(
           children: const [
-            Icon(
-              Icons.location_on,
-              color: Color(0xFFD4845A),
-            ),
-            SizedBox(width: 10),
             Expanded(
               child: Text(
                 'Cho phép truy cập vị trí',
@@ -594,11 +589,16 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Để sau'),
+            child: const Text(
+                'Để sau',
+              style: TextStyle(
+                color: Colors.black
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD4845A),
+              backgroundColor: ColorConfig.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -608,7 +608,7 @@ class _HomeCustomerTabState extends State<HomeCustomerTab>
               Geolocator.openAppSettings();
             },
             child: const Text(
-              'Mở Cài đặt',
+              'Tiếp tục',
               style: TextStyle(
                 color: Colors.white,
               ),
