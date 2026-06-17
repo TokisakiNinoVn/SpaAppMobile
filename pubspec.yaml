@@ -72,6 +72,7 @@ flutter:
     - lib/assets/images/
     - lib/assets/
     - lib/assets/data/tinhthanh.json
+    - lib/assets/data/cities.json
   fonts:
     - family: Roboto
       fonts:

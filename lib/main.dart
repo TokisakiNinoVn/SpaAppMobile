@@ -72,7 +72,7 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: 'notification.wav',
+      sound: 'notification.caf',
     );
 
     NotificationDetails platformDetails = NotificationDetails(
