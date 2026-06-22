@@ -1,0 +1,1 @@
+C:\Data\Works\Code\spa_app\fe_android\build\app\intermediates\cxx\RelWithDebInfo\292e631y\obj\arm64-v8a

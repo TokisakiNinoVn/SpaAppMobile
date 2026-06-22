@@ -315,20 +315,20 @@ class _NotificationManagementScreenState
               const SizedBox(height: 20),
               Row(
                 children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _editNotification(notification);
-                      },
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Chỉnh sửa'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
+                  // Expanded(
+                  //   child: ElevatedButton.icon(
+                  //     onPressed: () {
+                  //       Navigator.pop(context);
+                  //       _editNotification(notification);
+                  //     },
+                  //     icon: const Icon(Icons.edit),
+                  //     label: const Text('Chỉnh sửa'),
+                  //     style: ElevatedButton.styleFrom(
+                  //       padding: const EdgeInsets.symmetric(vertical: 12),
+                  //     ),
+                  //   ),
+                  // ),
+                  // const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
