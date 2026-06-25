@@ -422,7 +422,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
         typeOderDisplay = "Đặt ngay";
         break;
       case "automatic-matching":
-        typeOderDisplay = "Tự động ghép";
+        typeOderDisplay = "KTV ngẫu nhiên";
         break;
       default:
         typeOderDisplay = "${typeOrder}";
@@ -525,119 +525,216 @@ class _HistoryOrderState extends State<HistoryOrder> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: statusColor.withOpacity(.12),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                statusText,
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            if (isPrioritize) ...[
-                              const SizedBox(width: 4),
+                        // Row này đang bị tràn theo chiều rộng
+                        // Row(
+                        //   children: [
+                        //     Container(
+                        //       padding: const EdgeInsets.symmetric(
+                        //         horizontal: 10,
+                        //         vertical: 4,
+                        //       ),
+                        //       decoration: BoxDecoration(
+                        //         color: statusColor.withOpacity(.12),
+                        //         borderRadius: BorderRadius.circular(999),
+                        //       ),
+                        //       child: Text(
+                        //         statusText,
+                        //         style: TextStyle(
+                        //           color: statusColor,
+                        //           fontWeight: FontWeight.w600,
+                        //           fontSize: 12,
+                        //         ),
+                        //       ),
+                        //     ),
+                        //     if (isPrioritize) ...[
+                        //       const SizedBox(width: 4),
+                        //       Container(
+                        //         padding: const EdgeInsets.symmetric(
+                        //           horizontal: 10,
+                        //           vertical: 4,
+                        //         ),
+                        //         decoration: BoxDecoration(
+                        //           color: Colors.purple.withOpacity(.12),
+                        //           borderRadius: BorderRadius.circular(999),
+                        //         ),
+                        //         child: const Row(
+                        //           mainAxisSize: MainAxisSize.min,
+                        //           children: [
+                        //             Icon(
+                        //               Icons.flash_on,
+                        //               size: 14,
+                        //               color: Colors.purple,
+                        //             ),
+                        //             // SizedBox(width: 1),
+                        //             Text(
+                        //               "Ưu tiên",
+                        //               style: TextStyle(
+                        //                 color: Colors.purple,
+                        //                 fontWeight: FontWeight.w600,
+                        //                 fontSize: 12,
+                        //               ),
+                        //             ),
+                        //           ],
+                        //         ),
+                        //       ),
+                        //       const SizedBox(width: 4),
+                        //       Container(
+                        //         padding: const EdgeInsets.symmetric(
+                        //           horizontal: 10,
+                        //           vertical: 4,
+                        //         ),
+                        //         decoration: BoxDecoration(
+                        //           color: Colors.purple.withOpacity(.12),
+                        //           borderRadius: BorderRadius.circular(999),
+                        //         ),
+                        //         child: Row(
+                        //           mainAxisSize: MainAxisSize.min,
+                        //           children: [
+                        //             // const Icon(
+                        //             //   Icons.flash_on,
+                        //             //   size: 14,
+                        //             //   color: Colors.purple,
+                        //             // ),
+                        //             // const SizedBox(width: 4),
+                        //             Text(
+                        //               typeOderDisplay,
+                        //               style: const TextStyle(
+                        //                 color: Colors.purple,
+                        //                 fontWeight: FontWeight.w600,
+                        //                 fontSize: 12,
+                        //               ),
+                        //             ),
+                        //           ],
+                        //         ),
+                        //       ),
+                        //       const SizedBox(width: 4),
+                        //       Container(
+                        //         padding: const EdgeInsets.symmetric(
+                        //           horizontal: 10,
+                        //           vertical: 4,
+                        //         ),
+                        //         decoration: BoxDecoration(
+                        //           color: ColorConfig.primaryBackground,
+                        //           borderRadius: BorderRadius.circular(999),
+                        //         ),
+                        //         child: Row(
+                        //           mainAxisSize: MainAxisSize.min,
+                        //           children: [
+                        //              Icon(
+                        //               Icons.monetization_on,
+                        //               size: 14,
+                        //               color: ColorConfig.textPrimary,
+                        //             ),
+                        //             const SizedBox(width: 2),
+                        //             Text(
+                        //               FormatHelper.formatPrice(price),
+                        //               style: TextStyle(
+                        //                 color: ColorConfig.textPrimary,
+                        //                 fontWeight: FontWeight.w600,
+                        //                 fontSize: 12,
+                        //               ),
+                        //             ),
+                        //           ],
+                        //         ),
+                        //       ),
+                        //     ],
+                        //   ],
+                        // ),
+                        // Row này đang bị tràn theo chiều rộng
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const ClampingScrollPhysics(), // (tuỳ chọn) giúp cuộn mượt, dừng đúng vị trí
+                          child: Row(
+                            children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.purple.withOpacity(.12),
+                                  color: statusColor.withOpacity(.12),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.flash_on,
-                                      size: 14,
-                                      color: Colors.purple,
-                                    ),
-                                    // SizedBox(width: 1),
-                                    Text(
-                                      "Ưu tiên",
-                                      style: TextStyle(
-                                        color: Colors.purple,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
+                                child: Text(
+                                  statusText,
+                                  style: TextStyle(
+                                    color: statusColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              if (isPrioritize) ...[
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple.withOpacity(.12),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.flash_on, size: 14, color: Colors.purple),
+                                      Text(
+                                        "Ưu tiên",
+                                        style: TextStyle(
+                                          color: Colors.purple,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple.withOpacity(.12),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // const Icon(
-                                    //   Icons.flash_on,
-                                    //   size: 14,
-                                    //   color: Colors.purple,
-                                    // ),
-                                    // const SizedBox(width: 4),
-                                    Text(
-                                      typeOderDisplay,
-                                      style: const TextStyle(
-                                        color: Colors.purple,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple.withOpacity(.12),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        typeOderDisplay,
+                                        style: const TextStyle(
+                                          color: Colors.purple,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: ColorConfig.primaryBackground,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                     Icon(
-                                      Icons.monetization_on,
-                                      size: 14,
-                                      color: ColorConfig.textPrimary,
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      FormatHelper.formatPrice(price),
-                                      style: TextStyle(
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: ColorConfig.primaryBackground,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.monetization_on,
+                                        size: 14,
                                         color: ColorConfig.textPrimary,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        FormatHelper.formatPrice(price),
+                                        style: TextStyle(
+                                          color: ColorConfig.textPrimary,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                         const SizedBox(height: 10),
                         const DashedDivider(),
@@ -680,18 +777,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
                 ],
               ),
               const SizedBox(height: 7),
-              /// TYPE ORDER CHIP
-              // Row(
-              //   children: [
-              //     const SizedBox(width: 8),
-              //     _buildChip(
-              //       Icons.payments_outlined,
-              //       typeOderDisplay,
-              //       isPrimary: true,
-              //     ),
-              //   ],
-              // ),
-              // const SizedBox(height: 5),
+
               if (order['submittedAt'] != null) ...[
                 // const SizedBox(height: 4),
                 Row(
@@ -719,10 +805,10 @@ class _HistoryOrderState extends State<HistoryOrder> {
                 ],
               ),
               if (address.isNotEmpty) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 5),
                 Row(
                   children: [
-                    // Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                    Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -738,43 +824,7 @@ class _HistoryOrderState extends State<HistoryOrder> {
                   ],
                 ),
               ],
-              const SizedBox(height: 12),
-              /// TIMELINE
-              // Column(
-              //   children: [
-              //     if (submittedAt != null)
-              //       _buildTimelineItem(
-              //         icon: Icons.schedule,
-              //         title: "Tạo đơn",
-              //         value: FormatHelper.formatDateTime(submittedAt),
-              //       ),
-              //     if (approvedAt != null)
-              //       _buildTimelineItem(
-              //         icon: Icons.check_circle,
-              //         title: "Nhận đơn",
-              //         value: FormatHelper.formatDateTime(approvedAt),
-              //       ),
-              //     if (rejectedAt != null)
-              //       _buildTimelineItem(
-              //         icon: Icons.cancel,
-              //         title: "Từ chối",
-              //         value: FormatHelper.formatDateTime(rejectedAt),
-              //       ),
-              //     if (expiresAt != null && status == "expired")
-              //       _buildTimelineItem(
-              //         icon: Icons.timer_off,
-              //         title: "Hết hạn",
-              //         value: FormatHelper.formatDateTime(expiresAt),
-              //       ),
-              //   ],
-              // ),
-              // if (status == 'pending') ...[
-              //   // const SizedBox(height: 10),
-              //   _OrderCountdownWidget(
-              //     order: order,
-              //     onExpired: () => _onOrderExpired(order['_id']),
-              //   ),
-              // ],
+              // const SizedBox(height: 12),
               Divider(color: Colors.grey.withOpacity(0.2)),
               /// ACTIONS
               Row(
@@ -790,25 +840,6 @@ class _HistoryOrderState extends State<HistoryOrder> {
                       color: Colors.red,
                     ),
                   ],
-                  // if (status == 'done') ...[
-                  //   if (rate != null && rate.isNotEmpty) ...[
-                  //     buildActionButton(
-                  //       onPressed: () {
-                  //         final orderId = order["_id"];
-                  //         final technicianId = order["technicianInfor"]["_id"];
-                  //         final Map<String, dynamic> data = {
-                  //           "orderId": orderId,
-                  //           "technicianId": technicianId,
-                  //           ...rate,
-                  //         };
-                  //         context.push(CustomerRouterConfig.viewOrUpdateRate, extra: data);
-                  //       },
-                  //       icon: Icons.arrow_right,
-                  //       label: "Xem đánh giá",
-                  //       color: Colors.amber.shade700,
-                  //     ),
-                  //   ],
-                  // ],
                 ],
               ),
             ],

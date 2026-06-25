@@ -72,6 +72,7 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
       if (success && mounted) {
         setState(() {
           _originalListPost = List.from(provider.listPost);
+          // appLog("List post: $_originalListPost");
           _applySearchFilter();
         });
       }

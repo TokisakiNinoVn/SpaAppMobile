@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:spa_app/config/color_config.dart';
@@ -8,10 +9,13 @@ import 'package:spa_app/helper/snackbar_helper.dart';
 import 'package:spa_app/providers/order_provider.dart';
 import 'package:spa_app/providers/selected_tab_provider.dart';
 import 'package:spa_app/routes/config/technician_router_config.dart';
+import 'package:spa_app/screens/components/copyable_text.dart';
 import 'package:spa_app/screens/components/dashed_divider_component.dart';
 import 'package:spa_app/screens/customer/tabs/components/SpaDialog.dart';
 import 'package:spa_app/screens/technician/tabs/components/accept_order_dialog.dart';
 import 'package:spa_app/screens/technician/tabs/components/reject_order_bottom_sheet.dart';
+import 'package:spa_app/screens/widgets/order_progress_timeline.dart';
+import 'package:spa_app/services/order_application_service.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'dart:async';
@@ -21,11 +25,15 @@ import '../../../storage/index.dart';
 class DetailsOrderTechnician extends StatefulWidget {
   final String id;
   final bool isNewOrder;
+  final bool isEntrust;
+  final String? orderExpiredAt;
 
   const DetailsOrderTechnician({
     super.key,
     required this.id,
     this.isNewOrder = false,
+    this.isEntrust = false,
+    this.orderExpiredAt,
   });
 
   @override
@@ -34,6 +42,8 @@ class DetailsOrderTechnician extends StatefulWidget {
 
 class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
   final OrderService _orderService = OrderService();
+  final OrderApplicationService _orderApplicationService =
+      OrderApplicationService();
   Map<String, dynamic>? _orderDetails;
   bool _isLoading = true;
   String _errorMessage = '';
@@ -50,15 +60,28 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
   Duration _remainingTime = const Duration(minutes: 30);
   bool _isExpired = false;
 
+  // Entrust countdown (dùng widget.orderExpiredAt)
+  Timer? _entrustTimer;
+  Duration _entrustRemainingTime = Duration.zero;
+  bool _entrustExpired = false;
+
   @override
   void initState() {
     super.initState();
+    appLog("${widget.orderExpiredAt}");
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      loadCheckWorkingOrder();
+    });
     _loadOrderDetails();
+    if (widget.isEntrust) {
+      _startEntrustCountdown();
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _entrustTimer?.cancel();
     _noteController.dispose();
     _rejectReasonController.dispose();
     super.dispose();
@@ -76,22 +99,22 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
   /// Có thể nhận/ứng tuyển không
   bool get _canHandleOrder {
     if (_isExpired) return false;
-    // Đang làm việc + order-now => không cho nhận (chỉ block chế độ nhận việc)
-    if (isWorking && !_isAdminCreate && _typeOrder == 'order-now') return false;
+    // Đang làm việc => không cho cả Nhận việc lẫn Ứng tuyển việc
+    if (isWorking) return false;
     return true;
   }
 
   /// Text nút hành động chính
   String get _actionButtonText {
-    if (_isAdminCreate) return 'Ứng tuyển';
-    if (isWorking && _typeOrder == 'order-now') return 'Đang làm việc';
+    if (isWorking) return 'Đang làm việc';
+    if (widget.isEntrust) return 'Nhận việc';
+    if (_isAdminCreate) return 'Ứng tuyển việc';
     return 'Nhận việc';
   }
 
   // ─── Data loading ────────────────────────────────────────────────────────────
-
   Future<void> _loadOrderDetails() async {
-    isWorking = await SharedPrefs.getValue(PrefType.bool, "isWorking") ?? false;
+    // isWorking = await SharedPrefs.getValue(PrefType.bool, "isWorking") ?? false;
 
     try {
       setState(() {
@@ -99,6 +122,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
         _errorMessage = '';
       });
       final response = await _orderService.detailOrder(widget.id);
+      // appLog("CHi tiết đơn: $response");
       if (response['success'] == true) {
         setState(() {
           _orderDetails = response['data'];
@@ -114,6 +138,52 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
         _isLoading = false;
       });
     }
+  }
+
+  // ─── Entrust Countdown ──────────────────────────────────────────────────────
+
+  void _startEntrustCountdown() {
+    final expiredAtStr = widget.orderExpiredAt;
+    if (expiredAtStr == null || expiredAtStr.isEmpty) {
+      setState(() => _entrustExpired = true);
+      return;
+    }
+
+    final deadline = DateTime.parse(expiredAtStr).toLocal();
+    final now = DateTime.now();
+
+    if (now.isAfter(deadline)) {
+      setState(() => _entrustExpired = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _onEntrustExpired());
+      return;
+    }
+
+    setState(() {
+      _entrustRemainingTime = deadline.difference(now);
+    });
+
+    _entrustTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_entrustRemainingTime.inSeconds <= 0) {
+        timer.cancel();
+        setState(() => _entrustExpired = true);
+        _onEntrustExpired();
+      } else {
+        setState(() {
+          _entrustRemainingTime =
+              _entrustRemainingTime - const Duration(seconds: 1);
+        });
+      }
+    });
+  }
+
+  void _onEntrustExpired() {
+    if (!mounted) return;
+    context.pop();
+    SnackBarHelper.showError(context, 'Hết thời gian phản hồi giao việc');
   }
 
   // ─── Countdown ───────────────────────────────────────────────────────────────
@@ -222,7 +292,8 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
   // ─── Accept / Reject ─────────────────────────────────────────────────────────
   Future<void> _acceptOrderWithMessage(String message) async {
     try {
-      if (_typeOrder == 'order-now' || (_typeOrder == 'automatic-matching' && _subTypeOrder == 'now')) {
+      if (_typeOrder == 'order-now' ||
+          (_typeOrder == 'automatic-matching' && _subTypeOrder == 'now')) {
         final data = {
           'orderId': widget.id,
           'result': 'approved',
@@ -232,16 +303,33 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
         if (response['success'] == true) {
           if (!mounted) return;
           final acceptedAt = DateTime.now().toIso8601String();
-          await SharedPrefs.saveValue(PrefType.string, "orderDetail", _orderDetails);
+          await SharedPrefs.saveValue(
+            PrefType.string,
+            "orderDetail",
+            _orderDetails,
+          );
           await SharedPrefs.saveValue(PrefType.bool, "isWorking", true);
-          await SharedPrefs.saveValue(PrefType.string, "idOrderWorking", widget.id);
-          await SharedPrefs.saveValue(PrefType.string, "acceptedAt", acceptedAt);
+          await SharedPrefs.saveValue(
+            PrefType.string,
+            "idOrderWorking",
+            widget.id,
+          );
+          await SharedPrefs.saveValue(
+            PrefType.string,
+            "acceptedAt",
+            acceptedAt,
+          );
           SnackBarHelper.showSuccess(context, "Nhận đơn thành công!");
           context.read<SelectedTabProvider>().setIndex(0);
           context.go(TechnicianRouterConfig.homeTechnician);
         }
-      } else if (_typeOrder == 'book' || (_typeOrder == 'automatic-matching' && _subTypeOrder == 'book')) {
-        final data = {'orderId': widget.id, 'result': 'approved', 'noteTechnician': message };
+      } else if (_typeOrder == 'book' ||
+          (_typeOrder == 'automatic-matching' && _subTypeOrder == 'book')) {
+        final data = {
+          'orderId': widget.id,
+          'result': 'approved',
+          'noteTechnician': message,
+        };
         final response = await _orderService.updateStatus(data);
         if (response['success'] == true) {
           if (!mounted) return;
@@ -331,7 +419,10 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
       if (success) {
         SnackBarHelper.showSuccess(context, "Ứng tuyển đơn việc thành công!");
       } else {
-        SnackBarHelper.showError(context, provider.errorMessage ?? "Ứng tuyển thất bại!");
+        SnackBarHelper.showError(
+          context,
+          provider.errorMessage ?? "Ứng tuyển thất bại!",
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -341,6 +432,105 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
       if (!mounted) return;
       appLog("Apply order error: $e");
       SnackBarHelper.showError(context, "Ứng tuyển đơn việc thất bại: $e");
+    }
+  }
+
+  Future<void> _showRejectEntrustOrderDialog(String idOrder) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        _openDialogContexts.add(dialogContext);
+        return SpaDialog(
+          iconColor: ColorConfig.textError,
+          title: 'Từ chối',
+          body: 'Xác nhận từ chối đơn việc đã được giao?',
+          cancelLabel: 'Đóng',
+          confirmLabel: 'Từ chối',
+          confirmColor: ColorConfig.textError,
+          onConfirm: () {
+            // Navigator.pop(dialogContext, true);
+          },
+        );
+      },
+    );
+
+    _openDialogContexts.removeWhere((c) => !c.mounted);
+
+    if (result != true || !mounted) return;
+
+    // Loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (loadingCtx) {
+        _openDialogContexts.add(loadingCtx);
+        return Center(
+          child: CircularProgressIndicator(color: ColorConfig.primary),
+        );
+      },
+    );
+    // return;
+
+    try {
+      final response = await _orderApplicationService.rejectEntrustOrder({
+        "orderId": widget.id,
+      });
+
+      appLog("response: $response");
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      _openDialogContexts.removeWhere((c) => !c.mounted);
+
+      if (!mounted) return;
+
+      if (response['success']) {
+        context.pop();
+        SnackBarHelper.showSuccess(context, "Từ chối đơn việc thành công!");
+      } else {
+        SnackBarHelper.showError(
+          context,
+          response['message'] ?? "Từ chối thất bại!",
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      _openDialogContexts.removeWhere((c) => !c.mounted);
+      if (!mounted) return;
+      appLog("Apply order error: $e");
+      SnackBarHelper.showError(context, "Ứng tuyển đơn việc thất bại: $e");
+    }
+  }
+
+  Future<void> loadCheckWorkingOrder() async {
+    final provider = Provider.of<OrderProvider>(context, listen: false);
+
+    try {
+      setState(() {
+        _errorMessage = '';
+      });
+
+      final success = await provider.checkWorkingOrder();
+
+      if (success) {
+        setState(() {
+          isWorking = provider.workingOrder["isWorking"] ?? false;
+          // appLog("orderDetail: ${provider.workingOrder}");
+        });
+      } else {
+        setState(() {
+          _errorMessage =
+              provider.errorMessage ?? 'Không thể lấy thông tin đơn hàng';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+
+      appLog('Error check working order: $e');
     }
   }
 
@@ -363,7 +553,8 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
   // ─── UI helpers ──────────────────────────────────────────────────────────────
 
   Map<String, dynamic>? get _pricing => _orderDetails?['pricing'];
-  Map<String, dynamic>? get _serviceTimePrice => _orderDetails?['serviceTimePrice'];
+  Map<String, dynamic>? get _serviceTimePrice =>
+      _orderDetails?['serviceTimePrice'];
   Map<String, dynamic>? get _customer => _orderDetails?['customer'];
 
   Widget _buildSection(String? title, Widget child, {IconData? icon}) {
@@ -418,14 +609,14 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
   }
 
   Widget _buildPriceRow(
-      String label,
-      int amount, {
-        bool isTotal = false,
-        bool isAdd = false,
-        bool isRemove = false,
-        bool toolTip = false,
-        String? textToolTip,
-      }) {
+    String label,
+    int amount, {
+    bool isTotal = false,
+    bool isAdd = false,
+    bool isRemove = false,
+    bool toolTip = false,
+    String? textToolTip,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -438,9 +629,10 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                 style: TextStyle(
                   fontSize: isTotal ? 16 : 14,
                   fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
-                  color: isTotal
-                      ? ColorConfig.primary
-                      : ColorConfig.textBlack.withOpacity(0.8),
+                  color:
+                      isTotal
+                          ? ColorConfig.primary
+                          : ColorConfig.textBlack.withOpacity(0.8),
                 ),
               ),
               if (toolTip && textToolTip != null) ...[
@@ -450,7 +642,10 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                   triggerMode: TooltipTriggerMode.tap,
                   preferBelow: false,
                   waitDuration: const Duration(milliseconds: 100),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   margin: const EdgeInsets.symmetric(horizontal: 20),
                   textStyle: const TextStyle(
                     color: Colors.white,
@@ -484,11 +679,12 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                 style: TextStyle(
                   fontSize: isTotal ? 16 : 14,
                   fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-                  color: isTotal || isAdd
-                      ? ColorConfig.primary
-                      : isRemove
-                      ? ColorConfig.textError
-                      : ColorConfig.textBlack,
+                  color:
+                      isTotal || isAdd
+                          ? ColorConfig.primary
+                          : isRemove
+                          ? ColorConfig.textError
+                          : ColorConfig.textBlack,
                 ),
               ),
             ],
@@ -571,15 +767,25 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
     }
 
     final order = _orderDetails!;
+    // appLog("Detail order: ${order}");
     final status = order['status'] ?? '';
     final isPrioritize = order['isPrioritize'] ?? false;
     const double allBorderRadius = 20;
-    bool isViewCustomer = (status == 'done' || (status == 'approved' && (order["typeOrder"] == 'book' || (order["typeOrder"] == 'automatic-matching' && order["subTypeOrder"] == 'book'))));
+    // appLog("Status order: $status - ${order["typeOrder"]} - ${order["subTypeOrder"]}");
+    bool firstCondition = status == 'done';
+    // bool secondCondition = status == 'approved' && (order["typeOrder"] == 'book' || (order["typeOrder"] == 'automatic-matching' && (order["subTypeOrder"] == 'book') || order["subTypeOrder"] == 'now'));
+    bool secondCondition = status == 'approved';
+    // bool isViewCustomer = (status == 'done' || (status == 'approved' && (order["typeOrder"] == 'book' || (order["typeOrder"] == 'automatic-matching' && order["subTypeOrder"] == 'book'))));
+    bool isViewCustomer = firstCondition || secondCondition;
+    // appLog("isViewCustomer: $isViewCustomer");
 
     // Điều kiện hiển thị bottom bar hành động
-    final bool showActionBar = widget.isNewOrder && status == 'pending' && !_isExpired;
+    final bool showActionBar =
+        widget.isNewOrder && status == 'pending' && !_isExpired;
     // appLog("${status}");
     // appLog("$showActionBar | ${widget.isNewOrder} : ${status == 'pending'} : ${!_isExpired}");
+
+    final pricing = order["pricing"];
 
     return Scaffold(
       backgroundColor: ColorConfig.primaryBackground,
@@ -609,388 +815,1378 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
       ),
       body: Column(
         children: [
+          // Container(
+          //   padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+          //   child: OrderProgressTimeline(statusOrderNow: order["status"]),
+          // ),
           // ── Scrollable content ──────────────────────────────────────────────
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
               child: Column(
                 children: [
                   // Order header card
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: ColorConfig.white,
-                      borderRadius: BorderRadius.circular(allBorderRadius),
-                      border: Border.all(
-                        color: ColorConfig.primary.withOpacity(0.08),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        // Header strip
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: ColorConfig.primary,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(allBorderRadius),
-                              topRight: Radius.circular(allBorderRadius),
-                            ),
+                  if (widget.isEntrust) ...[
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                            spreadRadius: 0,
                           ),
-                          child: Row(
-                            children: [
-                              if (isPrioritize)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFFFFB74D),
-                                        Color(0xFFFF9800)
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(30),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Header - Gradient với hiệu ứng đẹp
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  ColorConfig.primary,
+                                  ColorConfig.primary.withOpacity(0.8),
+                                ],
+                              ),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(20),
+                                topRight: Radius.circular(20),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                // Badge nhỏ
+                                // Container(
+                                //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                //   decoration: BoxDecoration(
+                                //     color: Colors.white.withOpacity(0.2),
+                                //     borderRadius: BorderRadius.circular(20),
+                                //   ),
+                                //   child: Row(
+                                //     mainAxisSize: MainAxisSize.min,
+                                //     children: [
+                                //       Icon(
+                                //         Icons.notifications_active_rounded,
+                                //         size: 14,
+                                //         color: Colors.white,
+                                //       ),
+                                //       const SizedBox(width: 6),
+                                //       Text(
+                                //         "YÊU CẦU XÁC NHẬN",
+                                //         style: TextStyle(
+                                //           fontSize: 11,
+                                //           fontWeight: FontWeight.w600,
+                                //           color: Colors.white,
+                                //           letterSpacing: 0.8,
+                                //         ),
+                                //       ),
+                                //     ],
+                                //   ),
+                                // ),
+                                // const SizedBox(height: 12),
+                                Text(
+                                  "Đơn việc đã được giao cho bạn",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
                                   ),
+                                ),
+                                // const SizedBox(height: 6),
+                                Text(
+                                  "Vui lòng xác nhận hoặc hủy đơn trong",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white.withOpacity(0.85),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                // Timer với style đặc biệt
+                                Container(
+                                  // padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                                  // decoration: BoxDecoration(
+                                  //   color: Colors.white.withOpacity(0.15),
+                                  //   borderRadius: BorderRadius.circular(30),
+                                  //   border: Border.all(
+                                  //     color: Colors.white.withOpacity(0.2),
+                                  //     width: 1,
+                                  //   ),
+                                  // ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
-                                    children: const [
-                                      Icon(Icons.flash_on,
-                                          size: 16, color: Colors.white),
-                                      SizedBox(width: 4),
+                                    children: [
+
                                       Text(
-                                        'Ưu tiên',
+                                        _entrustExpired ? '00:00' : _formatDuration(_entrustRemainingTime),
                                         style: TextStyle(
+                                          fontSize: 22,
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 12,
+                                          letterSpacing: 1,
+                                          fontFeatures: const [FontFeature.tabularFigures()],
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  OrderHelper.displayTypeOrder(
-                                      order['typeOrder']),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                    color: ColorConfig.textWhite,
-                                  ),
-                                ),
-                              ),
-                              // Countdown timer
-                              if (widget.isNewOrder)
-                                Text(
-                                  _formatDuration(_remainingTime),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: _remainingTime.inSeconds <= 60
-                                        ? Colors.red.shade200
-                                        : Colors.white,
-                                  ),
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
 
-                        // Body
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              // Service name + duration
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                          // Body - Thông tin chi tiết
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Khách hàng & SĐT
+                                Column(
+                                  children: [
+                                    Row(
                                       children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                order['nameService'] ?? '',
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                                maxLines: 1,
-                                                overflow:
-                                                TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            if (_serviceTimePrice != null) ...[
-                                              const SizedBox(width: 10),
-                                              Container(
-                                                padding:
-                                                const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 5),
-                                                decoration: BoxDecoration(
-                                                  color: ColorConfig.primary
-                                                      .withOpacity(0.08),
-                                                  borderRadius:
-                                                  BorderRadius.circular(
-                                                      30),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons.schedule_rounded,
-                                                      size: 14,
-                                                      color:
-                                                      ColorConfig.primary,
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      '${_serviceTimePrice!['duration']} phút',
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        color: ColorConfig
-                                                            .primary,
-                                                        fontWeight:
-                                                        FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ],
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: ColorConfig.primary.withOpacity(0.08),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Icon(
+                                            Icons.person_rounded,
+                                            size: 20,
+                                            color: ColorConfig.primary,
+                                          ),
                                         ),
-                                        const SizedBox(height: 8),
-                                        const DashedDivider(),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            order["genderCustomer"] == "female"
+                                                ? "Khách nữ"
+                                                : "Khách nam",
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        ),
+                                        CopyableText(
+                                          text: order["phoneCustomer"] ?? "",
+                                          icon: Icons.call_rounded,
+                                          successMessage:
+                                          "Đã sao chép số điện thoại ${order["phoneCustomer"] ?? ""}",
+                                        ),
                                       ],
                                     ),
-                                  ),
-                                ],
-                              ),
 
-                              // Customer info
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                    const SizedBox(height: 10),
+
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        if(status != 'done') ...[
+                                        Icon(
+                                          Icons.location_on_rounded,
+                                          size: 18,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            order["address"] ?? "",
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.grey.shade600,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+
+                                // const SizedBox(height: 16),
+                                // Divider(
+                                //   color: Colors.grey.shade200,
+                                //   height: 1,
+                                // ),
+                                // const SizedBox(height: 16),
+                                const SizedBox(height: 8),
+                                const DashedDivider(),
+                                const SizedBox(height: 8),
+
+                                // Dịch vụ
+                                // Row(
+                                //   children: [
+                                //     Container(
+                                //       padding: const EdgeInsets.all(8),
+                                //       decoration: BoxDecoration(
+                                //         color: ColorConfig.primary.withOpacity(.1),
+                                //         borderRadius: BorderRadius.circular(10),
+                                //       ),
+                                //       child: Icon(
+                                //         Icons.build_rounded,
+                                //         size: 20,
+                                //         color: ColorConfig.primary,
+                                //       ),
+                                //     ),
+                                //     const SizedBox(width: 12),
+                                //     Expanded(
+                                //       child: Column(
+                                //         crossAxisAlignment: CrossAxisAlignment.start,
+                                //         children: [
+                                //           Text(
+                                //             order['nameService'] ?? '',
+                                //             style: const TextStyle(
+                                //               fontSize: 16,
+                                //               fontWeight: FontWeight.w700,
+                                //               color: Colors.black87,
+                                //             ),
+                                //             maxLines: 1,
+                                //             overflow: TextOverflow.ellipsis,
+                                //           ),
+                                //           if (_serviceTimePrice != null)
+                                //             Container(
+                                //               margin: const EdgeInsets.only(top: 4),
+                                //               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                //               decoration: BoxDecoration(
+                                //                 color: Colors.blue.shade50,
+                                //                 borderRadius: BorderRadius.circular(12),
+                                //               ),
+                                //               child: Row(
+                                //                 mainAxisSize: MainAxisSize.min,
+                                //                 children: [
+                                //                   Icon(
+                                //                     Icons.schedule_rounded,
+                                //                     size: 12,
+                                //                     color: Colors.blue.shade600,
+                                //                   ),
+                                //                   const SizedBox(width: 4),
+                                //                   Text(
+                                //                     '${_serviceTimePrice!['duration']} phút',
+                                //                     style: TextStyle(
+                                //                       fontSize: 11,
+                                //                       color: Colors.blue.shade600,
+                                //                       fontWeight: FontWeight.w600,
+                                //                     ),
+                                //                   ),
+                                //                 ],
+                                //               ),
+                                //             ),
+                                //         ],
+                                //       ),
+                                //     ),
+                                //   ],
+                                // ),
+
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        order['nameService'] ??
+                                            '',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight:
+                                          FontWeight.w700,
+                                        ),
+                                        maxLines: 1,
+                                        overflow:
+                                        TextOverflow
+                                            .ellipsis,
+                                      ),
+                                    ),
+                                    if (_serviceTimePrice !=
+                                        null) ...[
+                                      const SizedBox(width: 10),
+                                      Container(
+                                        padding:
+                                        const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: ColorConfig
+                                              .primary
+                                              .withOpacity(
+                                            0.08,
+                                          ),
+                                          borderRadius:
+                                          BorderRadius.circular(
+                                            30,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons
+                                                  .schedule_rounded,
+                                              size: 14,
+                                              color:
+                                              ColorConfig
+                                                  .primary,
+                                            ),
+                                            const SizedBox(
+                                              width: 4,
+                                            ),
+                                            Text(
+                                              '${_serviceTimePrice!['duration']} phút',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color:
+                                                ColorConfig
+                                                    .primary,
+                                                fontWeight:
+                                                FontWeight
+                                                    .w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                const DashedDivider(),
+                                const SizedBox(height: 12),
+
+                                // const SizedBox(height: 16),
+                                // Divider(
+                                //   color: Colors.grey.shade200,
+                                //   height: 1,
+                                // ),
+                                // const SizedBox(height: 16),
+
+                                // Thanh toán
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
                                           Text(
-                                            status != 'done'
-                                                ? (_customer?["gender"] ==
-                                                "male"
-                                                ? "Khách hàng nam"
-                                                : "Khách hàng nữ")
-                                                : (_customer?["fullname"] ??
-                                                "Chưa có tên"),
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w700,
+                                            'Tổng thanh toán',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade700,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            "${FormatHelper.formatPrice(pricing["finalAmount"] ?? 0)} đ",
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              color: ColorConfig.primary,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.5,
                                             ),
                                           ),
                                         ],
-                                        if(isViewCustomer) ...[
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
                                           Text(
-                                            (_customer?["fullname"] ?? "Chưa có tên"),
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w700,
+                                            'Thu nhập dự kiến',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade700,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
-                                        ],
-                                        // Text(
-                                        //   status != 'done'
-                                        //       ? (_customer?["gender"] ==
-                                        //       "male"
-                                        //       ? "Khách hàng nam"
-                                        //       : "Khách hàng nữ")
-                                        //       : (_customer?["fullname"] ??
-                                        //       "Chưa có tên"),
-                                        //   style: const TextStyle(
-                                        //     fontSize: 16,
-                                        //     fontWeight: FontWeight.w700,
-                                        //   ),
-                                        // ),
-                                        const SizedBox(height: 8),
-                                        if (status == 'done') ...[
                                           Row(
                                             children: [
-                                              Icon(Icons.wc_rounded,
-                                                  size: 16,
-                                                  color:
-                                                  Colors.grey.shade600),
-                                              const SizedBox(width: 6),
+                                              Icon(
+                                                Icons.trending_up_rounded,
+                                                size: 16,
+                                                color: Colors.green.shade600,
+                                              ),
+                                              const SizedBox(width: 4),
                                               Text(
-                                                _customer?["gender"] ==
-                                                    "male"
-                                                    ? "Nam"
-                                                    : "Nữ",
+                                                "${FormatHelper.formatPrice(pricing["technicianReceiveAmount"] ?? 0)} đ",
                                                 style: TextStyle(
-                                                    fontSize: 13,
-                                                    color:
-                                                    Colors.grey.shade700),
+                                                  fontSize: 18,
+                                                  color: Colors.green.shade700,
+                                                  fontWeight: FontWeight.bold,
+                                                  letterSpacing: 0.5,
+                                                ),
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 6),
                                         ],
-                                        Row(
-                                          children: [
-                                            Icon(Icons.phone_outlined,
-                                                size: 16,
-                                                color: Colors.grey.shade600),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              !isViewCustomer ? "Chưa hiển thị" : (_customer?["phone"] ?? "Chưa có SĐT"),
-                                              style: TextStyle(
-                                                  fontSize: 13,
-                                                  color:
-                                                  Colors.grey.shade700),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Row(
-                                          crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                          children: [
-                                            Icon(Icons.location_on_outlined,
-                                                size: 16,
-                                                color: Colors.grey.shade600),
-                                            const SizedBox(width: 6),
-                                            Expanded(
-                                              child: Text(
-                                                order['address'] ?? '',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  height: 1.5,
-                                                  color:
-                                                  Colors.grey.shade800,
-                                                ),
-                                                softWrap: true,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        const DashedDivider(),
-                                        const SizedBox(height: 6),
+                                      ),
+                                    ],
+                                  ),
+                                ),
 
-                                        // Notes section
-                                        if ((order['noteCustomer'] != null &&
-                                            order['noteCustomer']
-                                                .toString()
-                                                .isNotEmpty) ||
-                                            (order['noteTechnician'] !=
-                                                null &&
-                                                order['noteTechnician']
-                                                    .toString()
-                                                    .isNotEmpty) ||
-                                            (order['reasonReject'] != null &&
-                                                order['reasonReject']
-                                                    .toString()
-                                                    .isNotEmpty)) ...[
-                                          const Text(
-                                            'Ghi chú',
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 10),
-                                          if (order['noteCustomer'] != null &&
-                                              order['noteCustomer']
-                                                  .toString()
-                                                  .isNotEmpty)
-                                            _buildNoteItem('Khách hàng',
-                                                order['noteCustomer']),
-                                          if (order['noteTechnician'] !=
-                                              null &&
-                                              order['noteTechnician']
-                                                  .toString()
-                                                  .isNotEmpty)
-                                            _buildNoteItem(
-                                                'KTV', order['noteTechnician']),
-                                          if (order['reasonReject'] != null &&
-                                              order['reasonReject']
-                                                  .toString()
-                                                  .isNotEmpty)
-                                            _buildNoteItem('Lý do từ chối',
-                                                order['reasonReject']),
-                                        ],
-                                      ],
+                                const SizedBox(height: 16),
+
+                                // Ghi chú
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.amber.shade200,
+                                      width: 1,
                                     ),
                                   ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.sticky_note_2_rounded,
+                                            size: 16,
+                                            color: Colors.amber.shade700,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Ghi chú của khách',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.amber.shade800,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        (order['noteCustomer']?.toString().trim().isNotEmpty ?? false)
+                                            ? order['noteCustomer']
+                                            : 'Khách không để lại ghi chú gì...',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey.shade700,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
 
-                  const SizedBox(height: 8),
+                                const SizedBox(height: 20),
 
-                  // Pricing card
-                  if (_pricing != null)
-                    _buildSection(
-                      'Chi tiết hóa đơn',
-                      Column(
-                        children: [
-                          _buildPriceRow(
-                              'Tổng thanh toán',
-                              _pricing!['finalAmount'] ?? 0,
-                              isTotal: true),
-                          _buildPriceRow(
-                              'Giá dịch vụ', _pricing!['serviceAmount'] ?? 0),
-                          if ((_pricing!['discountAmount'] ?? 0) > 0)
-                            _buildPriceRow(
-                                'Ưu đãi', -(_pricing!['discountAmount'] ?? 0),
-                                isRemove: true),
-                          if ((_pricing!['extraAmount'] ?? 0) > 0)
-                            _buildPriceRow('Phụ phí hỗ trợ',
-                                _pricing!['extraAmount'] ?? 0,
-                                isAdd: true),
-                          if ((_pricing!['platformFeePercent'] ?? 0) > 0)
-                            _buildPriceRow(
-                              'Phí nền tảng',
-                              _pricing!['platformFeeAmount'] ?? 0,
-                              isRemove: true,
-                              toolTip: true,
-                              textToolTip:
-                              "Khoản phí nền tảng được áp dụng cho mỗi đơn dịch vụ.\nPhí nền tảng áp dụng cho đơn dịch vụ này là: ${FormatHelper.formatPrice(_pricing!['platformFeeAmount'])}đ (${_pricing!['platformFeePercent']}%)",
+                                // Lưu ý
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.blue.shade100,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline_rounded,
+                                        size: 18,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          'Sau khi nhận đơn, vui lòng di chuyển đến địa chỉ khách hàng trong thời gian sớm nhất. Đảm bảo an toàn trên đường di chuyển.',
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            color: Colors.grey.shade700,
+                                            height: 1.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                          const Divider(height: 20, thickness: 1),
-                          _buildPriceRow(
-                            status == "done"
-                                ? 'Số tiền thực nhận'
-                                : 'Thu nhập dự kiến',
-                            _pricing!['technicianReceiveAmount'] ?? 0,
-                            isAdd: true,
-                            isTotal: true,
                           ),
                         ],
                       ),
-                      icon: Icons.receipt_long,
                     ),
+                    // Container(
+                    //   width: double.infinity,
+                    //   decoration: BoxDecoration(
+                    //     borderRadius: BorderRadius.circular(allBorderRadius),
+                    //   ),
+                    //   child: Column(
+                    //     children: [
+                    //       Container(
+                    //         width: double.infinity,
+                    //         decoration: BoxDecoration(
+                    //           boxShadow: [
+                    //             BoxShadow(
+                    //               color: Colors.black.withOpacity(0.03),
+                    //               blurRadius: 10,
+                    //               offset: const Offset(0, 4),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //         child: Column(
+                    //           crossAxisAlignment: CrossAxisAlignment.center,
+                    //           children: [
+                    //             Container(
+                    //               width: double.infinity,
+                    //               padding: EdgeInsets.symmetric(
+                    //                 vertical: 10,
+                    //                 horizontal: 12,
+                    //               ),
+                    //               decoration: BoxDecoration(
+                    //                 color: ColorConfig.primary,
+                    //
+                    //                 boxShadow: [
+                    //                   BoxShadow(
+                    //                     color: Colors.black.withOpacity(0.03),
+                    //                     blurRadius: 10,
+                    //                     offset: const Offset(0, 4),
+                    //                   ),
+                    //                 ],
+                    //               ),
+                    //               child: Column(
+                    //                 crossAxisAlignment:
+                    //                     CrossAxisAlignment.center,
+                    //                 children: [
+                    //                   Text(
+                    //                     "Đơn việc đã được giao cho bạn",
+                    //                     style: TextStyle(
+                    //                       fontSize: 18,
+                    //                       fontWeight: FontWeight.bold,
+                    //                       color: ColorConfig.textWhite,
+                    //                     ),
+                    //                   ),
+                    //                   // const SizedBox(height: 8),
+                    //                   Text(
+                    //                     "Vui lòng xác nhận hoặc hủy đơn trong",
+                    //                     style: TextStyle(
+                    //                       fontSize: 14,
+                    //                       color: ColorConfig.textWhite,
+                    //                     ),
+                    //                   ),
+                    //                   const SizedBox(height: 8),
+                    //                   Text(
+                    //                     _entrustExpired
+                    //                         ? '00:00'
+                    //                         : _formatDuration(
+                    //                           _entrustRemainingTime,
+                    //                         ),
+                    //                     style: TextStyle(
+                    //                       fontSize: 22,
+                    //                       color: ColorConfig.white,
+                    //                       fontWeight: FontWeight.bold,
+                    //                     ),
+                    //                   ),
+                    //                 ],
+                    //               ),
+                    //             ),
+                    //
+                    //             Container(
+                    //               width: double.infinity,
+                    //               padding: EdgeInsets.symmetric(
+                    //                 vertical: 10,
+                    //                 horizontal: 12,
+                    //               ),
+                    //               decoration: BoxDecoration(
+                    //                 color: ColorConfig.white,
+                    //                 boxShadow: [
+                    //                   BoxShadow(
+                    //                     color: Colors.black.withOpacity(0.03),
+                    //                     blurRadius: 10,
+                    //                     offset: const Offset(0, 4),
+                    //                   ),
+                    //                 ],
+                    //               ),
+                    //               child: Column(
+                    //                 crossAxisAlignment:
+                    //                     CrossAxisAlignment.center,
+                    //                 children: [
+                    //                   Row(
+                    //                     crossAxisAlignment:
+                    //                         CrossAxisAlignment.start,
+                    //                     children: [
+                    //                       Expanded(
+                    //                         child: Column(
+                    //                           crossAxisAlignment:
+                    //                               CrossAxisAlignment.start,
+                    //                           children: [
+                    //                             // KHÁCH HÀNG
+                    //                             Row(
+                    //                               children: [
+                    //                                 Icon(
+                    //                                   Icons.person,
+                    //                                   size: 18,
+                    //                                   color:
+                    //                                       Colors.grey.shade500,
+                    //                                 ),
+                    //                                 const SizedBox(width: 4),
+                    //                                 Text(
+                    //                                   "${order["genderCustomer"] == "female" ? "Khách nữ" : "Khách nam"}",
+                    //                                   style: TextStyle(
+                    //                                     fontSize: 14,
+                    //                                     fontWeight:
+                    //                                         FontWeight.bold,
+                    //                                     color: Colors.black,
+                    //                                   ),
+                    //                                 ),
+                    //                                 const Spacer(),
+                    //                                 CopyableText(
+                    //                                   text:
+                    //                                       order["phoneCustomer"] ??
+                    //                                       "",
+                    //                                   icon: Icons.call,
+                    //                                   successMessage:
+                    //                                       "Đã sao chép số điện thoại ${order["phoneCustomer"] ?? ""}",
+                    //                                 ),
+                    //                               ],
+                    //                             ),
+                    //
+                    //                             // ĐỊA CHỈ
+                    //                             Row(
+                    //                               children: [
+                    //                                 Icon(
+                    //                                   Icons.location_on,
+                    //                                   size: 18,
+                    //                                   color:
+                    //                                       Colors.grey.shade500,
+                    //                                 ),
+                    //                                 const SizedBox(width: 4),
+                    //                                 Text(
+                    //                                   order["address"] ?? "",
+                    //                                   style: TextStyle(
+                    //                                     fontSize: 14,
+                    //                                     fontWeight:
+                    //                                         FontWeight.w500,
+                    //                                     color: Colors.black,
+                    //                                   ),
+                    //                                 ),
+                    //                               ],
+                    //                             ),
+                    //                             const SizedBox(height: 8),
+                    //                             const DashedDivider(),
+                    //                             const SizedBox(height: 8),
+                    //                             Row(
+                    //                               children: [
+                    //                                 Expanded(
+                    //                                   child: Text(
+                    //                                     order['nameService'] ??
+                    //                                         '',
+                    //                                     style: const TextStyle(
+                    //                                       fontSize: 16,
+                    //                                       fontWeight:
+                    //                                           FontWeight.w700,
+                    //                                     ),
+                    //                                     maxLines: 1,
+                    //                                     overflow:
+                    //                                         TextOverflow
+                    //                                             .ellipsis,
+                    //                                   ),
+                    //                                 ),
+                    //                                 if (_serviceTimePrice !=
+                    //                                     null) ...[
+                    //                                   const SizedBox(width: 10),
+                    //                                   Container(
+                    //                                     padding:
+                    //                                         const EdgeInsets.symmetric(
+                    //                                           horizontal: 10,
+                    //                                           vertical: 5,
+                    //                                         ),
+                    //                                     decoration: BoxDecoration(
+                    //                                       color: ColorConfig
+                    //                                           .primary
+                    //                                           .withOpacity(
+                    //                                             0.08,
+                    //                                           ),
+                    //                                       borderRadius:
+                    //                                           BorderRadius.circular(
+                    //                                             30,
+                    //                                           ),
+                    //                                     ),
+                    //                                     child: Row(
+                    //                                       children: [
+                    //                                         Icon(
+                    //                                           Icons
+                    //                                               .schedule_rounded,
+                    //                                           size: 14,
+                    //                                           color:
+                    //                                               ColorConfig
+                    //                                                   .primary,
+                    //                                         ),
+                    //                                         const SizedBox(
+                    //                                           width: 4,
+                    //                                         ),
+                    //                                         Text(
+                    //                                           '${_serviceTimePrice!['duration']} phút',
+                    //                                           style: TextStyle(
+                    //                                             fontSize: 12,
+                    //                                             color:
+                    //                                                 ColorConfig
+                    //                                                     .primary,
+                    //                                             fontWeight:
+                    //                                                 FontWeight
+                    //                                                     .w600,
+                    //                                           ),
+                    //                                         ),
+                    //                                       ],
+                    //                                     ),
+                    //                                   ),
+                    //                                 ],
+                    //                               ],
+                    //                             ),
+                    //                             const SizedBox(height: 8),
+                    //                             const DashedDivider(),
+                    //                             const SizedBox(height: 4),
+                    //
+                    //                             //Tổng thanh toán:
+                    //                             Row(
+                    //                               mainAxisAlignment:
+                    //                                   MainAxisAlignment
+                    //                                       .spaceBetween,
+                    //                               children: [
+                    //                                 Text(
+                    //                                   'Tổng thanh toán',
+                    //                                   style: TextStyle(
+                    //                                     fontSize: 14,
+                    //                                     color: Colors.black,
+                    //                                   ),
+                    //                                 ),
+                    //                                 Text(
+                    //                                   "${FormatHelper.formatPrice(pricing["finalAmount"] ?? 0)} đ",
+                    //                                   style: TextStyle(
+                    //                                     fontSize: 18,
+                    //                                     color:
+                    //                                         ColorConfig.primary,
+                    //                                     fontWeight:
+                    //                                         FontWeight.bold,
+                    //                                   ),
+                    //                                 ),
+                    //                               ],
+                    //                             ),
+                    //
+                    //                             // Thu nhập dự kiến
+                    //                             Row(
+                    //                               mainAxisAlignment:
+                    //                                   MainAxisAlignment
+                    //                                       .spaceBetween,
+                    //                               children: [
+                    //                                 Text(
+                    //                                   'Thu nhập dự kiến',
+                    //                                   style: TextStyle(
+                    //                                     fontSize: 14,
+                    //                                     color: Colors.black,
+                    //                                   ),
+                    //                                 ),
+                    //                                 Text(
+                    //                                   "${FormatHelper.formatPrice(pricing["technicianReceiveAmount"] ?? 0)} đ",
+                    //
+                    //                                   style: TextStyle(
+                    //                                     fontSize: 18,
+                    //                                     color:
+                    //                                         ColorConfig.primary,
+                    //                                     fontWeight:
+                    //                                         FontWeight.bold,
+                    //                                   ),
+                    //                                 ),
+                    //                               ],
+                    //                             ),
+                    //                             Text(
+                    //                               'Ghi chú của khách',
+                    //                               style: TextStyle(
+                    //                                 fontSize: 13,
+                    //                                 color: Colors.grey.shade500,
+                    //                               ),
+                    //                             ),
+                    //                             const SizedBox(height: 6),
+                    //                             Container(
+                    //                               width: double.infinity,
+                    //                               padding:
+                    //                                   const EdgeInsets.symmetric(
+                    //                                     horizontal: 12,
+                    //                                     vertical: 9,
+                    //                                   ),
+                    //                               decoration: BoxDecoration(
+                    //                                 color: Colors.grey.shade50,
+                    //                                 borderRadius:
+                    //                                     BorderRadius.circular(
+                    //                                       8,
+                    //                                     ),
+                    //                                 border: Border(
+                    //                                   left: BorderSide(
+                    //                                     color:
+                    //                                         ColorConfig.primary,
+                    //                                     width: 3,
+                    //                                   ),
+                    //                                 ),
+                    //                               ),
+                    //                               child: Text(
+                    //                                 (order['noteCustomer']
+                    //                                             ?.toString()
+                    //                                             .trim()
+                    //                                             .isNotEmpty ??
+                    //                                         false)
+                    //                                     ? order['noteCustomer']
+                    //                                     : 'Khách không để lại ghi chú gì...',
+                    //                                 style: TextStyle(
+                    //                                   fontSize: 13,
+                    //                                   color:
+                    //                                       ColorConfig.textBlack,
+                    //                                 ),
+                    //                               ),
+                    //                             ),
+                    //                           ],
+                    //                         ),
+                    //                       ),
+                    //                     ],
+                    //                   ),
+                    //                 ],
+                    //               ),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //       ),
+                    //
+                    //       const SizedBox(height: 20),
+                    //       Container(
+                    //         width: double.infinity,
+                    //         padding: const EdgeInsets.all(14),
+                    //         decoration: BoxDecoration(
+                    //           color: ColorConfig.white,
+                    //           borderRadius: BorderRadius.circular(
+                    //             allBorderRadius,
+                    //           ),
+                    //           border: Border.all(
+                    //             color: Colors.grey.shade200,
+                    //             width: 0.5,
+                    //           ),
+                    //         ),
+                    //         child: Column(
+                    //           crossAxisAlignment: CrossAxisAlignment.start,
+                    //           children: [
+                    //             Row(
+                    //               children: [
+                    //                 Icon(
+                    //                   Icons.info_outline_rounded,
+                    //                   size: 16,
+                    //                   color: Colors.amber.shade700,
+                    //                 ),
+                    //                 const SizedBox(width: 6),
+                    //                 const Text(
+                    //                   'Lưu ý',
+                    //                   style: TextStyle(
+                    //                     fontSize: 14,
+                    //                     fontWeight: FontWeight.bold,
+                    //                   ),
+                    //                 ),
+                    //               ],
+                    //             ),
+                    //             const SizedBox(height: 8),
+                    //             Text(
+                    //               'Sau khi nhận đơn, vui lòng di chuyển đến địa chỉ khách hàng trong thời gian sớm nhất. Đảm bảo an toàn trên đường di chuyển.',
+                    //               style: TextStyle(
+                    //                 fontSize: 14,
+                    //                 color: Colors.grey.shade600,
+                    //                 height: 1.6,
+                    //               ),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                  ] else ...[
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: ColorConfig.white,
+                        borderRadius: BorderRadius.circular(allBorderRadius),
+                        border: Border.all(
+                          color: ColorConfig.primary.withOpacity(0.08),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Header strip
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: ColorConfig.primary,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(allBorderRadius),
+                                topRight: Radius.circular(allBorderRadius),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                if (isPrioritize)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFFFFB74D),
+                                          Color(0xFFFF9800),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: const [
+                                        Icon(
+                                          Icons.flash_on,
+                                          size: 16,
+                                          color: Colors.white,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Ưu tiên',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    OrderHelper.displayTypeOrder(
+                                      order['typeOrder'],
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.5,
+                                      color: ColorConfig.textWhite,
+                                    ),
+                                  ),
+                                ),
+                                // Countdown timer
+                                if (widget.isNewOrder)
+                                  Text(
+                                    _formatDuration(_remainingTime),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          _remainingTime.inSeconds <= 60
+                                              ? Colors.red.shade200
+                                              : Colors.white,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+
+                          // Body
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                // Service name + duration
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  order['nameService'] ?? '',
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              if (_serviceTimePrice !=
+                                                  null) ...[
+                                                const SizedBox(width: 10),
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 5,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: ColorConfig.primary
+                                                        .withOpacity(0.08),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          30,
+                                                        ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.schedule_rounded,
+                                                        size: 14,
+                                                        color:
+                                                            ColorConfig.primary,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        '${_serviceTimePrice!['duration']} phút',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color:
+                                                              ColorConfig
+                                                                  .primary,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          const DashedDivider(),
+                                          const SizedBox(height: 4),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Customer info
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          if (status != 'done' &&
+                                              !isViewCustomer) ...[
+                                            Text(
+                                              status != 'done'
+                                                  ? (_customer?["gender"] ==
+                                                          "male"
+                                                      ? "Khách nam"
+                                                      : "Khách nữ")
+                                                  : (_customer?["fullname"] ??
+                                                      "Chưa có tên"),
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                          if (isViewCustomer) ...[
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  _customer?["fullname"] ??
+                                                      "Chưa có tên",
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  "(${_customer?["gender"] == "male" ? "Khách nam" : "Khách nữ"})",
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.black,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                          // Text(
+                                          //   status != 'done'
+                                          //       ? (_customer?["gender"] ==
+                                          //       "male"
+                                          //       ? "Khách hàng nam"
+                                          //       : "Khách hàng nữ")
+                                          //       : (_customer?["fullname"] ??
+                                          //       "Chưa có tên"),
+                                          //   style: const TextStyle(
+                                          //     fontSize: 16,
+                                          //     fontWeight: FontWeight.w700,
+                                          //   ),
+                                          // ),
+                                          // const SizedBox(height: 8),
+                                          if (status == 'done') ...[
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.wc_rounded,
+                                                  size: 16,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  _customer?["gender"] == "male"
+                                                      ? "Nam"
+                                                      : "Nữ",
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.grey.shade700,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                          ],
+                                          // Row(
+                                          //   children: [
+                                          //     Icon(
+                                          //       Icons.phone_outlined,
+                                          //       size: 16,
+                                          //       color: Colors.grey.shade600,
+                                          //     ),
+                                          //     const SizedBox(width: 6),
+                                          //     Text(
+                                          //       !isViewCustomer ? "Chưa hiển thị" : (_customer?["phone"] ?? "Chưa có SĐT"),
+                                          //       style: TextStyle(
+                                          //         fontSize: 13,
+                                          //         color: Colors.grey.shade700,
+                                          //       ),
+                                          //     ),
+                                          //   ],
+                                          // ),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.phone_outlined,
+                                                size: 16,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                              const SizedBox(width: 6),
+
+                                              Expanded(
+                                                child: Text(
+                                                  !isViewCustomer
+                                                      ? "Chưa hiển thị"
+                                                      : (_customer?["phone"] ??
+                                                          "Chưa có SĐT"),
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.grey.shade700,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+
+                                              if (isViewCustomer &&
+                                                  _customer?["phone"] != null &&
+                                                  (_customer?["phone"]
+                                                          as String)
+                                                      .isNotEmpty)
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.copy,
+                                                    size: 18,
+                                                  ),
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                  padding: EdgeInsets.zero,
+                                                  constraints:
+                                                      const BoxConstraints(),
+                                                  onPressed: () async {
+                                                    await Clipboard.setData(
+                                                      ClipboardData(
+                                                        text:
+                                                            _customer!["phone"],
+                                                      ),
+                                                    );
+
+                                                    if (context.mounted) {
+                                                      SnackBarHelper.showSuccess(
+                                                        context,
+                                                        "Đã sao chép số điện thoại",
+                                                      );
+                                                    }
+                                                  },
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Icon(
+                                                Icons.location_on_outlined,
+                                                size: 16,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  order['address'] ?? '',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    height: 1.5,
+                                                    color: Colors.grey.shade800,
+                                                  ),
+                                                  softWrap: true,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          const DashedDivider(),
+                                          const SizedBox(height: 6),
+
+                                          // Notes section
+                                          if ((order['noteCustomer'] != null &&
+                                                  order['noteCustomer']
+                                                      .toString()
+                                                      .isNotEmpty) ||
+                                              (order['noteTechnician'] !=
+                                                      null &&
+                                                  order['noteTechnician']
+                                                      .toString()
+                                                      .isNotEmpty) ||
+                                              (order['reasonReject'] != null &&
+                                                  order['reasonReject']
+                                                      .toString()
+                                                      .isNotEmpty)) ...[
+                                            const Text(
+                                              'Ghi chú',
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            if (order['noteCustomer'] != null &&
+                                                order['noteCustomer']
+                                                    .toString()
+                                                    .isNotEmpty)
+                                              _buildNoteItem(
+                                                'Khách hàng',
+                                                order['noteCustomer'],
+                                              ),
+                                            if (order['noteTechnician'] !=
+                                                    null &&
+                                                order['noteTechnician']
+                                                    .toString()
+                                                    .isNotEmpty)
+                                              _buildNoteItem(
+                                                'KTV',
+                                                order['noteTechnician'],
+                                              ),
+                                            if (order['reasonReject'] != null &&
+                                                order['reasonReject']
+                                                    .toString()
+                                                    .isNotEmpty)
+                                              _buildNoteItem(
+                                                'Lý do từ chối',
+                                                order['reasonReject'],
+                                              ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Pricing card
+                    if (_pricing != null)
+                      _buildSection(
+                        'Chi tiết hóa đơn',
+                        Column(
+                          children: [
+                            _buildPriceRow(
+                              'Tổng thanh toán',
+                              _pricing!['finalAmount'] ?? 0,
+                              isTotal: true,
+                            ),
+                            _buildPriceRow(
+                              'Giá dịch vụ',
+                              _pricing!['serviceAmount'] ?? 0,
+                            ),
+                            if ((_pricing!['discountAmount'] ?? 0) > 0)
+                              _buildPriceRow(
+                                'Ưu đãi',
+                                -(_pricing!['discountAmount'] ?? 0),
+                                isRemove: true,
+                              ),
+                            if ((_pricing!['extraAmount'] ?? 0) > 0)
+                              _buildPriceRow(
+                                'Phụ phí hỗ trợ',
+                                _pricing!['extraAmount'] ?? 0,
+                                isAdd: true,
+                              ),
+                            if ((_pricing!['platformFeePercent'] ?? 0) > 0)
+                              _buildPriceRow(
+                                'Phí nền tảng',
+                                _pricing!['platformFeeAmount'] ?? 0,
+                                isRemove: true,
+                                toolTip: true,
+                                textToolTip:
+                                    "Khoản phí nền tảng được áp dụng cho mỗi đơn dịch vụ.\nPhí nền tảng áp dụng cho đơn dịch vụ này là: ${FormatHelper.formatPrice(_pricing!['platformFeeAmount'])}đ (${_pricing!['platformFeePercent']}%)",
+                              ),
+                            const Divider(height: 20, thickness: 1),
+                            _buildPriceRow(
+                              status == "done"
+                                  ? 'Số tiền thực nhận'
+                                  : 'Thu nhập dự kiến',
+                              _pricing!['technicianReceiveAmount'] ?? 0,
+                              isAdd: true,
+                              isTotal: true,
+                            ),
+                          ],
+                        ),
+                        icon: Icons.receipt_long,
+                      ),
+                  ],
                 ],
               ),
             ),
@@ -999,7 +2195,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
           // ── Action bar ──────────────────────────────────────────────────────
           if (showActionBar)
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -1015,6 +2211,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                   // Nút từ chối (ẩn với automatic-matching)
                   if (_typeOrder != 'automatic-matching') ...[
                     Expanded(
+                      flex: 1, // Chiếm 1 phần
                       child: OutlinedButton(
                         onPressed: () async {
                           String? reason;
@@ -1034,8 +2231,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                             },
                           );
 
-                          _openDialogContexts
-                              .removeWhere((c) => !c.mounted);
+                          _openDialogContexts.removeWhere((c) => !c.mounted);
 
                           if (reason != null && mounted) {
                             context.pop({'success': true, 'id': widget.id});
@@ -1045,7 +2241,8 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           side: BorderSide(color: Colors.red.shade300),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(40)),
+                            borderRadius: BorderRadius.circular(40),
+                          ),
                         ),
                         child: Text(
                           'Từ chối',
@@ -1060,22 +2257,55 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                     const SizedBox(width: 12),
                   ],
 
-                  // Nút hành động chính (Nhận việc / Ứng tuyển)
+                  // Nút từ chối cho entrust
+                  if (widget.isEntrust) ...[
+                    Expanded(
+                      flex: 1, // Chiếm 1 phần
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          await _showRejectEntrustOrderDialog(widget.id);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: BorderSide(color: Colors.red.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(40),
+                          ),
+                        ),
+                        child: Text(
+                          'Từ chối',
+                          style: TextStyle(
+                            color: Colors.red.shade600,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+
+                  // Nút hành động chính (Nhận việc / Ứng tuyển) - Chiếm 2 phần
                   Expanded(
+                    flex: 2, // Chiếm 2 phần
                     child: ElevatedButton(
-                      onPressed: _canHandleOrder
-                          ? () {
-                        if (_isAdminCreate) {
-                          _showConfirmApplyJobDialog(widget.id);
+                      onPressed: () {
+                        if (_canHandleOrder) {
+                          if (widget.isEntrust) {
+                            _showAcceptOrderDialog();
+                          } else if (_isAdminCreate) {
+                            _showConfirmApplyJobDialog(widget.id);
+                          } else {
+                            _showAcceptOrderDialog();
+                          }
                         } else {
-                          _showAcceptOrderDialog();
+                          appLog("Here!");
                         }
-                      }
-                          : null,
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: ColorConfig.primary,
-                        disabledBackgroundColor:
-                        ColorConfig.primary.withOpacity(0.4),
+                        disabledBackgroundColor: ColorConfig.primary
+                            .withOpacity(0.4),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(40),

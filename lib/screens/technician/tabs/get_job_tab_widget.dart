@@ -37,6 +37,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
   bool isWorking = false;
   final Map<String, Timer> _timers = {};
   Timer? _countdownTimer;
+  List<dynamic> listRequestEntrust = [];
 
   List<dynamic> listJobs = [];
   List<dynamic> filteredJobs = [];
@@ -58,23 +59,16 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      loadCheckWorkingOrder();
+      loadRequestEntrustOrder();
+    });
+
     _loadAllServices();
     _loadBookOrders();
     _startCountdownTimer();
 
-    // _realtimeService = RealtimeService(
-    //   onOrderRemoved: (orderId) {
-    //     if (!mounted) return;
-    //     setState(() {
-    //       listJobs.removeWhere((e) => e['_id'] == orderId);
-    //       _remainingTimes.remove(orderId);
-    //       _applyFilter();
-    //     });
-    //   },
-    //   onNewOrderAutoMatching: _handleNewOrder,
-    // );
-    //
-    // _realtimeService.connect();
     _searchController.addListener(() {
       if (mounted) {
         setState(() {});
@@ -99,11 +93,28 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
     _realtimeService.init(context: context);
   }
 
+  Future<void> loadRequestEntrustOrder() async {
+    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+
+    final bool success = await orderProvider.requestEntrustOrder();
+
+    if (success) {
+      setState(() {
+        listRequestEntrust = orderProvider.listTechnicianRequestEntrust;
+        appLog("Data list request entrust: $listRequestEntrust");
+        _applyFilter();
+      });
+
+      // appLog("Lấy danh sách đơn việc được giao thành công");
+    } else {
+      appLog("Lấy danh sách đơn việc được giao thất bại");
+    }
+  }
+
   void _handleNewOrder(Map<String, dynamic> payload) {
     // Lấy order thật
-    final Map<String, dynamic> actualOrder = (payload['data'] is Map<String, dynamic>)
-        ? payload['data']
-        : payload;
+    final Map<String, dynamic> actualOrder =
+        (payload['data'] is Map<String, dynamic>) ? payload['data'] : payload;
 
     // appLog("Data new order: $actualOrder");
 
@@ -115,7 +126,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
 
     // Tránh duplicate order
     final bool alreadyExists = listJobs.any(
-          (o) => o['_id']?.toString() == orderId,
+      (o) => o['_id']?.toString() == orderId,
     );
 
     if (alreadyExists) return;
@@ -144,8 +155,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
     setState(() {
       listJobs.insert(0, actualOrder);
 
-      if (initialRemaining != null &&
-          initialRemaining!.inSeconds > 0) {
+      if (initialRemaining != null && initialRemaining!.inSeconds > 0) {
         _remainingTimes[orderId] = initialRemaining!;
       }
     });
@@ -156,38 +166,40 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
 
   void _applyFilter() {
     final now = DateTime.now();
-    final newFiltered = listJobs.where((job) {
-      // Filter by service
-      if (_selectedServiceId != 'all' && job['serviceId'] != _selectedServiceId) {
-        return false;
-      }
+    final newFiltered =
+        listJobs.where((job) {
+          // Filter by service
+          if (_selectedServiceId != 'all' &&
+              job['serviceId'] != _selectedServiceId) {
+            return false;
+          }
 
-      // Filter by address
-      if (_searchAddress.isNotEmpty) {
-        final address = (job['address'] ?? '').toString().toLowerCase();
-        final searchLower = _searchAddress.toLowerCase();
-        if (!address.contains(searchLower)) {
-          return false;
-        }
-      }
+          // Filter by address
+          if (_searchAddress.isNotEmpty) {
+            final address = (job['address'] ?? '').toString().toLowerCase();
+            final searchLower = _searchAddress.toLowerCase();
+            if (!address.contains(searchLower)) {
+              return false;
+            }
+          }
 
-      // Filter by time (based on service duration)
-      if (_selectedTimeFilter != 'all') {
-        final serviceDuration = job['serviceDuration'] ?? 0;
-        final maxDuration = int.parse(_selectedTimeFilter);
-        if (serviceDuration > maxDuration) {
-          return false;
-        }
-      }
+          // Filter by time (based on service duration)
+          if (_selectedTimeFilter != 'all') {
+            final serviceDuration = job['serviceDuration'] ?? 0;
+            final maxDuration = int.parse(_selectedTimeFilter);
+            if (serviceDuration > maxDuration) {
+              return false;
+            }
+          }
 
-      // Filter expired orders
-      final expiresAtStr = job['expiresAt'];
-      if (expiresAtStr != null && expiresAtStr is String) {
-        final expiryTime = DateTime.parse(expiresAtStr);
-        if (expiryTime.isBefore(now)) return false;
-      }
-      return true;
-    }).toList();
+          // Filter expired orders
+          final expiresAtStr = job['expiresAt'];
+          if (expiresAtStr != null && expiresAtStr is String) {
+            final expiryTime = DateTime.parse(expiresAtStr);
+            if (expiryTime.isBefore(now)) return false;
+          }
+          return true;
+        }).toList();
 
     if (mounted) {
       setState(() {
@@ -238,6 +250,37 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
         });
         _timers[orderId] = timer;
       }
+    }
+  }
+
+  Future<void> loadCheckWorkingOrder() async {
+    final provider = Provider.of<OrderProvider>(context, listen: false);
+
+    try {
+      setState(() {
+        _errorMessage = '';
+      });
+
+      final success = await provider.checkWorkingOrder();
+
+      if (success) {
+        setState(() {
+          isWorking = provider.workingOrder["isWorking"] ?? false;
+          // appLog("orderDetail: $isWorking"); // true
+          // appLog("orderDetail: ${provider.workingOrder}");
+        });
+      } else {
+        setState(() {
+          _errorMessage =
+              provider.errorMessage ?? 'Không thể lấy thông tin đơn hàng';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+
+      appLog('Error check working order: $e');
     }
   }
 
@@ -322,12 +365,13 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
   }
 
   Future<void> _loadAllServices() async {
-    isWorking = await SharedPrefs.getValue(PrefType.bool, "isWorking") ?? false;
+    // isWorking = await SharedPrefs.getValue(PrefType.bool, "isWorking") ?? false;
 
     try {
       final response = await _serviceService.listService();
       setState(() {
         allServices = response['data'];
+        // appLog("List service: $allServices");
       });
     } catch (e) {
       appLog("Error loading services: $e");
@@ -341,19 +385,22 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
         _errorMessage = '';
       });
 
-      final queryParams = 'status=pending&typeOrder=automatic-matching&timeRange=2d';
+      final queryParams =
+          'status=pending&typeOrder=automatic-matching&timeRange=2d';
       final response = await _orderService.listFilterOrder(queryParams);
+      // appLog("response : $response");
 
       if (response['success'] == true) {
         final newOrders = response['data'] ?? [];
         final now = DateTime.now();
 
-        final validOrders = newOrders.where((job) {
-          final expiresAtStr = job['expiresAt'];
-          if (expiresAtStr == null || expiresAtStr is! String) return true;
-          final expiryTime = DateTime.parse(expiresAtStr);
-          return expiryTime.isAfter(now);
-        }).toList();
+        final validOrders =
+            newOrders.where((job) {
+              final expiresAtStr = job['expiresAt'];
+              if (expiresAtStr == null || expiresAtStr is! String) return true;
+              final expiryTime = DateTime.parse(expiresAtStr);
+              return expiryTime.isAfter(now);
+            }).toList();
 
         setState(() {
           listJobs = List.from(validOrders);
@@ -373,7 +420,9 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
           _applyFilter();
         });
       } else {
-        throw Exception(response['message'] ?? 'Không thể tải danh sách đơn đặt trước');
+        throw Exception(
+          response['message'] ?? 'Không thể tải danh sách đơn đặt trước',
+        );
       }
     } catch (e) {
       setState(() {
@@ -402,10 +451,13 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
     }
   }
 
-  Future<void> _acceptOrderWithMessage(Map<String, dynamic> order, String message) async {
+  Future<void> _acceptOrderWithMessage(
+    Map<String, dynamic> order,
+    String message,
+  ) async {
     try {
       final idOrder = order["_id"];
-      if (order['subTypeOrder'] == 'now' ) {
+      if (order['subTypeOrder'] == 'now') {
         final data = {
           'orderId': idOrder,
           'result': 'approved',
@@ -418,22 +470,30 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
           final acceptedAt = DateTime.now().toIso8601String();
           await SharedPrefs.saveValue(PrefType.string, "orderDetail", order);
           await SharedPrefs.saveValue(PrefType.bool, "isWorking", true);
-          await SharedPrefs.saveValue(PrefType.string, "idOrderWorking", idOrder);
-          await SharedPrefs.saveValue(PrefType.string, "acceptedAt", acceptedAt);
+          await SharedPrefs.saveValue(
+            PrefType.string,
+            "idOrderWorking",
+            idOrder,
+          );
+          await SharedPrefs.saveValue(
+            PrefType.string,
+            "acceptedAt",
+            acceptedAt,
+          );
           SnackBarHelper.showSuccess(context, "Nhận đơn thành công!");
           // context.go(TechnicianRouterConfig.homeTechnician);
           context.read<SelectedTabProvider>().setIndex(0);
           context.go(TechnicianRouterConfig.homeTechnician);
         }
       } else if (order['subTypeOrder'] == 'book') {
-        final data = {
-          'orderId': idOrder,
-          'result': 'approved'
-        };
+        final data = {'orderId': idOrder, 'result': 'approved'};
         final response = await _orderService.updateStatus(data);
         if (response['success'] == true) {
           if (!mounted) return;
-          SnackBarHelper.showSuccess(context, "Nhận đơn việc đặt trước thành công!");
+          SnackBarHelper.showSuccess(
+            context,
+            "Nhận đơn việc đặt trước thành công!",
+          );
           setState(() {
             listJobs.removeWhere((e) => e['_id'] == idOrder);
             _remainingTimes.remove(idOrder);
@@ -472,17 +532,18 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
   Future<void> _showConfirmApplyJobDialog(String idOrder) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => SpaDialog(
-        iconColor: ColorConfig.primary,
-        title: 'Xác nhận ứng tuyển đơn việc',
-        body: 'Bạn có chắc chắn muốn ứng tuyển đơn dịch vụ này không?',
-        cancelLabel: 'Hủy',
-        confirmLabel: 'Ứng tuyển',
-        confirmColor: ColorConfig.primary,
-        onConfirm: () {
-          // Navigator.pop(dialogContext, true);
-        },
-      ),
+      builder:
+          (dialogContext) => SpaDialog(
+            iconColor: ColorConfig.primary,
+            title: 'Xác nhận ứng tuyển đơn việc',
+            body: 'Bạn có chắc chắn muốn ứng tuyển đơn dịch vụ này không?',
+            cancelLabel: 'Hủy',
+            confirmLabel: 'Ứng tuyển',
+            confirmColor: ColorConfig.primary,
+            onConfirm: () {
+              // Navigator.pop(dialogContext, true);
+            },
+          ),
     );
 
     if (result != true || !mounted) return;
@@ -490,11 +551,10 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(
-        child: CircularProgressIndicator(
-          color: ColorConfig.primary,
-        ),
-      ),
+      builder:
+          (_) => Center(
+            child: CircularProgressIndicator(color: ColorConfig.primary),
+          ),
     );
 
     try {
@@ -511,10 +571,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
       if (!mounted) return;
 
       if (success) {
-        SnackBarHelper.showSuccess(
-          context,
-          "Ứng tuyển đơn việc thành công!",
-        );
+        SnackBarHelper.showSuccess(context, "Ứng tuyển đơn việc thành công!");
       } else {
         SnackBarHelper.showError(
           context,
@@ -531,10 +588,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
 
       appLog("Apply order error: $e");
 
-      SnackBarHelper.showError(
-        context,
-        "Ứng tuyển đơn việc thất bại: $e",
-      );
+      SnackBarHelper.showError(context, "Ứng tuyển đơn việc thất bại: $e");
     }
   }
 
@@ -570,10 +624,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
                   // Service filter
                   const Text(
                     'Dịch vụ',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -592,10 +643,12 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
                             value: 'all',
                             child: Text('Tất cả'),
                           ),
-                          ...?allServices?.map((service) => DropdownMenuItem(
-                            value: service['_id'],
-                            child: Text(service['name'] ?? 'Không tên'),
-                          )),
+                          ...?allServices?.map(
+                            (service) => DropdownMenuItem(
+                              value: service['_id'],
+                              child: Text(service['name'] ?? 'Không tên'),
+                            ),
+                          ),
                         ],
                         onChanged: (value) {
                           setStateBottomSheet(() {
@@ -652,9 +705,7 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
                           ),
                           child: Text(
                             'Áp dụng',
-                            style: TextStyle(
-                              color: ColorConfig.textWhite
-                            ),
+                            style: TextStyle(color: ColorConfig.textWhite),
                           ),
                         ),
                       ),
@@ -670,21 +721,6 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
       },
     );
   }
-
-  // String _formatRemainingTime(Duration duration) {
-  //   if (duration.isNegative) return 'Đã hết hạn';
-  //   final days = duration.inDays;
-  //   final hours = duration.inHours.remainder(24);
-  //   final minutes = duration.inMinutes.remainder(60);
-  //   final seconds = duration.inSeconds.remainder(60);
-  //   if (days > 0) {
-  //     return '$days ngày ${hours.toString().padLeft(2, '0')}h';
-  //   } else if (hours > 0) {
-  //     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}h';
-  //   } else {
-  //     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  //   }
-  // }
 
   String _formatRemainingTime(Duration d) {
     if (d.isNegative) return '00:00';
@@ -708,7 +744,14 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
     return Scaffold(
       backgroundColor: ColorConfig.primaryBackground,
       body: RefreshIndicator(
-        onRefresh: _loadBookOrders,
+        // onRefresh: _loadBookOrders,
+        onRefresh: () async {
+          await _loadAllServices();
+          await _loadBookOrders();
+          await loadRequestEntrustOrder();
+        },
+        backgroundColor: ColorConfig.primaryBackground,
+        color: ColorConfig.primary,
         child: SafeArea(
           child: Column(
             children: [
@@ -752,22 +795,23 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
                               vertical: 14,
                             ),
 
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                              icon: Icon(
-                                Icons.clear,
-                                size: 20,
-                                color: Colors.grey.shade500,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _searchController.clear();
-                                  _searchAddress = '';
-                                  _applyFilter();
-                                });
-                              },
-                            )
-                                : null,
+                            suffixIcon:
+                                _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                      icon: Icon(
+                                        Icons.clear,
+                                        size: 20,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _searchController.clear();
+                                          _searchAddress = '';
+                                          _applyFilter();
+                                        });
+                                      },
+                                    )
+                                    : null,
                           ),
                         ),
                       ),
@@ -801,15 +845,16 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
                       ),
                       child: IconButton(
                         onPressed: _showFilterBottomSheet,
-                        icon: const Icon(Icons.filter_list, color: Colors.white),
+                        icon: const Icon(
+                          Icons.filter_list,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              Expanded(
-                child: _buildBody(),
-              ),
+              Expanded(child: _buildBody()),
             ],
           ),
         ),
@@ -817,6 +862,313 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
     );
   }
 
+  // ─── Entrust Section ──────────────────────────────────────────────────────
+  Widget _buildEntrustCard(Map<String, dynamic> entrust) {
+    final order = entrust['orderId'] as Map<String, dynamic>? ?? {};
+    final orderId = order['_id']?.toString() ?? '';
+    final nameService = order['nameService'] ?? 'Dịch vụ';
+    final address = order['address'] ?? '';
+    final workingHours = order['workingHours'] ?? '';
+    final subTypeOrder = order['subTypeOrder'] ?? '';
+    final pricing = order['pricing'] as Map<String, dynamic>? ?? {};
+    final technicianReceiveAmount = pricing['technicianReceiveAmount'] ?? 0;
+
+    // Tính thời gian còn lại của entrust
+    final expiresAtStr = entrust['expiresAt']?.toString();
+    Duration? remaining;
+    if (expiresAtStr != null) {
+      try {
+        final expires = DateTime.parse(expiresAtStr).toLocal();
+        remaining = expires.difference(DateTime.now());
+        if (remaining.isNegative) remaining = Duration.zero;
+      } catch (_) {}
+    }
+
+    return GestureDetector(
+      onTap: () async {
+        if (orderId.isEmpty) return;
+        await context.push(
+          '${TechnicianRouterConfig.detailsOrder}/$orderId',
+          extra: {
+            'isEntrust': true,
+            'isNewOrder': true,
+            'orderExpiredAt': entrust['expiresAt'],
+
+          },
+        );
+        // Reload danh sách sau khi quay lại
+        loadRequestEntrustOrder();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: ColorConfig.primary.withOpacity(0.35),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: ColorConfig.primary.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header strip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ColorConfig.primary,
+                    ColorConfig.primary.withOpacity(0.75),
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(14),
+                  topRight: Radius.circular(14),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.assignment_turned_in_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 6),
+                  const Expanded(
+                    child: Text(
+                      'Việc được giao',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  if (remaining != null && remaining > Duration.zero)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.timer_outlined,
+                            size: 13,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatRemainingTime(remaining),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // Body
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Tên dịch vụ
+                  Text(
+                    nameService,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+
+                  // Địa chỉ
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 15,
+                        color: Colors.grey.shade500,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          address,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  if (workingHours.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 15,
+                          color: Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          workingHours,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+
+                  const SizedBox(height: 8),
+
+                  // Thu nhập + loại đơn
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Text(
+                          '${FormatHelper.formatPrice(technicianReceiveAmount)} đ',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ColorConfig.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          subTypeOrder == 'now' ? 'Ngay' : 'Hẹn giờ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: ColorConfig.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Xem chi tiết',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: ColorConfig.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 16,
+                        color: ColorConfig.primary,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEntrustSection() {
+    if (listRequestEntrust.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: ColorConfig.primary,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Các việc được giao',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: ColorConfig.primary,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${listRequestEntrust.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...listRequestEntrust.map(
+            (e) => _buildEntrustCard(e as Map<String, dynamic>),
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  // ─── Body ─────────────────────────────────────────────────────────────────
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -833,7 +1185,11 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
                 color: Colors.red.shade50,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+              child: Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Colors.red.shade400,
+              ),
             ),
             const SizedBox(height: 24),
             Text(
@@ -847,7 +1203,10 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: ColorConfig.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
@@ -859,90 +1218,176 @@ class _JobApplicationTabState extends State<JobApplicationTab> {
       );
     }
 
-    // if (filteredJobs.isEmpty) {
-    //   return Center(
-    //     child: Column(
-    //       mainAxisAlignment: MainAxisAlignment.center,
-    //       children: [
-    //         Container(
-    //           padding: const EdgeInsets.all(20),
-    //           decoration: BoxDecoration(
-    //             color: Colors.grey.shade100,
-    //             shape: BoxShape.circle,
-    //           ),
-    //           child: Icon(
-    //             _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
-    //                 ? Icons.inbox_outlined
-    //                 : Icons.search_off_rounded,
-    //             size: 48,
-    //             color: Colors.grey.shade400,
-    //           ),
-    //         ),
-    //         const SizedBox(height: 16),
-    //         Text(
-    //           _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
-    //               ? 'Không có đơn việc nào'
-    //               : 'Không tìm thấy đơn việc',
-    //           style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
-    //         ),
-    //         const SizedBox(height: 8),
-    //         Text(
-    //           _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
-    //               ? 'Hãy kiểm tra lại sau'
-    //               : 'Hãy thử thay đổi bộ lọc tìm kiếm',
-    //           style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
-    //         ),
-    //       ],
-    //     ),
-    //   );
-    // }
-
+    // Khi danh sách jobs trống nhưng có entrust → hiển thị entrust + empty widget
     if (filteredJobs.isEmpty) {
-      // ✅ Dùng EmptyRefreshWidget thay vì Center thông thường
+      if (listRequestEntrust.isNotEmpty) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildEntrustSection(),
+              const SizedBox(height: 8),
+              // Section header đơn mới
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade400,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Các đơn việc mới',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 220,
+                child: EmptyRefreshWidget(
+                  onRefresh: _loadBookOrders,
+                  title:
+                      _selectedServiceId == 'all' &&
+                              _searchAddress.isEmpty &&
+                              _selectedTimeFilter == 'all'
+                          ? 'Hiện tại chưa có đơn việc nào'
+                          : 'Không tìm thấy đơn việc',
+                  subTitle: "Nơi này khá trống trải...!",
+                  icon:
+                      _selectedServiceId == 'all' &&
+                              _searchAddress.isEmpty &&
+                              _selectedTimeFilter == 'all'
+                          ? Icons.inbox_outlined
+                          : Icons.search_off_rounded,
+                  buttonText: 'Tải lại',
+                  heightFactor: 1,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
       return EmptyRefreshWidget(
         onRefresh: _loadBookOrders,
-        title: _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
-            ? 'Hiện tại chưa có đơn việc nào'
-            : 'Không tìm thấy đơn việc',
+        title:
+            _selectedServiceId == 'all' &&
+                    _searchAddress.isEmpty &&
+                    _selectedTimeFilter == 'all'
+                ? 'Hiện tại chưa có đơn việc nào'
+                : 'Không tìm thấy đơn việc',
         subTitle: "Nơi này khá trống trải...!",
-        icon: _selectedServiceId == 'all' && _searchAddress.isEmpty && _selectedTimeFilter == 'all'
-            ? Icons.inbox_outlined
-            : Icons.search_off_rounded,
+        icon:
+            _selectedServiceId == 'all' &&
+                    _searchAddress.isEmpty &&
+                    _selectedTimeFilter == 'all'
+                ? Icons.inbox_outlined
+                : Icons.search_off_rounded,
         buttonText: 'Tải lại',
-        heightFactor: 0.65,  // Có thể điều chỉnh theo ý muốn
+        heightFactor: 0.65,
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filteredJobs.length,
-      itemBuilder: (context, index) {
-        final job = filteredJobs[index];
-        final orderId = job['_id'];
-        final remainingTime = _remainingTimes[orderId] ?? Duration.zero;
+    // Có cả 2 danh sách → dùng CustomScrollView để ghép
+    return CustomScrollView(
+      slivers: [
+        // Section: Các việc được giao
+        if (listRequestEntrust.isNotEmpty)
+          SliverToBoxAdapter(child: _buildEntrustSection()),
 
-        return JobCard(
-          isWorking: isWorking,
-          job: job,
-          remainingTime: remainingTime,
-          onAccept: () => _acceptJob(job),
-          onTap: () async {
-            final result = await context.push(
-              '${TechnicianRouterConfig.detailsOrder}/${orderId}',
-              extra: true,
-            );
-            if (result != null && result is Map && result['success'] == true) {
-              setState(() {
-                listJobs.removeWhere((e) => e['_id'] == orderId);
-                _remainingTimes.remove(orderId);
-                _applyFilter();
-              });
-            }
-          },
-          formatRemainingTime: _formatRemainingTime,
-          getTimerColor: _getTimerColor,
-        );
-      },
+        // Section header: Các đơn việc mới
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: ColorConfig.primary,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Các đơn việc mới',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: ColorConfig.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${filteredJobs.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Danh sách đơn mới
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final job = filteredJobs[index];
+              final orderId = job['_id'];
+              final remainingTime = _remainingTimes[orderId] ?? Duration.zero;
+
+              return JobCard(
+                isWorking: isWorking,
+                job: job,
+                remainingTime: remainingTime,
+                onAccept: () => _acceptJob(job),
+                onTap: () async {
+                  final result = await context.push(
+                    '${TechnicianRouterConfig.detailsOrder}/${orderId}',
+                    extra: {
+                      'isEntrust': false,
+                      'isNewOrder': true,
+                    },
+                  );
+                  if (result != null &&
+                      result is Map &&
+                      result['success'] == true) {
+                    setState(() {
+                      listJobs.removeWhere((e) => e['_id'] == orderId);
+                      _remainingTimes.remove(orderId);
+                      _applyFilter();
+                    });
+                  }
+                },
+                formatRemainingTime: _formatRemainingTime,
+                getTimerColor: _getTimerColor,
+              );
+            }, childCount: filteredJobs.length),
+          ),
+        ),
+      ],
     );
   }
 }
