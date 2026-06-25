@@ -273,6 +273,7 @@
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 				30018B7ADE4E3CF87060E1A2 /* GoogleService-Info.plist in Resources */,
+				AA11BB22CC33DD44EE55FF66 /* notification.caf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
