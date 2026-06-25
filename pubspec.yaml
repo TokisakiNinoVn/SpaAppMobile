@@ -73,7 +73,9 @@ flutter:
     - lib/assets/
     - lib/assets/data/tinhthanh.json
     - lib/assets/data/cities.json
-    - assets/audio/notification.caf
+    - assets/audios/notification.caf
+    - assets/audios/
+    - assets/
   fonts:
     - family: Roboto
       fonts:
