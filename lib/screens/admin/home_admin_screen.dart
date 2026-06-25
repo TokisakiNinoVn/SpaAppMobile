@@ -56,52 +56,47 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    return ExitAppWrapper (
+    return ExitAppWrapper(
       child: Scaffold(
-          body: SafeArea(child: _pages[_selectedIndex]),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: _onItemTapped,
-            selectedItemColor: ColorConfig.primary,
-            unselectedItemColor: ColorConfig.unselectedItemColor,
-            type: BottomNavigationBarType.fixed,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home),
-                label: 'Home',
-              ),
+        backgroundColor: ColorConfig.primaryBackground,
+        body: SafeArea(child: _pages[_selectedIndex]),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          selectedItemColor: ColorConfig.primary,
+          unselectedItemColor: ColorConfig.unselectedItemColor,
+          type: BottomNavigationBarType.fixed,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
 
-              // BottomNavigationBarItem(
-              //   icon: Icon(Icons.calendar_today),
-              //   label: 'Dịch vụ',
-              // ),
-              //
-              // BottomNavigationBarItem(
-              //   icon: Icon(Icons.manage_accounts_sharp),
-              //   label: 'Tài khoản',
-              // ),
+            // BottomNavigationBarItem(
+            //   icon: Icon(Icons.calendar_today),
+            //   label: 'Dịch vụ',
+            // ),
+            //
+            // BottomNavigationBarItem(
+            //   icon: Icon(Icons.manage_accounts_sharp),
+            //   label: 'Tài khoản',
+            // ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.assignment_turned_in),
+              label: 'Phê duyệt',
+            ),
 
-              BottomNavigationBarItem(
-                icon: Icon(Icons.assignment_turned_in),
-                label: 'Phê duyệt',
-              ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings),
+              label: 'QL Chung',
+            ),
 
-              BottomNavigationBarItem(
-                icon: Icon(Icons.settings),
-                label: 'QL Chung',
-              ),
-
-              BottomNavigationBarItem(
-                icon: Icon(Icons.account_circle_rounded),
-                label: 'Admin',
-              ),
-            ],
-          ),
-        )
+            BottomNavigationBarItem(
+              icon: Icon(Icons.account_circle_rounded),
+              label: 'Admin',
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

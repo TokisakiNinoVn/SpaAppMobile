@@ -32,9 +32,9 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
   List<dynamic> allServices = [];
 
   // Filter state
-  String _statusQuery = 'pending';
+  String _statusQuery = 'all';
   String _searchKeyword = '';
-  String? _selectedServiceId;   // null = Tất cả dịch vụ
+  String? _selectedServiceId; // null = Tất cả dịch vụ
   DateTime _selectedDate = DateTime.now();
 
   @override
@@ -66,6 +66,7 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
         parts.add('serviceId=$_selectedServiceId');
       }
       final queryParams = parts.join('&');
+      appLog('Query params: $queryParams');
 
       final provider = context.read<OrderProvider>();
       final success = await provider.loadListPostOrderAdmin(queryParams);
@@ -113,11 +114,12 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
       _listPost = List.from(_originalListPost);
     } else {
       final keyword = _searchKeyword.toLowerCase();
-      _listPost = _originalListPost.where((order) {
-        final phone = (order['phoneCustomer'] ?? '').toLowerCase();
-        final address = (order['address'] ?? '').toLowerCase();
-        return phone.contains(keyword) || address.contains(keyword);
-      }).toList();
+      _listPost =
+          _originalListPost.where((order) {
+            final phone = (order['phoneCustomer'] ?? '').toLowerCase();
+            final address = (order['address'] ?? '').toLowerCase();
+            return phone.contains(keyword) || address.contains(keyword);
+          }).toList();
     }
   }
 
@@ -145,7 +147,7 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
     final picked = await showDateOfBirthPickerBottomSheet(
       context: context,
       initialDate: _selectedDate,
-      minimumDate: DateTime(2000),      // Có thể điều chỉnh theo nhu cầu
+      minimumDate: DateTime(2000), // Có thể điều chỉnh theo nhu cầu
       maximumDate: DateTime(2100),
       title: "Chọn ngày",
     );
@@ -181,8 +183,8 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
 
   bool get _hasActiveFilters =>
       _statusQuery != 'pending' ||
-          _selectedServiceId != null ||
-          !_isSameDay(_selectedDate, DateTime.now());
+      _selectedServiceId != null ||
+      !_isSameDay(_selectedDate, DateTime.now());
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
@@ -240,16 +242,17 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
                       color: Colors.grey,
                       size: 20,
                     ),
-                    suffixIcon: _searchKeyword.isNotEmpty
-                        ? GestureDetector(
-                      onTap: _clearSearch,
-                      child: const Icon(
-                        Icons.cancel_rounded,
-                        color: Colors.grey,
-                        size: 18,
-                      ),
-                    )
-                        : null,
+                    suffixIcon:
+                        _searchKeyword.isNotEmpty
+                            ? GestureDetector(
+                              onTap: _clearSearch,
+                              child: const Icon(
+                                Icons.cancel_rounded,
+                                color: Colors.grey,
+                                size: 18,
+                              ),
+                            )
+                            : null,
                     isDense: true,
                     contentPadding: EdgeInsets.zero,
                     border: OutlineInputBorder(
@@ -320,35 +323,33 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
 
           // ── List ────────────────────────────────────────────────────
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _listPost.isEmpty
-                ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.inbox_outlined,
-                    size: 80,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    "Không có bài đăng nào",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
+            child:
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _listPost.isEmpty
+                    ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inbox_outlined,
+                            size: 80,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            "Không có bài đăng nào",
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    )
+                    : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                      itemCount: _listPost.length,
+                      itemBuilder:
+                          (context, index) => _buildOrderCard(_listPost[index]),
                     ),
-                  ),
-                ],
-              ),
-            )
-                : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              itemCount: _listPost.length,
-              itemBuilder: (context, index) =>
-                  _buildOrderCard(_listPost[index]),
-            ),
           ),
         ],
       ),
@@ -389,19 +390,21 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
     final options = {
       'pending': 'Đang chờ',
       'expired': 'Hết hạn',
+      'done': 'Hoàn thành',
       'all': 'Tất cả',
     };
 
     return _buildDropdownChip<String>(
       value: _statusQuery,
-      items: options.entries
-          .map(
-            (e) => DropdownMenuItem(
-          value: e.key,
-          child: Text(e.value, style: const TextStyle(fontSize: 13)),
-        ),
-      )
-          .toList(),
+      items:
+          options.entries
+              .map(
+                (e) => DropdownMenuItem(
+                  value: e.key,
+                  child: Text(e.value, style: const TextStyle(fontSize: 13)),
+                ),
+              )
+              .toList(),
       onChanged: (val) {
         if (val == null) return;
         setState(() => _statusQuery = val);
@@ -478,9 +481,8 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
   // Chip chọn ngày – khi nhấn sẽ mở BottomSheet
   Widget _buildDateChip() {
     final isToday = _isSameDay(_selectedDate, DateTime.now());
-    final label = isToday
-        ? 'Hôm nay'
-        : DateFormat('dd/MM/yyyy').format(_selectedDate);
+    final label =
+        isToday ? 'Hôm nay' : DateFormat('dd/MM/yyyy').format(_selectedDate);
 
     return GestureDetector(
       onTap: _pickDateWithBottomSheet,
@@ -488,10 +490,16 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: isToday ? Colors.grey.shade100 : ColorConfig.primary.withOpacity(0.08),
+          color:
+              isToday
+                  ? Colors.grey.shade100
+                  : ColorConfig.primary.withOpacity(0.08),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isToday ? Colors.grey.shade200 : ColorConfig.primary.withOpacity(0.4),
+            color:
+                isToday
+                    ? Colors.grey.shade200
+                    : ColorConfig.primary.withOpacity(0.4),
           ),
         ),
         child: Row(
@@ -525,14 +533,16 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
         height: 36,
         width: 36,
         decoration: BoxDecoration(
-          color: _hasActiveFilters
-              ? ColorConfig.primary.withOpacity(0.10)
-              : Colors.grey.shade100,
+          color:
+              _hasActiveFilters
+                  ? ColorConfig.primary.withOpacity(0.10)
+                  : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: _hasActiveFilters
-                ? ColorConfig.primary.withOpacity(0.35)
-                : Colors.grey.shade200,
+            color:
+                _hasActiveFilters
+                    ? ColorConfig.primary.withOpacity(0.35)
+                    : Colors.grey.shade200,
           ),
         ),
         child: Icon(
@@ -553,10 +563,7 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: () {
-        context.push(
-          AdminRouterConfig.listTechnicianApply,
-          extra: order,
-        );
+        context.push(AdminRouterConfig.listTechnicianApply, extra: order);
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
@@ -638,7 +645,8 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
                                       color: ColorConfig.white,
                                       borderRadius: BorderRadius.circular(30),
                                       border: Border.all(
-                                          color: ColorConfig.primary),
+                                        color: ColorConfig.primary,
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -677,8 +685,7 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color:
-                                  ColorConfig.primary.withOpacity(0.18),
+                                  color: ColorConfig.primary.withOpacity(0.18),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -695,8 +702,9 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
-                                      color: ColorConfig.textWhite
-                                          .withOpacity(0.95),
+                                      color: ColorConfig.textWhite.withOpacity(
+                                        0.95,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -739,17 +747,17 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
                         children: [
                           _buildInfoChip(
                             label:
-                            "${order['serviceTimePriceDetails']['duration'] ?? 0} phút",
+                                "${order['serviceTimePriceDetails']['duration'] ?? 0} phút",
                           ),
                           _buildInfoChip(
                             label:
-                            "${FormatHelper.formatPrice(order['pricing']['serviceAmount'] ?? 0)} đ",
+                                "${FormatHelper.formatPrice(order['pricing']['serviceAmount'] ?? 0)} đ",
                           ),
                           if ((order['pricing']['extraAmount'] ?? 0) > 0)
                             _buildInfoChip(
                               icon: Icons.flash_on_rounded,
                               label:
-                              "${FormatHelper.formatPrice(order['pricing']['extraAmount'] ?? 0)} đ",
+                                  "${FormatHelper.formatPrice(order['pricing']['extraAmount'] ?? 0)} đ",
                             ),
                         ],
                       ),
@@ -765,8 +773,11 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.location_on_outlined,
-                    size: 18, color: Colors.grey.shade600),
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 18,
+                  color: Colors.grey.shade600,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -774,9 +785,10 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade700,
-                        height: 1.4),
+                      fontSize: 13,
+                      color: Colors.grey.shade700,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ],
@@ -787,8 +799,11 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
             /// GENDER + PHONE
             Row(
               children: [
-                Icon(Icons.person_outline_rounded,
-                    size: 18, color: Colors.grey.shade600),
+                Icon(
+                  Icons.person_outline_rounded,
+                  size: 18,
+                  color: Colors.grey.shade600,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   order['genderRequirement'] == 'female'
@@ -797,8 +812,11 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
                 ),
                 const Spacer(),
-                Icon(Icons.phone_outlined,
-                    size: 18, color: Colors.grey.shade600),
+                Icon(
+                  Icons.phone_outlined,
+                  size: 18,
+                  color: Colors.grey.shade600,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   order['phoneCustomer'] ?? '',
@@ -822,7 +840,9 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
                       Text(
                         "KTV nhận được (- ${order['pricing']?['platformFeePercent'] ?? 0}% phí)",
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -844,14 +864,14 @@ class _ManagementPostOrderState extends State<ManagementPostOrder> {
                     Text(
                       "Tổng thanh toán",
                       style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600),
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _formatCurrency(
-                        order['pricing']?['finalAmount'] ??
-                            order['price'] ??
-                            0,
+                        order['pricing']?['finalAmount'] ?? order['price'] ?? 0,
                       ),
                       style: const TextStyle(
                         fontSize: 16,
