@@ -6,29 +6,25 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/order_helper.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
-import 'package:spa_app/providers/order_provider.dart';
-import 'package:spa_app/providers/selected_tab_provider.dart';
-import 'package:spa_app/routes/config/technician_router_config.dart';
+
 import 'package:spa_app/screens/components/copyable_text.dart';
 import 'package:spa_app/screens/components/dashed_divider_component.dart';
-import 'package:spa_app/screens/customer/tabs/components/SpaDialog.dart';
-import 'package:spa_app/screens/technician/tabs/components/accept_order_dialog.dart';
-import 'package:spa_app/screens/technician/tabs/components/reject_order_bottom_sheet.dart';
+import 'package:spa_app/screens/widgets/order_history_status.dart';
 import 'package:spa_app/screens/widgets/order_progress_timeline.dart';
 import 'package:spa_app/services/order_application_service.dart';
 import 'package:spa_app/services/order_service.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'dart:async';
 
-import '../../../storage/index.dart';
+import 'package:spa_app/storage/index.dart';
 
-class DetailsOrderTechnician extends StatefulWidget {
+class DetailsOrderAdmin extends StatefulWidget {
   final String id;
   final bool isNewOrder;
   final bool isEntrust;
   final String? orderExpiredAt;
 
-  const DetailsOrderTechnician({
+  const DetailsOrderAdmin({
     super.key,
     required this.id,
     this.isNewOrder = false,
@@ -37,10 +33,10 @@ class DetailsOrderTechnician extends StatefulWidget {
   });
 
   @override
-  State<DetailsOrderTechnician> createState() => _DetailsOrderTechnicianState();
+  State<DetailsOrderAdmin> createState() => _DetailsOrderTechnicianState();
 }
 
-class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
+class _DetailsOrderTechnicianState extends State<DetailsOrderAdmin> {
   final OrderService _orderService = OrderService();
   final OrderApplicationService _orderApplicationService =
       OrderApplicationService();
@@ -69,9 +65,9 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
   void initState() {
     super.initState();
     appLog("${widget.orderExpiredAt}");
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      loadCheckWorkingOrder();
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   loadCheckWorkingOrder();
+    // });
     _loadOrderDetails();
     if (widget.isEntrust) {
       _startEntrustCountdown();
@@ -97,20 +93,20 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
   String get _subTypeOrder => _orderDetails?['subTypeOrder'] ?? '';
 
   /// Có thể nhận/ứng tuyển không
-  bool get _canHandleOrder {
-    if (_isExpired) return false;
-    // Đang làm việc => không cho cả Nhận việc lẫn Ứng tuyển việc
-    if (isWorking) return false;
-    return true;
-  }
-
-  /// Text nút hành động chính
-  String get _actionButtonText {
-    if (isWorking) return 'Đang làm việc';
-    if (widget.isEntrust) return 'Nhận việc';
-    if (_isAdminCreate) return 'Ứng tuyển việc';
-    return 'Nhận việc';
-  }
+  // bool get _canHandleOrder {
+  //   if (_isExpired) return false;
+  //   // Đang làm việc => không cho cả Nhận việc lẫn Ứng tuyển việc
+  //   if (isWorking) return false;
+  //   return true;
+  // }
+  //
+  // /// Text nút hành động chính
+  // String get _actionButtonText {
+  //   if (isWorking) return 'Đang làm việc';
+  //   if (widget.isEntrust) return 'Nhận việc';
+  //   if (_isAdminCreate) return 'Ứng tuyển việc';
+  //   return 'Nhận việc';
+  // }
 
   // ─── Data loading ────────────────────────────────────────────────────────────
   Future<void> _loadOrderDetails() async {
@@ -122,7 +118,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
         _errorMessage = '';
       });
       final response = await _orderService.detailOrder(widget.id);
-      // appLog("CHi tiết đơn: $response");
+      appLog("Chi tiết đơn: $response");
       if (response['success'] == true) {
         setState(() {
           _orderDetails = response['data'];
@@ -290,265 +286,265 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
   }
 
   // ─── Accept / Reject ─────────────────────────────────────────────────────────
-  Future<void> _acceptOrderWithMessage(String message) async {
-    try {
-      if (_typeOrder == 'order-now' ||
-          (_typeOrder == 'automatic-matching' && _subTypeOrder == 'now')) {
-        final data = {
-          'orderId': widget.id,
-          'result': 'approved',
-          'noteTechnician': message,
-        };
-        final response = await _orderService.updateStatus(data);
-        if (response['success'] == true) {
-          if (!mounted) return;
-          final acceptedAt = DateTime.now().toIso8601String();
-          await SharedPrefs.saveValue(
-            PrefType.string,
-            "orderDetail",
-            _orderDetails,
-          );
-          await SharedPrefs.saveValue(PrefType.bool, "isWorking", true);
-          await SharedPrefs.saveValue(
-            PrefType.string,
-            "idOrderWorking",
-            widget.id,
-          );
-          await SharedPrefs.saveValue(
-            PrefType.string,
-            "acceptedAt",
-            acceptedAt,
-          );
-          SnackBarHelper.showSuccess(context, "Nhận đơn thành công!");
-          context.read<SelectedTabProvider>().setIndex(0);
-          context.go(TechnicianRouterConfig.homeTechnician);
-        }
-      } else if (_typeOrder == 'book' ||
-          (_typeOrder == 'automatic-matching' && _subTypeOrder == 'book')) {
-        final data = {
-          'orderId': widget.id,
-          'result': 'approved',
-          'noteTechnician': message,
-        };
-        final response = await _orderService.updateStatus(data);
-        if (response['success'] == true) {
-          if (!mounted) return;
-          SnackBarHelper.showSuccess(context, "Nhận đơn việc thành công!");
-          context.read<SelectedTabProvider>().setIndex(1);
-          context.go(TechnicianRouterConfig.homeTechnician);
-        } else {
-          SnackBarHelper.showError(context, "Lỗi khi nhận đơn!");
-        }
-      } else {
-        SnackBarHelper.showError(context, "Không rõ loại đơn! ${_typeOrder}");
-      }
-    } catch (e) {
-      debugPrint('Error accepting order: $e');
-      if (!mounted) return;
-      SnackBarHelper.showError(context, 'Có lỗi xảy ra khi nhận đơn');
-    }
-  }
+  // Future<void> _acceptOrderWithMessage(String message) async {
+  //   try {
+  //     if (_typeOrder == 'order-now' ||
+  //         (_typeOrder == 'automatic-matching' && _subTypeOrder == 'now')) {
+  //       final data = {
+  //         'orderId': widget.id,
+  //         'result': 'approved',
+  //         'noteTechnician': message,
+  //       };
+  //       final response = await _orderService.updateStatus(data);
+  //       if (response['success'] == true) {
+  //         if (!mounted) return;
+  //         final acceptedAt = DateTime.now().toIso8601String();
+  //         await SharedPrefs.saveValue(
+  //           PrefType.string,
+  //           "orderDetail",
+  //           _orderDetails,
+  //         );
+  //         await SharedPrefs.saveValue(PrefType.bool, "isWorking", true);
+  //         await SharedPrefs.saveValue(
+  //           PrefType.string,
+  //           "idOrderWorking",
+  //           widget.id,
+  //         );
+  //         await SharedPrefs.saveValue(
+  //           PrefType.string,
+  //           "acceptedAt",
+  //           acceptedAt,
+  //         );
+  //         SnackBarHelper.showSuccess(context, "Nhận đơn thành công!");
+  //         context.read<SelectedTabProvider>().setIndex(0);
+  //         context.go(TechnicianRouterConfig.homeTechnician);
+  //       }
+  //     } else if (_typeOrder == 'book' ||
+  //         (_typeOrder == 'automatic-matching' && _subTypeOrder == 'book')) {
+  //       final data = {
+  //         'orderId': widget.id,
+  //         'result': 'approved',
+  //         'noteTechnician': message,
+  //       };
+  //       final response = await _orderService.updateStatus(data);
+  //       if (response['success'] == true) {
+  //         if (!mounted) return;
+  //         SnackBarHelper.showSuccess(context, "Nhận đơn việc thành công!");
+  //         context.read<SelectedTabProvider>().setIndex(1);
+  //         context.go(TechnicianRouterConfig.homeTechnician);
+  //       } else {
+  //         SnackBarHelper.showError(context, "Lỗi khi nhận đơn!");
+  //       }
+  //     } else {
+  //       SnackBarHelper.showError(context, "Không rõ loại đơn! ${_typeOrder}");
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Error accepting order: $e');
+  //     if (!mounted) return;
+  //     SnackBarHelper.showError(context, 'Có lỗi xảy ra khi nhận đơn');
+  //   }
+  // }
 
-  Future<void> _rejectOrderWithReason(String? reason) async {
-    try {
-      final data = {
-        'orderId': widget.id,
-        'result': 'rejected',
-        'noteTechnician': '',
-        'reasonReject': reason ?? '',
-      };
-      final response = await _orderService.updateStatus(data);
-      if (response['success'] == true) {
-        if (!mounted) return;
-        _timer?.cancel();
-        SnackBarHelper.showSuccess(context, 'Đã từ chối đơn việc');
-      }
-    } catch (e) {
-      debugPrint('Error rejecting order: $e');
-      if (!mounted) return;
-      SnackBarHelper.showError(context, 'Có lỗi xảy ra, vui lòng thử lại');
-    }
-  }
+  // Future<void> _rejectOrderWithReason(String? reason) async {
+  //   try {
+  //     final data = {
+  //       'orderId': widget.id,
+  //       'result': 'rejected',
+  //       'noteTechnician': '',
+  //       'reasonReject': reason ?? '',
+  //     };
+  //     final response = await _orderService.updateStatus(data);
+  //     if (response['success'] == true) {
+  //       if (!mounted) return;
+  //       _timer?.cancel();
+  //       SnackBarHelper.showSuccess(context, 'Đã từ chối đơn việc');
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Error rejecting order: $e');
+  //     if (!mounted) return;
+  //     SnackBarHelper.showError(context, 'Có lỗi xảy ra, vui lòng thử lại');
+  //   }
+  // }
 
-  Future<void> _showConfirmApplyJobDialog(String idOrder) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        _openDialogContexts.add(dialogContext);
-        return SpaDialog(
-          iconColor: ColorConfig.primary,
-          title: 'Xác nhận',
-          body: 'Xác nhận ứng tuyển đơn việc?',
-          cancelLabel: 'Đóng',
-          confirmLabel: 'Xác nhận',
-          confirmColor: ColorConfig.primary,
-          onConfirm: () {
-            // Navigator.pop(dialogContext, true);
-          },
-        );
-      },
-    );
+  // Future<void> _showConfirmApplyJobDialog(String idOrder) async {
+  //   final result = await showDialog<bool>(
+  //     context: context,
+  //     builder: (dialogContext) {
+  //       _openDialogContexts.add(dialogContext);
+  //       return SpaDialog(
+  //         iconColor: ColorConfig.primary,
+  //         title: 'Xác nhận',
+  //         body: 'Xác nhận ứng tuyển đơn việc?',
+  //         cancelLabel: 'Đóng',
+  //         confirmLabel: 'Xác nhận',
+  //         confirmColor: ColorConfig.primary,
+  //         onConfirm: () {
+  //           // Navigator.pop(dialogContext, true);
+  //         },
+  //       );
+  //     },
+  //   );
+  //
+  //   _openDialogContexts.removeWhere((c) => !c.mounted);
+  //
+  //   if (result != true || !mounted) return;
+  //
+  //   // Loading dialog
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (loadingCtx) {
+  //       _openDialogContexts.add(loadingCtx);
+  //       return Center(
+  //         child: CircularProgressIndicator(color: ColorConfig.primary),
+  //       );
+  //     },
+  //   );
+  //
+  //   try {
+  //     final provider = context.read<OrderProvider>();
+  //     final success = await provider.technicianApplyOrder(idOrder);
+  //
+  //     if (mounted) {
+  //       Navigator.of(context, rootNavigator: true).pop();
+  //     }
+  //     _openDialogContexts.removeWhere((c) => !c.mounted);
+  //
+  //     if (!mounted) return;
+  //
+  //     if (success) {
+  //       SnackBarHelper.showSuccess(context, "Ứng tuyển đơn việc thành công!");
+  //     } else {
+  //       SnackBarHelper.showError(
+  //         context,
+  //         provider.errorMessage ?? "Ứng tuyển thất bại!",
+  //       );
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       Navigator.of(context, rootNavigator: true).pop();
+  //     }
+  //     _openDialogContexts.removeWhere((c) => !c.mounted);
+  //     if (!mounted) return;
+  //     appLog("Apply order error: $e");
+  //     SnackBarHelper.showError(context, "Ứng tuyển đơn việc thất bại: $e");
+  //   }
+  // }
+  //
+  // Future<void> _showRejectEntrustOrderDialog(String idOrder) async {
+  //   final result = await showDialog<bool>(
+  //     context: context,
+  //     builder: (dialogContext) {
+  //       _openDialogContexts.add(dialogContext);
+  //       return SpaDialog(
+  //         iconColor: ColorConfig.textError,
+  //         title: 'Từ chối',
+  //         body: 'Xác nhận từ chối đơn việc đã được giao?',
+  //         cancelLabel: 'Đóng',
+  //         confirmLabel: 'Từ chối',
+  //         confirmColor: ColorConfig.textError,
+  //         onConfirm: () {
+  //           // Navigator.pop(dialogContext, true);
+  //         },
+  //       );
+  //     },
+  //   );
+  //
+  //   _openDialogContexts.removeWhere((c) => !c.mounted);
+  //
+  //   if (result != true || !mounted) return;
+  //
+  //   // Loading dialog
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (loadingCtx) {
+  //       _openDialogContexts.add(loadingCtx);
+  //       return Center(
+  //         child: CircularProgressIndicator(color: ColorConfig.primary),
+  //       );
+  //     },
+  //   );
+  //   // return;
+  //
+  //   try {
+  //     final response = await _orderApplicationService.rejectEntrustOrder({
+  //       "orderId": widget.id,
+  //     });
+  //
+  //     appLog("response: $response");
+  //     if (mounted) {
+  //       Navigator.of(context, rootNavigator: true).pop();
+  //     }
+  //     _openDialogContexts.removeWhere((c) => !c.mounted);
+  //
+  //     if (!mounted) return;
+  //
+  //     if (response['success']) {
+  //       context.pop();
+  //       SnackBarHelper.showSuccess(context, "Từ chối đơn việc thành công!");
+  //     } else {
+  //       SnackBarHelper.showError(
+  //         context,
+  //         response['message'] ?? "Từ chối thất bại!",
+  //       );
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       Navigator.of(context, rootNavigator: true).pop();
+  //     }
+  //     _openDialogContexts.removeWhere((c) => !c.mounted);
+  //     if (!mounted) return;
+  //     appLog("Apply order error: $e");
+  //     SnackBarHelper.showError(context, "Ứng tuyển đơn việc thất bại: $e");
+  //   }
+  // }
 
-    _openDialogContexts.removeWhere((c) => !c.mounted);
+  // Future<void> loadCheckWorkingOrder() async {
+  //   final provider = Provider.of<OrderProvider>(context, listen: false);
+  //
+  //   try {
+  //     setState(() {
+  //       _errorMessage = '';
+  //     });
+  //
+  //     final success = await provider.checkWorkingOrder();
+  //
+  //     if (success) {
+  //       setState(() {
+  //         isWorking = provider.workingOrder["isWorking"] ?? false;
+  //         // appLog("orderDetail: ${provider.workingOrder}");
+  //       });
+  //     } else {
+  //       setState(() {
+  //         _errorMessage =
+  //             provider.errorMessage ?? 'Không thể lấy thông tin đơn hàng';
+  //       });
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       _errorMessage = e.toString();
+  //     });
+  //
+  //     appLog('Error check working order: $e');
+  //   }
+  // }
 
-    if (result != true || !mounted) return;
-
-    // Loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (loadingCtx) {
-        _openDialogContexts.add(loadingCtx);
-        return Center(
-          child: CircularProgressIndicator(color: ColorConfig.primary),
-        );
-      },
-    );
-
-    try {
-      final provider = context.read<OrderProvider>();
-      final success = await provider.technicianApplyOrder(idOrder);
-
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-      _openDialogContexts.removeWhere((c) => !c.mounted);
-
-      if (!mounted) return;
-
-      if (success) {
-        SnackBarHelper.showSuccess(context, "Ứng tuyển đơn việc thành công!");
-      } else {
-        SnackBarHelper.showError(
-          context,
-          provider.errorMessage ?? "Ứng tuyển thất bại!",
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-      _openDialogContexts.removeWhere((c) => !c.mounted);
-      if (!mounted) return;
-      appLog("Apply order error: $e");
-      SnackBarHelper.showError(context, "Ứng tuyển đơn việc thất bại: $e");
-    }
-  }
-
-  Future<void> _showRejectEntrustOrderDialog(String idOrder) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        _openDialogContexts.add(dialogContext);
-        return SpaDialog(
-          iconColor: ColorConfig.textError,
-          title: 'Từ chối',
-          body: 'Xác nhận từ chối đơn việc đã được giao?',
-          cancelLabel: 'Đóng',
-          confirmLabel: 'Từ chối',
-          confirmColor: ColorConfig.textError,
-          onConfirm: () {
-            // Navigator.pop(dialogContext, true);
-          },
-        );
-      },
-    );
-
-    _openDialogContexts.removeWhere((c) => !c.mounted);
-
-    if (result != true || !mounted) return;
-
-    // Loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (loadingCtx) {
-        _openDialogContexts.add(loadingCtx);
-        return Center(
-          child: CircularProgressIndicator(color: ColorConfig.primary),
-        );
-      },
-    );
-    // return;
-
-    try {
-      final response = await _orderApplicationService.rejectEntrustOrder({
-        "orderId": widget.id,
-      });
-
-      appLog("response: $response");
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-      _openDialogContexts.removeWhere((c) => !c.mounted);
-
-      if (!mounted) return;
-
-      if (response['success']) {
-        context.pop();
-        SnackBarHelper.showSuccess(context, "Từ chối đơn việc thành công!");
-      } else {
-        SnackBarHelper.showError(
-          context,
-          response['message'] ?? "Từ chối thất bại!",
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-      _openDialogContexts.removeWhere((c) => !c.mounted);
-      if (!mounted) return;
-      appLog("Apply order error: $e");
-      SnackBarHelper.showError(context, "Ứng tuyển đơn việc thất bại: $e");
-    }
-  }
-
-  Future<void> loadCheckWorkingOrder() async {
-    final provider = Provider.of<OrderProvider>(context, listen: false);
-
-    try {
-      setState(() {
-        _errorMessage = '';
-      });
-
-      final success = await provider.checkWorkingOrder();
-
-      if (success) {
-        setState(() {
-          isWorking = provider.workingOrder["isWorking"] ?? false;
-          // appLog("orderDetail: ${provider.workingOrder}");
-        });
-      } else {
-        setState(() {
-          _errorMessage =
-              provider.errorMessage ?? 'Không thể lấy thông tin đơn hàng';
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
-
-      appLog('Error check working order: $e');
-    }
-  }
-
-  Future<void> _showAcceptOrderDialog() {
-    return showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        _openDialogContexts.add(dialogCtx);
-        return AcceptOrderDialog(
-          onConfirm: (message) async {
-            await _acceptOrderWithMessage(message);
-          },
-        );
-      },
-    ).then((_) {
-      _openDialogContexts.removeWhere((c) => !c.mounted);
-    });
-  }
+  // Future<void> _showAcceptOrderDialog() {
+  //   return showDialog(
+  //     context: context,
+  //     builder: (dialogCtx) {
+  //       _openDialogContexts.add(dialogCtx);
+  //       return AcceptOrderDialog(
+  //         onConfirm: (message) async {
+  //           await _acceptOrderWithMessage(message);
+  //         },
+  //       );
+  //     },
+  //   ).then((_) {
+  //     _openDialogContexts.removeWhere((c) => !c.mounted);
+  //   });
+  // }
 
   // ─── UI helpers ──────────────────────────────────────────────────────────────
 
@@ -1095,7 +1091,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                                                           .spaceBetween,
                                                   children: [
                                                     Text(
-                                                      'Thu nhập dự kiến',
+                                                      'KTV Nhận được',
                                                       style: TextStyle(
                                                         fontSize: 14,
                                                         color: Colors.black,
@@ -1435,22 +1431,13 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          if (status != 'done' &&
-                                              !isViewCustomer) ...[
-                                            Text(
-                                              status != 'done'
-                                                  ? (_customer?["gender"] ==
-                                                          "male"
-                                                      ? "Khách nam"
-                                                      : "Khách nữ")
-                                                  : (_customer?["fullname"] ??
-                                                      "Chưa có tên"),
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ],
+                                          // Text(
+                                          //   _customer?["fullname"] ?? "Chưa có tên",
+                                          //   style: const TextStyle(
+                                          //     fontSize: 16,
+                                          //     fontWeight: FontWeight.w700,
+                                          //   ),
+                                          // ),
                                           if (isViewCustomer) ...[
                                             Row(
                                               children: [
@@ -1473,61 +1460,26 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                                               ],
                                             ),
                                           ],
-                                          // Text(
-                                          //   status != 'done'
-                                          //       ? (_customer?["gender"] ==
-                                          //       "male"
-                                          //       ? "Khách hàng nam"
-                                          //       : "Khách hàng nữ")
-                                          //       : (_customer?["fullname"] ??
-                                          //       "Chưa có tên"),
-                                          //   style: const TextStyle(
-                                          //     fontSize: 16,
-                                          //     fontWeight: FontWeight.w700,
-                                          //   ),
-                                          // ),
-                                          // const SizedBox(height: 8),
-                                          if (status == 'done') ...[
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.wc_rounded,
-                                                  size: 16,
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  _customer?["gender"] == "male"
-                                                      ? "Nam"
-                                                      : "Nữ",
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    color: Colors.grey.shade700,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 6),
-                                          ],
-                                          // Row(
-                                          //   children: [
-                                          //     Icon(
-                                          //       Icons.phone_outlined,
-                                          //       size: 16,
-                                          //       color: Colors.grey.shade600,
-                                          //     ),
-                                          //     const SizedBox(width: 6),
-                                          //     Text(
-                                          //       !isViewCustomer ? "Chưa hiển thị" : (_customer?["phone"] ?? "Chưa có SĐT"),
-                                          //       style: TextStyle(
-                                          //         fontSize: 13,
-                                          //         color: Colors.grey.shade700,
-                                          //       ),
-                                          //     ),
-                                          //   ],
-                                          // ),
+
                                           Row(
                                             children: [
+                                              Icon(
+                                                Icons.wc_rounded,
+                                                size: 16,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                _customer?["gender"] == "male"
+                                                    ? "Khách nam"
+                                                    : "Khách nữ",
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.grey.shade700,
+                                                ),
+                                              ),
+
+                                              const Spacer(),
                                               Icon(
                                                 Icons.phone_outlined,
                                                 size: 16,
@@ -1537,10 +1489,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
 
                                               Expanded(
                                                 child: Text(
-                                                  !isViewCustomer
-                                                      ? "Chưa hiển thị"
-                                                      : (_customer?["phone"] ??
-                                                          "Chưa có SĐT"),
+                                                  order["phoneCustomer"] ?? "Chưa có SĐT",
                                                   style: TextStyle(
                                                     fontSize: 13,
                                                     color: Colors.grey.shade700,
@@ -1549,26 +1498,24 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                                                 ),
                                               ),
 
-                                              if (isViewCustomer &&
-                                                  _customer?["phone"] != null &&
-                                                  (_customer?["phone"]
-                                                          as String)
-                                                      .isNotEmpty)
+                                              if (
+                                              order["phoneCustomer"] != null &&
+                                                  (order["phoneCustomer"] as String).isNotEmpty)
                                                 IconButton(
                                                   icon: const Icon(
                                                     Icons.copy,
                                                     size: 18,
                                                   ),
                                                   visualDensity:
-                                                      VisualDensity.compact,
+                                                  VisualDensity.compact,
                                                   padding: EdgeInsets.zero,
                                                   constraints:
-                                                      const BoxConstraints(),
+                                                  const BoxConstraints(),
                                                   onPressed: () async {
                                                     await Clipboard.setData(
                                                       ClipboardData(
-                                                        text:
-                                                            _customer!["phone"],
+                                                          text:
+                                                          order["phoneCustomer"]
                                                       ),
                                                     );
 
@@ -1582,7 +1529,6 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                                                 ),
                                             ],
                                           ),
-                                          const SizedBox(height: 6),
                                           Row(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -1606,9 +1552,9 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 8),
-                                          const DashedDivider(),
-                                          const SizedBox(height: 6),
+                                          // const SizedBox(height: 8),
+                                          // const DashedDivider(),
+                                          // const SizedBox(height: 6),
 
                                           // Notes section
                                           if ((order['noteCustomer'] != null &&
@@ -1712,7 +1658,7 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                             _buildPriceRow(
                               status == "done"
                                   ? 'Số tiền thực nhận'
-                                  : 'Thu nhập dự kiến',
+                                  : 'KTV Nhận được',
                               _pricing!['technicianReceiveAmount'] ?? 0,
                               isAdd: true,
                               isTotal: true,
@@ -1721,145 +1667,14 @@ class _DetailsOrderTechnicianState extends State<DetailsOrderTechnician> {
                         ),
                         icon: Icons.receipt_long,
                       ),
+
+                    OrderHistoryStatus(historyStatus: order['historyStatus']),
                   ],
                 ],
               ),
             ),
           ),
 
-          // ── Action bar ──────────────────────────────────────────────────────
-          if (showActionBar)
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Nút từ chối (ẩn với automatic-matching)
-                  if (_typeOrder != 'automatic-matching') ...[
-                    Expanded(
-                      flex: 1, // Chiếm 1 phần
-                      child: OutlinedButton(
-                        onPressed: () async {
-                          String? reason;
-
-                          await showModalBottomSheet<void>(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (sheetCtx) {
-                              _openDialogContexts.add(sheetCtx);
-                              return RejectOrderBottomSheet(
-                                onConfirm: (r) async {
-                                  reason = r;
-                                  await _rejectOrderWithReason(r);
-                                },
-                              );
-                            },
-                          );
-
-                          _openDialogContexts.removeWhere((c) => !c.mounted);
-
-                          if (reason != null && mounted) {
-                            context.pop({'success': true, 'id': widget.id});
-                          }
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(color: Colors.red.shade300),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(40),
-                          ),
-                        ),
-                        child: Text(
-                          'Từ chối',
-                          style: TextStyle(
-                            color: Colors.red.shade600,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
-
-                  // Nút từ chối cho entrust
-                  if (widget.isEntrust) ...[
-                    Expanded(
-                      flex: 1, // Chiếm 1 phần
-                      child: OutlinedButton(
-                        onPressed: () async {
-                          await _showRejectEntrustOrderDialog(widget.id);
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(color: Colors.red.shade300),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(40),
-                          ),
-                        ),
-                        child: Text(
-                          'Từ chối',
-                          style: TextStyle(
-                            color: Colors.red.shade600,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
-
-                  // Nút hành động chính (Nhận việc / Ứng tuyển) - Chiếm 2 phần
-                  Expanded(
-                    flex: 2, // Chiếm 2 phần
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_canHandleOrder) {
-                          if (widget.isEntrust) {
-                            _showAcceptOrderDialog();
-                          } else if (_isAdminCreate) {
-                            _showConfirmApplyJobDialog(widget.id);
-                          } else {
-                            _showAcceptOrderDialog();
-                          }
-                        } else {
-                          appLog("Here!");
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColorConfig.primary,
-                        disabledBackgroundColor: ColorConfig.primary
-                            .withOpacity(0.4),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(40),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        _actionButtonText,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );

@@ -52,7 +52,7 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
           route: AdminRouterConfig.technicianManagementAccount,
           color: const Color(0xFF6C63FF),
         ),
-         _MenuItem(
+        _MenuItem(
           icon: Icons.account_balance_outlined,
           title: 'Quản lý ngân hàng',
           route: AdminRouterConfig.managementBank,
@@ -64,7 +64,7 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
           route: AdminRouterConfig.managePlatformFees,
           color: Color(0xFFE1337C),
         ),
-         _MenuItem(
+        _MenuItem(
           icon: Icons.outbond_outlined,
           title: 'Yêu cầu rút tiền',
           route: AdminRouterConfig.listWithdraw,
@@ -73,7 +73,7 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
         ),
       ],
     ),
-     _MenuGroup(
+    _MenuGroup(
       label: 'Dịch vụ & Ưu đãi',
       items: [
         _MenuItem(
@@ -96,7 +96,7 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
         ),
       ],
     ),
-     _MenuGroup(
+    _MenuGroup(
       label: 'Nội dung & Hiển thị',
       items: [
         _MenuItem(
@@ -136,6 +136,12 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
       label: 'Cấu hình hệ thống',
       items: [
         _MenuItem(
+          icon: Icons.supervised_user_circle_outlined,
+          title: 'Hiển thị KTV',
+          route: AdminRouterConfig.manageDisplayTechnician,
+          color: Color(0xFF2D9C0A),
+        ),
+        _MenuItem(
           icon: Icons.settings,
           title: 'Quản lý hệ thống',
           route: AdminRouterConfig.manageInformationSystem,
@@ -152,10 +158,7 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
       vsync: this,
       duration: const Duration(milliseconds: 220),
     );
-    _fadeAnim = CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOut,
-    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
   }
 
@@ -203,10 +206,7 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
               ],
             ),
           ),
-          _ViewToggle(
-            isGridView: _isGridView,
-            onToggle: _toggleViewMode,
-          ),
+          _ViewToggle(isGridView: _isGridView, onToggle: _toggleViewMode),
         ],
       ),
     );
@@ -241,16 +241,10 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
           borderRadius: BorderRadius.circular(14),
           onTap: () => context.push(item.route),
           child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 11,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: const Color(0xFFEAEAEA),
-                width: .8,
-              ),
+              border: Border.all(color: const Color(0xFFEAEAEA), width: .8),
             ),
             child: Row(
               children: [
@@ -265,11 +259,7 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
                         color: bgColor,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(
-                        item.icon,
-                        color: item.color,
-                        size: 20,
-                      ),
+                      child: Icon(item.icon, color: item.color, size: 20),
                     ),
 
                     if (item.hasBadge)
@@ -385,16 +375,17 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
   Widget _buildListView() {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      children: _groups.map((group) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionLabel(group.label),
-            ...group.items.map(_buildListItem),
-            const SizedBox(height: 8),
-          ],
-        );
-      }).toList(),
+      children:
+          _groups.map((group) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionLabel(group.label),
+                ...group.items.map(_buildListItem),
+                const SizedBox(height: 8),
+              ],
+            );
+          }).toList(),
     );
   }
 
@@ -402,24 +393,25 @@ class _GeneralManagementTabState extends State<GeneralManagementTab>
   Widget _buildGridView() {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      children: _groups.map((group) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionLabel(group.label),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 1.1,
-              children: group.items.map(_buildGridItem).toList(),
-            ),
-            const SizedBox(height: 16),
-          ],
-        );
-      }).toList(),
+      children:
+          _groups.map((group) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionLabel(group.label),
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 1.1,
+                  children: group.items.map(_buildGridItem).toList(),
+                ),
+                const SizedBox(height: 16),
+              ],
+            );
+          }).toList(),
     );
   }
 

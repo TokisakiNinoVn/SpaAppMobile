@@ -5,6 +5,7 @@ import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/format_helper.dart';
 import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/snackbar_helper.dart';
+import 'package:spa_app/providers/order_provider.dart';
 import 'package:spa_app/providers/selected_tab_provider.dart';
 import 'package:spa_app/routes/config/technician_router_config.dart';
 import 'package:spa_app/screens/technician/tabs/components/accept_order_dialog.dart';
@@ -50,6 +51,10 @@ class _OrderTabState extends State<OrderTab> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      loadCheckWorkingOrder();
+    });
+
     _loadData();
 
     _realtimeService = RealtimeService.instance;
@@ -117,7 +122,10 @@ class _OrderTabState extends State<OrderTab> {
     });
   }
 
-  Future<void> _acceptOrderWithMessage(Map<String, dynamic> order, String message) async {
+  Future<void> _acceptOrderWithMessage(
+    Map<String, dynamic> order,
+    String message,
+  ) async {
     try {
       final idOrder = order["_id"];
       if (order['typeOrder'] == 'order-now') {
@@ -132,25 +140,32 @@ class _OrderTabState extends State<OrderTab> {
           final acceptedAt = DateTime.now().toIso8601String();
           await SharedPrefs.saveValue(PrefType.string, "orderDetail", order);
           await SharedPrefs.saveValue(PrefType.bool, "isWorking", true);
-          await SharedPrefs.saveValue(PrefType.string, "idOrderWorking", idOrder);
-          await SharedPrefs.saveValue(PrefType.string, "acceptedAt", acceptedAt);
+          await SharedPrefs.saveValue(
+            PrefType.string,
+            "idOrderWorking",
+            idOrder,
+          );
+          await SharedPrefs.saveValue(
+            PrefType.string,
+            "acceptedAt",
+            acceptedAt,
+          );
           SnackBarHelper.showSuccess(context, "Nhận đơn thành công!");
           context.read<SelectedTabProvider>().setIndex(0);
           context.go(TechnicianRouterConfig.homeTechnician);
         }
       } else if (order?['typeOrder'] == 'book') {
-        final data = {
-          'orderId': idOrder,
-          'result': 'approved'
-        };
+        final data = {'orderId': idOrder, 'result': 'approved'};
         final response = await _orderService.updateStatus(data);
         if (response['success'] == true) {
           if (!mounted) return;
-          SnackBarHelper.showSuccess(context, "Nhận đơn việc đặt trước thành công!");
+          SnackBarHelper.showSuccess(
+            context,
+            "Nhận đơn việc đặt trước thành công!",
+          );
           setState(() {
             filteredRequestOrders.removeWhere((e) => e['_id'] == idOrder);
           });
-
         } else {
           SnackBarHelper.showError(context, "Lỗi khi nhận đơn!");
         }
@@ -265,14 +280,13 @@ class _OrderTabState extends State<OrderTab> {
       });
 
       // Load isWorking trước
-      isWorking = await SharedPrefs.getValue(PrefType.bool, "isWorking") ?? false;
+      // isWorking = await SharedPrefs.getValue(PrefType.bool, "isWorking") ?? false;
 
       // Gọi song song cả 2 API để tăng performance
       final results = await Future.wait([
         _orderService.listRequestOrder(),
         _orderService.listApprovedBookOrder(),
       ]);
-
 
       final requestResponse = results[0];
       final bookResponse = results[1];
@@ -287,7 +301,9 @@ class _OrderTabState extends State<OrderTab> {
           });
           _startTimersForOrders(newOrders);
         } else {
-          throw Exception(requestResponse['message'] ?? 'Không thể tải danh sách đơn việc');
+          throw Exception(
+            requestResponse['message'] ?? 'Không thể tải danh sách đơn việc',
+          );
         }
       } else {
         // Nếu đang làm việc thì clear list request orders
@@ -305,7 +321,9 @@ class _OrderTabState extends State<OrderTab> {
           filteredBookOrders = List.from(newOrders);
         });
       } else {
-        throw Exception(bookResponse['message'] ?? 'Không thể tải danh sách đơn đặt trước');
+        throw Exception(
+          bookResponse['message'] ?? 'Không thể tải danh sách đơn đặt trước',
+        );
       }
 
       setState(() {
@@ -401,26 +419,27 @@ class _OrderTabState extends State<OrderTab> {
   void _updateFilteredOrders() {
     // Request orders: lọc bỏ các order đã hết hạn
     // NHƯNG vẫn hiển thị order mới (chưa có remaining time nhưng chưa hết hạn)
-    filteredRequestOrders = listRequestOrders.where((order) {
-      final orderId = order['_id'];
-      final remaining = _remainingTimes[orderId];
+    filteredRequestOrders =
+        listRequestOrders.where((order) {
+          final orderId = order['_id'];
+          final remaining = _remainingTimes[orderId];
 
-      // Nếu chưa có remaining time, kiểm tra expiresAt
-      if (remaining == null) {
-        final expiresAt = order['expiresAt'];
-        if (expiresAt != null && expiresAt is String) {
-          final expiryTime = DateTime.parse(expiresAt);
-          final now = DateTime.now();
-          // Nếu chưa hết hạn thì hiển thị
-          return expiryTime.isAfter(now);
-        }
-        // Nếu không có expiresAt, vẫn hiển thị (để an toàn)
-        return true;
-      }
+          // Nếu chưa có remaining time, kiểm tra expiresAt
+          if (remaining == null) {
+            final expiresAt = order['expiresAt'];
+            if (expiresAt != null && expiresAt is String) {
+              final expiryTime = DateTime.parse(expiresAt);
+              final now = DateTime.now();
+              // Nếu chưa hết hạn thì hiển thị
+              return expiryTime.isAfter(now);
+            }
+            // Nếu không có expiresAt, vẫn hiển thị (để an toàn)
+            return true;
+          }
 
-      // Có remaining time, kiểm tra còn hạn không
-      return !remaining.isNegative && remaining.inSeconds > 0;
-    }).toList();
+          // Có remaining time, kiểm tra còn hạn không
+          return !remaining.isNegative && remaining.inSeconds > 0;
+        }).toList();
 
     // Book orders: hiển thị TẤT CẢ (không lọc)
     filteredBookOrders = List.from(listBookOrders);
@@ -450,6 +469,37 @@ class _OrderTabState extends State<OrderTab> {
       debugPrint('Error rejecting order: $e');
       if (!mounted) return;
       SnackBarHelper.showError(context, 'Có lỗi xảy ra, vui lòng thử lại');
+    }
+  }
+
+  Future<void> loadCheckWorkingOrder() async {
+    final provider = Provider.of<OrderProvider>(context, listen: false);
+
+    try {
+      setState(() {
+        _errorMessage = '';
+      });
+
+      final success = await provider.checkWorkingOrder();
+
+      if (success) {
+        setState(() {
+          isWorking = provider.workingOrder["isWorking"] ?? false;
+          // appLog("orderDetail: $isWorking"); // true
+          // appLog("orderDetail: ${provider.workingOrder}");
+        });
+      } else {
+        setState(() {
+          _errorMessage =
+              provider.errorMessage ?? 'Không thể lấy thông tin đơn hàng';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+
+      appLog('Error check working order: $e');
     }
   }
 
@@ -515,10 +565,7 @@ class _OrderTabState extends State<OrderTab> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadData,
-              child: const Text('Thử lại'),
-            ),
+            ElevatedButton(onPressed: _loadData, child: const Text('Thử lại')),
           ],
         ),
       );
@@ -540,9 +587,11 @@ class _OrderTabState extends State<OrderTab> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.warning_amber_rounded,
-                    color: Colors.orange.shade700,
-                    size: 48),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange.shade700,
+                  size: 48,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Bạn đang thực hiện đơn',
@@ -555,10 +604,7 @@ class _OrderTabState extends State<OrderTab> {
                 const SizedBox(height: 8),
                 Text(
                   'không thể nhận thêm việc mới',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.orange.shade700,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.orange.shade700),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -603,9 +649,7 @@ class _OrderTabState extends State<OrderTab> {
           return _buildOrderItem(order);
         },
       );
-    }
-
-    else {
+    } else {
       // if (filteredBookOrders.isEmpty) {
       //   return Center(
       //     child: Column(
@@ -644,7 +688,8 @@ class _OrderTabState extends State<OrderTab> {
 
   Widget _buildTabButton(String title, int index) {
     final isSelected = selectedTab == index;
-    final count = index == 0 ? filteredRequestOrders.length : listBookOrders.length;
+    final count =
+        index == 0 ? filteredRequestOrders.length : listBookOrders.length;
     final displayTitle = index == 1 ? '$title ($count)' : title;
 
     return Expanded(
@@ -688,78 +733,75 @@ class _OrderTabState extends State<OrderTab> {
     final isBookOrderTab = selectedTab == 1;
 
     return isBookOrderTab
-      ? BookOrderCard(
-        order: order,
-        remainingTime: _remainingTimes[order['_id']],
-        showTimeline: true,
-        onApply: () async {
-          final idOrder = order["_id"];
+        ? BookOrderCard(
+          order: order,
+          remainingTime: _remainingTimes[order['_id']],
+          showTimeline: true,
+          onApply: () async {
+            final idOrder = order["_id"];
 
-          final result = await context.push(
-            '${TechnicianRouterConfig.canceledOrder}/${order['_id']}'
-          );
+            final result = await context.push(
+              '${TechnicianRouterConfig.canceledOrder}/${order['_id']}',
+            );
 
-          if (result != null && mounted) {
-            setState(() {
-              filteredBookOrders.removeWhere((e) => e['_id'] == idOrder);
-            });
-          }
+            if (result != null && mounted) {
+              setState(() {
+                filteredBookOrders.removeWhere((e) => e['_id'] == idOrder);
+              });
+            }
+          },
+        )
+        : RequestOrderCard(
+          order: order,
+          remainingTime: _remainingTimes[order['_id']],
+          showTimeline: true,
+          onTap: () async {
+            final result = await context.push(
+              '${TechnicianRouterConfig.detailsOrder}/${order['_id']}',
+              extra: true,
+            );
+            if (result != null && result is Map && result['success'] == true) {
+              final removedId = result['id'];
 
-        })
-      : RequestOrderCard(
-        order: order,
-        remainingTime: _remainingTimes[order['_id']],
-        showTimeline: true,
-        onTap: () async {
-          final result = await context.push(
-            '${TechnicianRouterConfig.detailsOrder}/${order['_id']}',
-            extra: true,
-          );
-          if (result != null &&
-              result is Map &&
-              result['success'] == true) {
+              setState(() {
+                filteredRequestOrders.removeWhere((e) => e['_id'] == removedId);
+              });
+            }
+          },
+          onApply: () {
+            // appLog("Details order: $order");
+            showAcceptOrderDialog(
+              context: context,
+              order: order,
+              onConfirm: (message) async {
+                await _acceptOrderWithMessage(order, message);
+              },
+            );
+          },
 
-            final removedId = result['id'];
+          onReject: () async {
+            // appLog("reject order: $order");
+            final idOrder = order["_id"];
+            final reason = await showModalBottomSheet<String>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) {
+                return RejectOrderBottomSheet(
+                  onConfirm: (reason) async {
+                    await _rejectOrderWithReason(idOrder, reason);
+                  },
+                );
+              },
+            );
 
-            setState(() {
-              filteredRequestOrders.removeWhere((e) => e['_id'] == removedId);
-            });
-          }
-        },
-        onApply: () {
-          // appLog("Details order: $order");
-          showAcceptOrderDialog(
-            context: context,
-            order: order,
-            onConfirm: (message) async {
-              await _acceptOrderWithMessage(order, message);
-            },
-          );
-        },
-
-        onReject: () async {
-          // appLog("reject order: $order");
-          final idOrder = order["_id"];
-          final reason = await showModalBottomSheet<String>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) {
-              return RejectOrderBottomSheet(
-                onConfirm: (reason) async {
-                  await _rejectOrderWithReason(idOrder, reason);
-                },
-              );
-            },
-          );
-
-          // if (reason != null && mounted) {
-          //   context.pop({
-          //     'success': true,
-          //     'id': widget.id,
-          //   });
-          // }
-        },
-      );
+            // if (reason != null && mounted) {
+            //   context.pop({
+            //     'success': true,
+            //     'id': widget.id,
+            //   });
+            // }
+          },
+        );
   }
 }

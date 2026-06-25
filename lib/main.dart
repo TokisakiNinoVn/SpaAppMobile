@@ -62,6 +62,7 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
       importance: Importance.max,
       priority: Priority.high,
       playSound: true,
+      icon: 'ic_notification',
       sound: RawResourceAndroidNotificationSound('notification'),
       enableVibration: true,
       autoCancel: true,
@@ -99,7 +100,8 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
 
 Future<void> _setupLocalNotifications() async {
   /// ANDROID
-  const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  // const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('ic_notification');
 
   /// iOS settings
   const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
@@ -252,7 +254,7 @@ Future<void> main() async {
   FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
   // appLog("🎯 Background handler registered");
 
-  // await _setupLocalNotifications();
+  await _setupLocalNotifications();
   // appLog("🔔 Local notifications initialized");
 
   /// Request permission
