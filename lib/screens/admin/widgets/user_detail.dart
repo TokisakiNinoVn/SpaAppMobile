@@ -277,7 +277,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Chi tiết tài khoản',
+                'Chi tiết Kỹ thuật viên',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               IconButton(
@@ -361,7 +361,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                   ],
 
                   // Cập nhật phần hiển thị trạng thái tài khoản
-                  if (_role == 'admin') ... [
+                  // if (_role == 'admin') ... [
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Row(
@@ -382,7 +382,7 @@ class _UserDetailWidgetAdminState extends State<UserDetailWidgetAdmin> {
                       ),
                     ),
                     const Divider(),
-                  ],
+                  // ],
 
                   if (_role == 'admin') ... [
                     // _buildCopyableDetailRow(context, 'ID KTV', widget.user['_id']),

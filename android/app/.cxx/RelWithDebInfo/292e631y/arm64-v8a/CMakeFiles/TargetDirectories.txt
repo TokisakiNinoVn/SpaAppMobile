@@ -1,0 +1,2 @@
+C:/Data/Works/Code/spa_app/fe_android/android/app/.cxx/RelWithDebInfo/292e631y/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Data/Works/Code/spa_app/fe_android/android/app/.cxx/RelWithDebInfo/292e631y/arm64-v8a/CMakeFiles/rebuild_cache.dir

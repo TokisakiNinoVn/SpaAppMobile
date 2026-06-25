@@ -1,0 +1,27 @@
+[
+  {
+    "id": 4,
+    "name": "Thành phố Hồ Chí Minh",
+    "value": "TP. Hồ Chí Minh",
+    "image": "lib/assets/images/tphcm.jpg"
+  },
+  {
+    "id": 1,
+    "name": "Hà Nội",
+    "value": "Hà Nội",
+    "image": "lib/assets/images/ha_noi.jpg"
+  },
+  {
+    "id": 2,
+    "name": "Hải Phòng",
+    "value": "Hải Phòng",
+    "image": "lib/assets/images/hai_phong.jpg"
+  },
+  {
+    "id": 3,
+    "name": "Đà Nẵng",
+    "value": "Đà Nẵng",
+    "image": "lib/assets/images/da_nang.jpg"
+  }
+
+]
