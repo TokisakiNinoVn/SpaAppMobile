@@ -42,7 +42,7 @@ class _ListTechnicianApplyState extends State<ListTechnicianApply> {
 
     RealtimeService.instance.init(context: context);
 
-    appLog("data widget: ${widget.data}");
+    // appLog("data widget: ${widget.data}");
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadListTechnicianApply();

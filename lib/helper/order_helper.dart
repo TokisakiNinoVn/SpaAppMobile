@@ -52,6 +52,15 @@ class OrderHelper {
       case 'pending':
         return 'Đang chờ';
 
+      case 'accept':
+        return 'Đã nhận đơn';
+
+      case 'accepted':
+        return 'Đã nhận đơn';
+
+      case 'entrusted':
+        return 'Đã giao việc';
+
       case 'approved':
         return 'Đã chấp nhận';
 
