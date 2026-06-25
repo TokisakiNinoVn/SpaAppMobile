@@ -3,7 +3,7 @@ description: "Serene Spa"
 
 publish_to: "none"
 
-version: 1.5.3+48
+version: 1.5.3+49
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -73,6 +73,7 @@ flutter:
     - lib/assets/
     - lib/assets/data/tinhthanh.json
     - lib/assets/data/cities.json
+    - assets/audio/notification.caf
   fonts:
     - family: Roboto
       fonts:
