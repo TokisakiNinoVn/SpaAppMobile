@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 
 class OrderHelper {
   static MaterialColor statusColor(String status) {
@@ -44,10 +45,21 @@ class OrderHelper {
         return 'Không xác định';
     }
   }
+
   static String displayStatusOrder(String status) {
+    // appLog(status);
     switch (status) {
       case 'pending':
         return 'Đang chờ';
+
+      case 'accept':
+        return 'Đã nhận đơn';
+
+      case 'accepted':
+        return 'Đã nhận đơn';
+
+      case 'entrusted':
+        return 'Đã giao việc';
 
       case 'approved':
         return 'Đã chấp nhận';
@@ -60,6 +72,9 @@ class OrderHelper {
 
       case 'rejected':
         return 'Bị từ chối';
+
+      case 'reject':
+        return 'Từ chối';
 
       case 'canceled':
         return 'Đã hủy';

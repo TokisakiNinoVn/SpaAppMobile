@@ -14,7 +14,10 @@ class TechnicianService {
       '${TechnicianApiRoutes.detailTechnician}/$id',
     );
   }
-  Future<Map<String, dynamic>> getDetailsTechnicianForCustomerService(String id) async {
+
+  Future<Map<String, dynamic>> getDetailsTechnicianForCustomerService(
+    String id,
+  ) async {
     return await ApiMethodsPrivate.getRequest(
       '${TechnicianApiRoutes.detailTechnicianForCustomer}/$id',
     );
@@ -22,8 +25,8 @@ class TechnicianService {
 
   // create
   Future<Map<String, dynamic>> createTechnicianService(
-      Map<String, dynamic> data,
-      ) async {
+    Map<String, dynamic> data,
+  ) async {
     // appLog("URL: ${TechnicianApiRoutes.createTechnician}");
     // appLog("Data: ${data}");
     return await ApiMethodsPrivate.postRequest(
@@ -31,11 +34,12 @@ class TechnicianService {
       data,
     );
   }
+
   Future<Map<String, dynamic>> addTechnicianService(
-      Map<String, dynamic> data,
-      ) async {
+    Map<String, dynamic> data,
+  ) async {
     // final prettyJson = const JsonEncoder.withIndent('  ').convert(data);
-      // print("data request: $prettyJson");
+    // print("data request: $prettyJson");
     return await ApiMethodsPrivate.postRequest(
       TechnicianApiRoutes.addTechnician,
       data,
@@ -43,7 +47,7 @@ class TechnicianService {
   }
 
   Future<Map<String, dynamic>> updateTechnicianService(
-      String id,
+    String id,
     Map<String, dynamic> data,
   ) async {
     // debugPrint("$id - data update: $data");
@@ -85,30 +89,55 @@ class TechnicianService {
   // }
   Future<Map<String, dynamic>> getListTechnicianCreateByUser() async {
     return await ApiMethodsPrivate.getRequest(
-      TechnicianApiRoutes.listTechnicianCreateByUser
+      TechnicianApiRoutes.listTechnicianCreateByUser,
     );
   }
 
-  Future<Map<String, dynamic>> getListTechnicianForCustomer(double? lat, double? lng, String typeOrder) async {
+  Future<Map<String, dynamic>> getListTechnicianForCustomer(
+    double? lat,
+    double? lng,
+    String typeOrder,
+  ) async {
     // print("✅ $lat - $lng");
-    bool isLogin = await SharedPrefs.getValue(PrefType.bool, "isLogin") ?? false;
-    String fullUrl = "${TechnicianApiRoutes.listTechnicianForCustomer}?lat=${lat}&lng=${lng}&isLogin=$isLogin&typeOrder=$typeOrder";
+    bool isLogin =
+        await SharedPrefs.getValue(PrefType.bool, "isLogin") ?? false;
+    String fullUrl =
+        "${TechnicianApiRoutes.listTechnicianForCustomer}?lat=${lat}&lng=${lng}&isLogin=$isLogin&typeOrder=$typeOrder";
     // appLog("$fullUrl");
-    if(isLogin) {
+    if (isLogin) {
       return await ApiMethodsPrivate.getRequest(fullUrl);
     } else {
       return await ApiMethodsPublic.getRequest(fullUrl);
     }
   }
 
-  Future<Map<String, dynamic>> filterTechnicianByIdProvince(int idProvince) async {
+  Future<Map<String, dynamic>> filterTechnicianByIdProvince(
+    int idProvince,
+  ) async {
     return await ApiMethodsPrivate.getRequest(
-        '${TechnicianApiRoutes.filterTechnician}?idProvince=${idProvince}'
+      '${TechnicianApiRoutes.filterTechnician}?idProvince=${idProvince}',
     );
   }
+
   Future<Map<String, dynamic>> deleteTechnicianCreateByUser(String? id) async {
     return await ApiMethodsPrivate.deleteRequest(
-      '${TechnicianApiRoutes.deleteTechnicianCreateByUser}/$id'
+      '${TechnicianApiRoutes.deleteTechnicianCreateByUser}/$id',
+    );
+  }
+
+  // =============== Admin ===============================================================
+  Future<Map<String, dynamic>> listViewTechnician() async {
+    return await ApiMethodsPrivate.getRequest(
+      '${TechnicianApiRoutes.listViewTechnician}',
+    );
+  }
+
+  Future<Map<String, dynamic>> changeDisplayTechnician(
+    Map<String, dynamic> data,
+  ) async {
+    return await ApiMethodsPrivate.postRequest(
+      '${TechnicianApiRoutes.changeDisplayTechnician}',
+      data,
     );
   }
 }

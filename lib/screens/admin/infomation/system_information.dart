@@ -236,14 +236,14 @@ class _ManagementSystemInformationState extends State<ManagementSystemInformatio
                 valueController: _orderValueController,
                 unit: _orderUnit,
                 onUnitChanged: (unit) => setState(() => _orderUnit = unit),
-                minValue: 5,
+                minValue: 1,
               ),
               _buildTimeoutField(
                 label: "Yêu cầu ghép KTV tự động",
                 valueController: _autoMatchingValueController,
                 unit: _autoMatchingUnit,
                 onUnitChanged: (unit) => setState(() => _autoMatchingUnit = unit),
-                minValue: 5,
+                minValue: 1,
               ),
 
               const SizedBox(height: 40),

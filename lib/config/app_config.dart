@@ -36,7 +36,9 @@ class AppConfig {
   static const String apiUrl = "https://apispa.tokisakinino.xyz";
   static const String apiWebsocketUrl = "ws://apispa.tokisakinino.xyz";
   static const String apiUrlTinhThanh = "https://api-tinh-thanh-git-main-toiyours-projects.vercel.app";
+
   static const String apiUrlPrivate = "$apiUrl/api/private";
+  static const String apiUrlAdminPrivate = "$apiUrl/api/admin/private";
   static const String apiUrlPublic = "$apiUrl/api/public";
   static const String apiUrlImage = "$apiUrl/public";
   static const String apiKey = "";

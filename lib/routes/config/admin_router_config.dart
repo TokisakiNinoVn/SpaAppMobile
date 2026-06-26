@@ -1,11 +1,15 @@
 class AdminRouterConfig {
-  static String createOrder = "/home-customer/list-technician/create-order-technician";
+  static String createOrder =
+      "/home-customer/list-technician/create-order-technician";
 
   // Management account
-  static String technicianManagementAccount = "/home-admin/manage-account-technician";
-  static String editTechnician = "/home-admin/manage-account-technician/edit-technician";
+  static String technicianManagementAccount =
+      "/home-admin/manage-account-technician";
+  static String editTechnician =
+      "/home-admin/manage-account-technician/edit-technician";
 
-  static String customerManagementAccount = "/home-admin/manage-account-customer";
+  static String customerManagementAccount =
+      "/home-admin/manage-account-customer";
 
   // Report
   static String listReport = "/home-admin/reports";
@@ -14,11 +18,9 @@ class AdminRouterConfig {
   static String createBanner = "/home-admin/manage-banner/create";
   static String editBanner = "/home-admin/manage-banner/edit";
 
-
   static String managementDiscount = "/home-admin/manage-discount";
   static String createDiscount = "/home-admin/manage-discount/create";
   static String editDiscount = "/home-admin/manage-discount/edit";
-
 
   static String managementService = "/home-admin/manage-service";
   static String editService = "/home-admin/manage-service/edit";
@@ -26,7 +28,6 @@ class AdminRouterConfig {
 
   static String notificationManagement = "/home-admin/manage-notification";
   static String createNotification = "/home-admin/manage-notification/create";
-
 
   static String settingApp = "/home-admin/settings-app";
   static String statistical = "/home-admin/statistical";
@@ -49,10 +50,17 @@ class AdminRouterConfig {
 
   // Post order
   static String manageOrderPost = "/home-admin/manage-post-order";
-  static String createOrderPost = "/home-admin/manage-post-order/create-post-order";
-  static String listTechnicianApply = "/home-admin/manage-post-order/technician-apply";
+  static String createOrderPost =
+      "/home-admin/manage-post-order/create-post-order";
+  static String listTechnicianApply =
+      "/home-admin/manage-post-order/technician-apply";
+  static String detailOrderAdmin = "/home-admin/details-orders";
 
   static String createManageAccount = "/home-admin/create-manage-account";
 
   static String manageInformationSystem = "/home-admin/manage-system";
+
+  // Display technician
+  static String manageDisplayTechnician =
+      "/home-admin/manage-display-technician";
 }

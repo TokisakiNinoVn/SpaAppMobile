@@ -18,110 +18,121 @@ import '../screens/technician/statistical/statistical_screen.dart';
 
 final List<GoRoute> technicianRoutes = [
   GoRoute(
-      path: '/home-technician',
-      builder: (context, state) {
-        final initialIndex = state.extra as int? ?? 0;
-        // appLog("initialIndex: $initialIndex");
-        return HomeTechnicianScreen(
-          initialIndex: initialIndex,
-        );
-      },
-      // builder: (context, state) => const HomeTechnicianScreen(),
-      // pageBuilder: (context, state) {
-      //   final initialIndex = state.extra as int? ?? 0;
-      //     appLog("${state.extra} initialIndex: $initialIndex");
+    path: '/home-technician',
+    builder: (context, state) {
+      final initialIndex = state.extra as int? ?? 0;
+      // appLog("initialIndex: $initialIndex");
+      return HomeTechnicianScreen(initialIndex: initialIndex);
+    },
+    // builder: (context, state) => const HomeTechnicianScreen(),
+    // pageBuilder: (context, state) {
+    //   final initialIndex = state.extra as int? ?? 0;
+    //     appLog("${state.extra} initialIndex: $initialIndex");
+    //
+    //   return MaterialPage(
+    //     key: ValueKey(initialIndex),
+    //     child: HomeTechnicianScreen(
+    //       initialIndex: initialIndex,
+    //     ),
+    //   );
+    // },
+    // pageBuilder: (context, state) {
+    //   final initialIndex = state.extra as int? ?? 0;
+    //   return MaterialPage(
+    //     key: UniqueKey(),  // luôn tạo mới
+    //     child: HomeTechnicianScreen(initialIndex: initialIndex),
+    //   );
+    // },
+    routes: [
+      GoRoute(
+        path: 'technician-update-service',
+        builder: (context, state) => const TechnicianUpdateService(),
+      ),
+      GoRoute(
+        path: 'canceled-order/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+
+          return TechnicianCanceledOrder(idOrder: id);
+        },
+      ),
+      GoRoute(
+        path: 'history-order',
+        builder: (context, state) => const HistoryOrder(),
+      ),
+      GoRoute(
+        path: 'create-request-withdraw',
+        builder: (context, state) => const CreateRequestWithdrawTechnician(),
+        routes: [
+          GoRoute(
+            path: 'confirm',
+            builder: (context, state) {
+              final data = state.extra as Map<String, dynamic>;
+              return ConfirmRequestWithdrawTechnician(data: data);
+            },
+            // builder: (context, state) => ConfirmRequestWithdrawTechnician(),
+          ),
+          GoRoute(
+            path: 'history',
+            builder: (context, state) {
+              return HistoryWithdrawTechnician();
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: 'notifications',
+        builder: (context, state) => ListNotificationTechnician(),
+      ),
+      GoRoute(
+        path: 'statistical',
+        builder: (context, state) => const StatisticalTechnicianScreen(),
+      ),
+      GoRoute(
+        path: 'add-technician',
+        builder: (context, state) => const AddTechnicianScreen(),
+      ),
+
+      GoRoute(
+        path: 'orders/:orderId',
+        builder: (context, state) {
+          final orderId = state.pathParameters['orderId']!;
+          return DetailsNewOrderScreen(orderId: orderId);
+        },
+      ),
+
+      // GoRoute(
+      //   path: 'details-orders/:id',
+      //   builder: (context, state) {
+      //     final id = state.pathParameters['id']!;
       //
-      //   return MaterialPage(
-      //     key: ValueKey(initialIndex),
-      //     child: HomeTechnicianScreen(
-      //       initialIndex: initialIndex,
-      //     ),
-      //   );
-      // },
-      // pageBuilder: (context, state) {
-      //   final initialIndex = state.extra as int? ?? 0;
-      //   return MaterialPage(
-      //     key: UniqueKey(),  // luôn tạo mới
-      //     child: HomeTechnicianScreen(initialIndex: initialIndex),
-      //   );
-      // },
-      routes: [
-        GoRoute(
-          path: 'technician-update-service',
-          builder: (context, state) => const TechnicianUpdateService(),
-        ),
-        GoRoute(
-          path: 'canceled-order/:id',
-          builder: (context, state) {
-            final id = state.pathParameters['id']!;
+      //     return DetailsOrderTechnician(
+      //       id: id,
+      //       isNewOrder: state.extra as bool? ?? false,
+      //       isEntrust: state.extra as bool? ?? false,
+      //     );
+      //   },
+      // ),
+      GoRoute(
+        path: 'details-orders/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
 
-            return TechnicianCanceledOrder(
-              idOrder: id,
-            );
-          }
-        ),
-        GoRoute(
-          path: 'history-order',
-          builder: (context, state) => const HistoryOrder(),
-        ),
-        GoRoute(
-          path: 'create-request-withdraw',
-          builder: (context, state) => const CreateRequestWithdrawTechnician(),
-          routes: [
-            GoRoute(
-              path: 'confirm',
-              builder: (context, state) {
-                final data = state.extra as Map<String, dynamic>;
-                return ConfirmRequestWithdrawTechnician(data: data);
-              }
-              // builder: (context, state) => ConfirmRequestWithdrawTechnician(),
-            ),
-            GoRoute(
-              path: 'history',
-              builder: (context, state) {
-                return HistoryWithdrawTechnician();
-              }
-            ),
-          ]
-        ),
-        GoRoute(
-          path: 'notifications',
-          builder: (context, state) => ListNotificationTechnician(),
-        ),
-        GoRoute(
-          path: 'statistical',
-          builder: (context, state) => const StatisticalTechnicianScreen(),
-        ),
-        GoRoute(
-          path: 'add-technician',
-          builder: (context, state) => const AddTechnicianScreen(),
-        ),
+          final extra = state.extra as Map<String, dynamic>?;
 
-        GoRoute(
-          path: 'orders/:orderId',
-          builder: (context, state) {
-            final orderId = state.pathParameters['orderId']!;
-            return DetailsNewOrderScreen(orderId: orderId);
-          },
-        ),
+          return DetailsOrderTechnician(
+            id: id,
+            isNewOrder: extra?['isNewOrder'] ?? false,
+            isEntrust: extra?['isEntrust'] ?? false,
+            orderExpiredAt: extra?['orderExpiredAt'] ?? null,
+          );
+        },
+      ),
 
-        GoRoute(
-          path: 'details-orders/:id',
-          builder: (context, state) {
-            final id = state.pathParameters['id']!;
-
-            return DetailsOrderTechnician(
-              id: id,
-              isNewOrder: state.extra as bool? ?? false,
-            );
-          },
-        ),
-
-        GoRoute(
-          path: '/update-profile',
-          builder: (context, state) => const UserEditTechnicianScreen(),
-        ),
-
-      ]
+      GoRoute(
+        path: '/update-profile',
+        builder: (context, state) => const UserEditTechnicianScreen(),
+      ),
+    ],
   ),
 ];

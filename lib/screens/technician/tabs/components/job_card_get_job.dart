@@ -6,7 +6,7 @@ import 'package:spa_app/screens/components/dashed_divider_component.dart';
 
 class JobCard extends StatelessWidget {
   final Map<String, dynamic> job;
-  final bool isWorking;
+  final bool isWorking; // Đang làm việc job này
   final Duration remainingTime;
   final VoidCallback onAccept;
   final VoidCallback? onTap;
@@ -25,65 +25,60 @@ class JobCard extends StatelessWidget {
   });
 
   bool get isAdminPost => job['isAdminCreate'] ?? false;
-
-  /// Kiểm tra hết hạn
   bool get isExpired => remainingTime.isNegative;
+  bool get isPrioritize => job['isPrioritize'] ?? false;
 
-  /// Chế độ ứng tuyển
-  bool get isApplyMode => isAdminPost;
-
-  /// Có thể thao tác không
-  bool get canHandleJob {
-    // Hết hạn => disable
-    if (isExpired) return false;
-
-    // Đang làm việc mà là nút nhận việc => disable
-    if (isWorking && !isApplyMode) {
-      return false;
-    }
-
-    return true;
+  /// Trạng thái chính của job
+  String get jobStatus {
+    if (isExpired) return "expired";
+    if (isWorking) return "working";
+    return "available";
   }
 
-  /// Text nút
+  /// Text hiển thị trên nút
   String get actionText {
-    if (isApplyMode) {
-      return "Ứng tuyển";
-    }
+    if (isExpired) return "Đã hết hạn";
 
     if (isWorking) {
-      return "Đang làm việc";
+      return isAdminPost ? "Đang làm việc" : "Đang làm việc";
     }
 
-    return "Nhận việc";
+    return isAdminPost ? "Ứng tuyển" : "Nhận việc";
   }
 
   /// Màu nút
   Color get buttonColor {
-    if (!canHandleJob) {
-      return Colors.grey.shade300;
+    if (isExpired) return Colors.grey.shade300;
+
+    if (isWorking) {
+      return Colors.orange.shade600; // Màu nổi bật khi đang làm
     }
 
-    return isApplyMode
-        ? ColorConfig.primary
-        : ColorConfig.primary;
+    return isAdminPost ? ColorConfig.primary : ColorConfig.primary;
+  }
+
+  /// Icon cho nút
+  IconData get buttonIcon {
+    if (isWorking) {
+      return Icons.access_time_rounded;
+    }
+    return isAdminPost ? Icons.send_rounded : Icons.handshake_rounded;
+  }
+
+  /// Có thể bấm nút không
+  bool get canHandleJob {
+    if (isExpired) return false;
+    if (isWorking) return false; // Đang làm rồi thì không cho bấm lại
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    // appLog("Job: $job");
     final customer = job['customerId'] ?? {};
-
-    final rawServiceTimePrice = job['serviceTimePrice'] ?? job['serviceTimePriceId'];
-
-    final serviceTimePrice = (rawServiceTimePrice is Map)
-        ? rawServiceTimePrice
-        : {};
-    // appLog("Job: $serviceTimePrice");
-
-    final isPrioritize = job['isPrioritize'] ?? false;
-    final isExpired = remainingTime.isNegative;
-    final isAdminPost = job['isAdminCreate'] ?? false;
+    final rawServiceTimePrice =
+        job['serviceTimePrice'] ?? job['serviceTimePriceId'];
+    final serviceTimePrice =
+        (rawServiceTimePrice is Map) ? rawServiceTimePrice : {};
 
     final gender = customer['gender'] == "male" ? "Khách nam" : "Khách nữ";
     const double borderRadiusAll = 18.0;
@@ -97,12 +92,15 @@ class JobCard extends StatelessWidget {
           elevation: 1.5,
           borderRadius: BorderRadius.circular(borderRadiusAll),
           child: Container(
-            padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
+            padding: const EdgeInsets.only(
+              top: 16,
+              left: 16,
+              right: 16,
+              bottom: 8,
+            ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(borderRadiusAll),
-              border: Border.all(
-                color: Colors.grey.shade200,
-              ),
+              border: Border.all(color: Colors.grey.shade200),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,17 +133,25 @@ class JobCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
+                        color:
+                            isExpired
+                                ? Colors.red.shade50
+                                : Colors.orange.shade50,
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Row(
                         children: [
                           Text(
-                            isPrioritize ? "Cần ngay" : "Đang chờ",
+                            isExpired
+                                ? "Hết hạn"
+                                : (isPrioritize ? "Cần ngay" : "Đang chờ"),
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: Colors.orange.shade700,
+                              color:
+                                  isExpired
+                                      ? Colors.red.shade700
+                                      : Colors.orange.shade700,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -163,7 +169,9 @@ class JobCard extends StatelessWidget {
                   ],
                 ),
 
-                /// CUSTOMER
+                const SizedBox(height: 12),
+
+                /// CUSTOMER INFO
                 Text(
                   "$gender${customer['nationality'] != null ? ", ${customer['nationality']}" : ""}",
                   style: const TextStyle(
@@ -183,11 +191,12 @@ class JobCard extends StatelessWidget {
                     color: Colors.grey.shade700,
                   ),
                 ),
+
                 const SizedBox(height: 14),
                 const DashedDivider(),
-                const SizedBox(height: 5),
+                const SizedBox(height: 8),
 
-                /// SERVICE + DURATION
+                /// SERVICE + TIME
                 Row(
                   children: [
                     Expanded(
@@ -223,9 +232,10 @@ class JobCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 5),
+
+                const SizedBox(height: 8),
                 const DashedDivider(),
-                const SizedBox(height: 5),
+                const SizedBox(height: 12),
 
                 /// PRICE + BUTTON
                 Row(
@@ -255,42 +265,37 @@ class JobCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 5),
 
-                    /// BUTTON Handling the matter
-                    if (!isExpired) ...[
-                      Expanded(
-                        child: SizedBox(
-                          height: 40,
-                          child: ElevatedButton.icon(
-                            onPressed: canHandleJob ? onAccept : null,
-                            icon: Icon(
-                              isAdminPost
-                                  ? Icons.send_rounded
-                                  : Icons.handshake_rounded,
-                              size: 16,
+                    // const SizedBox(width: 4),
+
+                    /// BUTTON
+                    Expanded(
+                      child: SizedBox(
+                        height: 42,
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: canHandleJob ? onAccept : null,
+                          icon: Icon(buttonIcon, size: 14),
+                          label: Text(
+                            actionText,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
                             ),
-                            label: Text(
-                              actionText,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              elevation: 0,
-                              backgroundColor: buttonColor,
-                              disabledBackgroundColor: Colors.grey.shade300,
-                              foregroundColor: Colors.white,
-                              disabledForegroundColor: Colors.grey.shade600,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                              ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: buttonColor,
+                            disabledBackgroundColor: Colors.grey.shade300,
+                            foregroundColor: Colors.white,
+                            disabledForegroundColor: Colors.grey.shade600,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
                             ),
                           ),
                         ),
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ],

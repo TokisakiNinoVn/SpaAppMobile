@@ -8,11 +8,13 @@ import 'package:spa_app/screens/admin/feature_service/edit.dart';
 import 'package:spa_app/screens/admin/feature_service/list.dart';
 import 'package:spa_app/screens/admin/infomation/system_information.dart';
 import 'package:spa_app/screens/admin/notification/create_notification_screen.dart';
+import 'package:spa_app/screens/admin/order/post/admin_detail_order.dart';
 import 'package:spa_app/screens/admin/order/post/create_post_order.dart';
 import 'package:spa_app/screens/admin/order/post/management_post_order.dart';
 import 'package:spa_app/screens/admin/order/post/technician_apply.dart';
 import 'package:spa_app/screens/admin/platform_fee/management_platform_fee.dart';
 import 'package:spa_app/screens/admin/report/report.dart';
+import 'package:spa_app/screens/admin/technician/manage_display.dart';
 import 'package:spa_app/screens/admin/withdraw/confirm_request_screen.dart';
 import 'package:spa_app/screens/admin/withdraw/detail_request.dart';
 import 'package:spa_app/screens/admin/withdraw/list_request.dart';
@@ -49,8 +51,30 @@ final List<GoRoute> adminRoutes = [
               return EditTechnicianScreen(data: data);
             },
           ),
-        ]
+        ],
       ),
+
+      GoRoute(
+        path: 'manage-display-technician',
+        builder: (context, state) => const ManageDisplayTechnician(),
+      ),
+
+      GoRoute(
+        path: 'details-orders/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+
+          final extra = state.extra as Map<String, dynamic>?;
+
+          return DetailsOrderAdmin(
+            id: id,
+            isNewOrder: extra?['isNewOrder'] ?? false,
+            isEntrust: extra?['isEntrust'] ?? false,
+            orderExpiredAt: extra?['orderExpiredAt'] ?? null,
+          );
+        },
+      ),
+
       GoRoute(
         path: 'manage-account-customer',
         builder: (context, state) => const ManagementAccountCustomer(),
@@ -79,7 +103,7 @@ final List<GoRoute> adminRoutes = [
               return ListTechnicianApply(data: data);
             },
           ),
-        ]
+        ],
       ),
       GoRoute(
         path: 'manage-platform-fees',
@@ -104,7 +128,7 @@ final List<GoRoute> adminRoutes = [
               return EditBankScreen(bankData: data);
             },
           ),
-        ]
+        ],
       ),
       GoRoute(
         path: 'manage-banner',
@@ -121,36 +145,33 @@ final List<GoRoute> adminRoutes = [
               return EditBannerScreen(data: data);
             },
           ),
-        ]
+        ],
       ),
 
       GoRoute(
-          path: 'list-withdraw',
-          builder: (context, state) => ListRequestWithdraw(),
-          routes: [
-            GoRoute(
-              path: 'details/:id',
-              builder: (context, state) {
-                final id = state.pathParameters['id']!;
-                return DetailsRequestWithdraw(id: id);
-              },
-              routes: [
-                GoRoute(
-                  path: 'confirm',
-                  builder: (context, state) {
-                    final id = state.pathParameters['id']!;
-                    final extra = state.extra as Map?;
-                    final type = extra?['type'];
+        path: 'list-withdraw',
+        builder: (context, state) => ListRequestWithdraw(),
+        routes: [
+          GoRoute(
+            path: 'details/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return DetailsRequestWithdraw(id: id);
+            },
+            routes: [
+              GoRoute(
+                path: 'confirm',
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  final extra = state.extra as Map?;
+                  final type = extra?['type'];
 
-                    return ConfirmRequestScreen(
-                      id: id,
-                      type: type,
-                    );
-                  },
-                ),
-              ]
-            ),
-          ]
+                  return ConfirmRequestScreen(id: id, type: type);
+                },
+              ),
+            ],
+          ),
+        ],
       ),
 
       GoRoute(
@@ -168,7 +189,7 @@ final List<GoRoute> adminRoutes = [
               return EditDiscountScreen(data: data);
             },
           ),
-        ]
+        ],
       ),
       GoRoute(
         path: 'manage-service',
@@ -181,11 +202,8 @@ final List<GoRoute> adminRoutes = [
               return UpdateService(item: item);
             },
           ),
-          GoRoute(
-            path: 'add',
-            builder: (context, state) => const AddService(),
-          ),
-        ]
+          GoRoute(path: 'add', builder: (context, state) => const AddService()),
+        ],
       ),
       GoRoute(
         path: 'settings-app',
@@ -202,7 +220,7 @@ final List<GoRoute> adminRoutes = [
               return EditFeatureService(featureData: featureData);
             },
           ),
-        ]
+        ],
       ),
       GoRoute(
         path: 'statistical',
@@ -216,7 +234,7 @@ final List<GoRoute> adminRoutes = [
             path: 'create',
             builder: (context, state) => const CreateNotificationScreen(),
           ),
-        ]
+        ],
       ),
     ],
   ),
