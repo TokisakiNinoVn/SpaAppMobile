@@ -6,17 +6,26 @@ import 'package:spa_app/apis/auth_api.dart';
 import '../helper/logger_utils.dart';
 
 class AuthService {
+  Future<Map<String, dynamic>> getAppActiveService() async {
+    return await ApiMethodsPublic.getRequest(AuthApiRoutes.appActive);
+  }
+
   Future<Map<String, dynamic>> loginService(data) async {
     return await ApiMethodsPublic.postRequest(AuthApiRoutes.login, body: data);
   }
-  
+
   Future<Map<String, dynamic>> verifyFirebaseService(data) async {
     // appLog("Data: $data");
-    return await ApiMethodsPublic.postRequest(AuthApiRoutes.verifyFirebase, body: data);
+    return await ApiMethodsPublic.postRequest(
+      AuthApiRoutes.verifyFirebase,
+      body: data,
+    );
   }
 
   Future<Map<String, dynamic>> existsPhoneService(String phone) async {
-    return await ApiMethodsPublic.getRequest('${AuthApiRoutes.existsPhone}?phone=$phone');
+    return await ApiMethodsPublic.getRequest(
+      '${AuthApiRoutes.existsPhone}?phone=$phone',
+    );
   }
 
   Future<Map<String, dynamic>> logoutAuthService() async {
@@ -29,27 +38,35 @@ class AuthService {
 
   Future<Map<String, dynamic>> switchRoleAccount(data) async {
     // appLog("Role: $data");
-    return await ApiMethodsPrivate.postRequest(AuthApiRoutes.changeRolePrivate, data);
+    return await ApiMethodsPrivate.postRequest(
+      AuthApiRoutes.changeRolePrivate,
+      data,
+    );
   }
 
   Future<Map<String, dynamic>> verifyOTPService(data) async {
-    return await ApiMethodsPublic.postRequest(AuthApiRoutes.verifyOTP, body: data);
+    return await ApiMethodsPublic.postRequest(
+      AuthApiRoutes.verifyOTP,
+      body: data,
+    );
   }
+
   Future<Map<String, dynamic>> verifyOTPLoginService(data) async {
-    return await ApiMethodsPublic.postRequest(AuthApiRoutes.verifyOTPLogin, body: data);
+    return await ApiMethodsPublic.postRequest(
+      AuthApiRoutes.verifyOTPLogin,
+      body: data,
+    );
   }
 
   Future<Map<String, dynamic>> changePasswordService(data) async {
-    return await ApiMethodsPublic.postRequest(AuthApiRoutes.changePassword, body: data);
+    return await ApiMethodsPublic.postRequest(
+      AuthApiRoutes.changePassword,
+      body: data,
+    );
   }
 
-  Future<Map<String, dynamic>> logoutService(
-      Map<String, dynamic> data,
-      ) async {
-    return await ApiMethodsPrivate.postRequest(
-      '${AuthApiRoutes.logout}',
-      data,
-    );
+  Future<Map<String, dynamic>> logoutService(Map<String, dynamic> data) async {
+    return await ApiMethodsPrivate.postRequest('${AuthApiRoutes.logout}', data);
   }
 
   Future<Map<String, dynamic>> registerService(data) async {
@@ -57,6 +74,9 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> checkTokenService(payload) async {
-    return await ApiMethodsPrivate.putRequest(AuthApiRoutes.checkTokenUser, payload);
+    return await ApiMethodsPrivate.putRequest(
+      AuthApiRoutes.checkTokenUser,
+      payload,
+    );
   }
 }

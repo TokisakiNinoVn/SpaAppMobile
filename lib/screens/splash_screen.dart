@@ -7,9 +7,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spa_app/config/app_config.dart';
+import 'package:spa_app/config/color_config.dart';
 import 'package:spa_app/helper/fcm_helper.dart';
+import 'package:spa_app/helper/logger_utils.dart';
 import 'package:spa_app/helper/shared_preferences_helper.dart';
 import 'package:spa_app/services/auth_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../storage/index.dart';
 
@@ -30,10 +34,11 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _scaleAnimation;
   late Animation<Offset> _slideAnimation;
 
+  bool _isAppActive = true;
+
   double _progress = 0.0;
   String _loadingMessage = "Đang khởi động...";
 
-  // Trạng thái màn hình: loading | noInternet | done
   _ScreenState _screenState = _ScreenState.loading;
 
   @override
@@ -41,6 +46,50 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _setupAnimations();
     WidgetsBinding.instance.addPostFrameCallback((_) => _start());
+
+    // Kiểm tra trạng thái app khi vào splash
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAppActivity();
+    });
+  }
+
+  // ─── App Activity Check ────────────────────────────────────────────────────
+
+  Future<void> _checkAppActivity() async {
+    try {
+      final response = await _authService.getAppActiveService();
+      appLog('App Active Response: $response');
+
+      if (response['success'] == false) {
+        _setMaintenanceState();
+        return;
+      }
+
+      final isActive = response['data']['isAppActive'] ?? true;
+
+      setState(() {
+        _isAppActive = isActive;
+      });
+
+      if (!isActive) {
+        _setMaintenanceState();
+      } else if (_screenState == _ScreenState.maintenance) {
+        // Nếu trước đó đang bảo trì mà giờ đã active → quay lại loading
+        setState(() => _screenState = _ScreenState.loading);
+        _start();
+      }
+    } catch (e) {
+      appLog('Error checking app activity: $e');
+      // Nếu lỗi thì coi như active để không chặn user (có thể retry sau)
+    }
+  }
+
+  void _setMaintenanceState() {
+    if (!mounted) return;
+    setState(() {
+      _screenState = _ScreenState.maintenance;
+      _isAppActive = false;
+    });
   }
 
   // ─── Animations ───────────────────────────────────────────────────────────
@@ -63,8 +112,7 @@ class _SplashScreenState extends State<SplashScreen>
       begin: const Offset(0, 0.5),
       end: Offset.zero,
     ).animate(
-      CurvedAnimation(
-          parent: _animationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
 
     _animationController.forward();
@@ -81,12 +129,11 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 300));
   }
 
-  /// Kiểm tra kết nối mạng bằng DNS lookup — không hardcode URL bên ngoài,
-  /// an toàn với App Store Review Guidelines.
   Future<bool> _hasInternet() async {
     try {
-      final result = await InternetAddress.lookup('apple.com')
-          .timeout(const Duration(seconds: 5));
+      final result = await InternetAddress.lookup(
+        'apple.com',
+      ).timeout(const Duration(seconds: 5));
       return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
     } catch (_) {
       return false;
@@ -130,6 +177,10 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _checkAndNavigate() async {
     await _setProgress(0.2, "Đang kiểm tra trạng thái...");
 
+    // Kiểm tra lại app active trước khi đi xa hơn
+    await _checkAppActivity();
+    if (!_isAppActive) return;
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     final isLogin = token != null && token.isNotEmpty;
@@ -141,7 +192,7 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
-    // Đã đăng nhập: khởi tạo notification + lấy FCM token
+    // Đã đăng nhập
     await _setProgress(0.4, "Đang khởi tạo dịch vụ...");
     await _initNotification();
 
@@ -149,20 +200,21 @@ class _SplashScreenState extends State<SplashScreen>
     final fcmToken = await FcmHelper.getFCMToken();
 
     await _setProgress(0.8, "Đang xác thực...");
-    final role =
-        prefs.getString('role')?.replaceAll('"', '').trim() ?? '';
-    final response =
-    await _authService.checkTokenService({'fcmToken': fcmToken});
+
+    final response = await _authService.checkTokenService({
+      'fcmToken': fcmToken,
+    });
 
     await _setProgress(1.0, "Hoàn tất!");
     await Future.delayed(const Duration(milliseconds: 200));
 
     if (!mounted) return;
 
-    final success = response['success'] == true ||
-        response['status'] == 'success';
+    final success =
+        response['success'] == true || response['status'] == 'success';
 
     if (success) {
+      final role = prefs.getString('role')?.replaceAll('"', '').trim() ?? '';
       switch (role) {
         case 'customer':
           context.go('/home-customer');
@@ -186,8 +238,6 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
-  // ─── Dispose ──────────────────────────────────────────────────────────────
-
   @override
   void dispose() {
     _animationController.dispose();
@@ -206,11 +256,7 @@ class _SplashScreenState extends State<SplashScreen>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                Colors.green.shade50,
-                Colors.white,
-              ],
+              colors: [Colors.white, Colors.green.shade50, Colors.white],
             ),
           ),
           child: SafeArea(
@@ -220,9 +266,7 @@ class _SplashScreenState extends State<SplashScreen>
                 Center(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 400),
-                    child: _screenState == _ScreenState.noInternet
-                        ? _buildNoInternet()
-                        : _buildLoading(),
+                    child: _buildCurrentScreen(),
                   ),
                 ),
                 Positioned(
@@ -247,13 +291,24 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
+  Widget _buildCurrentScreen() {
+    switch (_screenState) {
+      case _ScreenState.noInternet:
+        return _buildNoInternet();
+      case _ScreenState.maintenance:
+        return _buildMaintenance();
+      default:
+        return _buildLoading();
+    }
+  }
+
   Widget _buildLoading() {
     return SingleChildScrollView(
       key: const ValueKey('loading'),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Logo
+          // ... (giữ nguyên phần loading cũ của bạn)
           SlideTransition(
             position: _slideAnimation,
             child: FadeTransition(
@@ -267,10 +322,7 @@ class _SplashScreenState extends State<SplashScreen>
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Colors.green.shade400,
-                        Colors.green.shade700,
-                      ],
+                      colors: [Colors.green.shade400, Colors.green.shade700],
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -290,7 +342,6 @@ class _SplashScreenState extends State<SplashScreen>
           ),
           const SizedBox(height: 30),
 
-          // App name
           FadeTransition(
             opacity: _fadeAnimation,
             child: Column(
@@ -317,10 +368,7 @@ class _SplashScreenState extends State<SplashScreen>
                   height: 2,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        Colors.green.shade300,
-                        Colors.green.shade700,
-                      ],
+                      colors: [Colors.green.shade300, Colors.green.shade700],
                     ),
                   ),
                 ),
@@ -339,7 +387,6 @@ class _SplashScreenState extends State<SplashScreen>
 
           const SizedBox(height: 60),
 
-          // Progress
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Column(
@@ -379,25 +426,96 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Widget _buildProgressIcon() {
-    if (_progress >= 0.99) {
-      return Icon(Icons.check_circle, color: Colors.green.shade600, size: 20);
-    }
-    if (_progress >= 0.8) {
-      return Icon(Icons.refresh, color: Colors.green.shade400, size: 20);
-    }
-    return SizedBox(
-      width: 20,
-      height: 20,
-      child: CircularProgressIndicator(
-        strokeWidth: 2,
-        valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade600),
+  Widget _buildMaintenance() {
+    return Padding(
+      key: const ValueKey('maintenance'),
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.settings, size: 80, color: ColorConfig.primary),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'Ứng dụng đang được bảo trì',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade800,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Ứng dụng đang được bảo trì, không thể sử dụng ứng dụng ngay lúc này.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 40),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _checkAppActivity,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text(
+                'Kiểm tra',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ColorConfig.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => SystemNavigator.pop(),
+            child: Text(
+              'Thoát ứng dụng',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ),
+
+          // url hỗ trợ khách hàng
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () async {
+              final uri = Uri.parse(AppConfig.urlSupport);
+
+              try {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              } catch (e) {
+                debugPrint(e.toString());
+              }
+            },
+            child: Text(
+              'Hỗ trợ khách hàng',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Màn hình không có mạng — text Apple-safe, không mang tính "chặn/block"
+  // Các widget khác giữ nguyên (_buildNoInternet, _buildProgressIcon, _buildAnimatedBackground...)
   Widget _buildNoInternet() {
+    // ... (giữ nguyên code cũ của bạn)
     return Padding(
       key: const ValueKey('no-internet'),
       padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -428,7 +546,7 @@ class _SplashScreenState extends State<SplashScreen>
           const SizedBox(height: 12),
           Text(
             'Ứng dụng cần kết nối Internet để hoạt động. '
-                'Vui lòng kiểm tra Wi-Fi hoặc dữ liệu di động của bạn.',
+            'Vui lòng kiểm tra Wi-Fi hoặc dữ liệu di động của bạn.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -462,6 +580,23 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
+  Widget _buildProgressIcon() {
+    if (_progress >= 0.99) {
+      return Icon(Icons.check_circle, color: Colors.green.shade600, size: 20);
+    }
+    if (_progress >= 0.8) {
+      return Icon(Icons.refresh, color: Colors.green.shade400, size: 20);
+    }
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade600),
+      ),
+    );
+  }
+
   Widget _buildAnimatedBackground() {
     return TweenAnimationBuilder(
       tween: Tween<double>(begin: 0, end: 2 * 3.14159),
@@ -484,7 +619,7 @@ class _SplashScreenState extends State<SplashScreen>
 
 // ─── Enums & Painters ─────────────────────────────────────────────────────────
 
-enum _ScreenState { loading, noInternet }
+enum _ScreenState { loading, noInternet, maintenance }
 
 class _WavePainter extends CustomPainter {
   final double progress;
@@ -494,9 +629,10 @@ class _WavePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
+    final paint =
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.fill;
 
     final path = Path();
     const waveHeight = 20.0;
