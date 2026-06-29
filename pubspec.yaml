@@ -3,7 +3,7 @@ description: "Zen Home Spa"
 
 publish_to: "none"
 
-version: 1.5.3+52
+version: 1.5.4+52
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
